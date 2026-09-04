@@ -1,8 +1,26 @@
 // VWorld 프록시 (Vercel 서버리스 함수, Node 런타임 / CommonJS)
-// 같은 배포 도메인에서 /req/* 요청을 받아 api.vworld.kr 로 중계한다.
-// Node의 fetch(undici)는 VWorld의 비표준 응답(Connection: Upgrade 등)도 정상 처리.
-// vercel.json 의 rewrite 로 /req/:path* → /api/proxy?__path=:path* 로 들어온다.
-// res.status()/send() 헬퍼 의존을 피하려 순수 Node http 응답 API만 사용.
+// /req/* 요청을 api.vworld.kr 로 중계. vercel.json rewrite: /req/:path* → /api/proxy?__path=:path*
+// ⚠️ fetch(undici)는 VWorld의 비표준 응답(Connection: Upgrade)에서 UND_ERR_SOCKET로 실패 →
+//    curl처럼 관대한 Node 기본 https 모듈로 요청한다.
+const https = require('https');
+
+function vget(target) {
+  return new Promise((resolve, reject) => {
+    const r = https.request(
+      target,
+      { method: 'GET', headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' } },
+      (up) => {
+        const chunks = [];
+        up.on('data', (c) => chunks.push(c));
+        up.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+      }
+    );
+    r.on('error', reject);
+    r.setTimeout(15000, () => r.destroy(new Error('timeout')));
+    r.end();
+  });
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', '*');
@@ -14,15 +32,13 @@ module.exports = async (req, res) => {
     const p = u.searchParams.get('__path') || '';   // address, data ...
     u.searchParams.delete('__path');
     const target = 'https://api.vworld.kr/req/' + p + '?' + u.searchParams.toString();
-    const r = await fetch(target, { headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' } });
-    const body = await r.text();
+    const body = await vget(target);
     res.statusCode = 200;
     res.setHeader('Content-Type', 'application/json;charset=UTF-8');
     res.end(body);
   } catch (e) {
     res.statusCode = 502;
     res.setHeader('Content-Type', 'application/json');
-    const cause = e && e.cause ? (e.cause.code || e.cause.message || String(e.cause)) : null;
-    res.end(JSON.stringify({ proxy_error: String((e && e.message) || e), cause }));
+    res.end(JSON.stringify({ proxy_error: String((e && e.message) || e), code: e && e.code }));
   }
 };
