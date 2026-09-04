@@ -133,8 +133,11 @@
         </div>
       </div>
       <div class="fld"><label>경사각</label><div class="rng"><input type="range" id="o-tilt" min="0" max="35" value="25"><b id="v-tilt">25°</b></div></div>
-      <div class="fld"><label>배열 방위 (정남 기준 회전)</label><div class="rng"><input type="range" id="o-az" min="-90" max="90" value="0"><b id="v-az">정남</b></div></div>
-      <div class="fld"><label>경계 이격거리</label><div class="rng"><input type="range" id="o-set" min="0" max="100" value="10"><b id="v-set">1.0 m</b></div></div>
+      <div class="fld"><label>완충 경계(안쪽 이격)</label><div class="rng"><input type="range" id="o-set" min="0" max="100" value="20"><b id="v-set">2.0 m</b></div></div>
+      <div class="fld"><label>패널 최대 배치</label>
+        <div class="seg" id="seg-opt"><button data-o="1" class="on">🎯 자동(최다)</button><button data-o="0">수동 방위</button></div>
+      </div>
+      <div class="fld" id="az-manual" style="display:none"><label>배열 방위 (정남 기준 회전)</label><div class="rng"><input type="range" id="o-az" min="-90" max="90" value="0"><b id="v-az">정남</b></div></div>
       <div class="fld"><label>열 간격 (그림자 방지)</label>
         <div class="seg" id="seg-pitch"><button data-p="auto" class="on">자동</button><button data-p="manual">수동</button></div>
       </div>
@@ -196,11 +199,12 @@ const labels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services
   {maxZoom:21, maxNativeZoom:19, opacity:.7}).addTo(map);
 
 const panelLayer = L.layerGroup().addTo(map);   // panels
+const bufferLayer = L.layerGroup().addTo(map);  // 완충 경계선
 let boundaryLayer = null;                        // the parcel polygon (geoman layer)
 const canvasRenderer = L.canvas({padding:0.5});
 
 // ---------- state ----------
-const S = {type:'ground', tilt:25, az:0, setback:1.0, pitchMode:'auto', pitch:5.0, stack:2};
+const S = {type:'ground', tilt:25, az:0, setback:2.0, pitchMode:'auto', pitch:5.0, stack:2, optimize:true};
 
 // ---------- UI wiring ----------
 const $=id=>document.getElementById(id);
@@ -301,7 +305,7 @@ $('btn-draw').onclick = ()=>{
   map.pm.enableDraw('Polygon', {snappable:true, templineStyle:{color:'#ffd54a'}, hintlineStyle:{color:'#ffd54a',dashArray:'4,4'}, pathOptions:{color:'#ffd54a',weight:2,fillOpacity:.06}});
   setStatus('꼭짓점을 순서대로 클릭, <b>시작점 클릭 또는 더블클릭</b>으로 완성하세요.');
 };
-$('btn-clear').onclick = ()=>{ clearBoundary(); panelLayer.clearLayers(); resetStats(); setStatus('경계를 지웠습니다.'); };
+$('btn-clear').onclick = ()=>{ clearBoundary(); panelLayer.clearLayers(); bufferLayer.clearLayers(); resetStats(); setStatus('경계를 지웠습니다.'); };
 map.on('pm:create', e=>{ boundaryLayer = e.layer; map.pm.disableDraw(); setStatus('부지 경계 완성. <b>배치 계산</b>을 누르세요.'); });
 
 function clearBoundary(){ map.pm.disableDraw(); if(boundaryLayer){ map.removeLayer(boundaryLayer); boundaryLayer=null; } }
@@ -317,6 +321,7 @@ $('o-set').oninput = e=>{ S.setback=(+e.target.value)/10; $('v-set').innerHTML=S
 $('o-pitch').oninput = e=>{ S.pitch=(+e.target.value)/10; $('v-pitch').innerHTML=S.pitch.toFixed(1)+' m'; };
 document.querySelectorAll('#seg-type button').forEach(b=>b.onclick=()=>{ document.querySelectorAll('#seg-type button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); S.type=b.dataset.t; });
 document.querySelectorAll('#seg-pitch button').forEach(b=>b.onclick=()=>{ document.querySelectorAll('#seg-pitch button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); S.pitchMode=b.dataset.p; $('pitch-manual').style.display = S.pitchMode==='manual'?'block':'none'; });
+document.querySelectorAll('#seg-opt button').forEach(b=>b.onclick=()=>{ document.querySelectorAll('#seg-opt button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); S.optimize=(b.dataset.o==='1'); $('az-manual').style.display = S.optimize?'none':'block'; });
 
 $('btn-run').onclick = runLayout;
 $('btn-toggle').onclick = ()=>{ const on=map.hasLayer(panelLayer); if(on){map.removeLayer(panelLayer);$('btn-toggle').textContent='패널 보이기';} else {map.addLayer(panelLayer);$('btn-toggle').textContent='패널 숨기기';} };
@@ -342,97 +347,103 @@ function pnpoly(pt, ring){ // ray casting, ring: [{x,y}]
 function runLayout(){
   if(!boundaryLayer){ setStatus('⚠️ 먼저 <b>부지 경계</b>를 그리거나 샘플을 불러오세요.'); return; }
   panelLayer.clearLayers();
+  bufferLayer.clearLayers();
 
-  // 1) parcel ring in latlng, and setback (inward buffer) via turf
+  // 1) 외곽 경계 + 완충(안쪽 이격) 버퍼
   const ll = ringLatLng(boundaryLayer);
   const gjPoly = turf.polygon([[...ll.map(p=>[p.lng,p.lat]), [ll[0].lng,ll[0].lat]]]);
   const landArea = turf.area(gjPoly);
   let work = gjPoly;
   if(S.setback>0){
     const buf = turf.buffer(gjPoly, -S.setback, {units:'meters'});
-    if(!buf || !buf.geometry || turf.area(buf)<1){ setStatus('⚠️ 이격거리가 너무 커서 배치 공간이 없습니다.'); resetStats(); return; }
+    if(!buf || !buf.geometry || turf.area(buf)<1){ setStatus('⚠️ 완충거리가 너무 커서 배치 공간이 없습니다.'); resetStats(); return; }
     work = buf;
   }
-  // take largest polygon if multipolygon
   let wcoords = work.geometry.coordinates;
   if(work.geometry.type==='MultiPolygon'){
-    wcoords = work.geometry.coordinates.map(c=>c).sort((a,b)=>turf.area(turf.polygon(b))-turf.area(turf.polygon(a)))[0];
+    wcoords = work.geometry.coordinates.slice().sort((a,b)=>turf.area(turf.polygon(b))-turf.area(turf.polygon(a)))[0];
   }
-  const wring = wcoords[0].map(c=>({lng:c[0],lat:c[1]}));
+  const wringLL = wcoords[0].map(c=>({lng:c[0],lat:c[1]}));   // 완충 경계 latlng
 
-  // 2) local meter projection centered on parcel centroid
-  const cen = turf.centroid(gjPoly).geometry.coordinates; // [lng,lat]
+  // 2) 로컬 미터 투영(중심 기준) + 회전 헬퍼
+  const cen = turf.centroid(gjPoly).geometry.coordinates;
   const lng0=cen[0], lat0=cen[1];
   const mLat=110540, mLng=111320*Math.cos(lat0*Math.PI/180);
   const toL=(lat,lng)=>({x:(lng-lng0)*mLng, y:(lat-lat0)*mLat});
   const toLatLng=(x,y)=>[lat0 + y/mLat, lng0 + x/mLng];
-
-  // 3) rotate working ring by -az so rows align to axis (u = row, v = stacking/north)
-  const az = S.az*Math.PI/180;
   const rot=(x,y,a)=>({x:x*Math.cos(a)-y*Math.sin(a), y:x*Math.sin(a)+y*Math.cos(a)});
-  const wl = wring.map(p=>{ const l=toL(p.lat,p.lng); return rot(l.x,l.y,-az); });
+  const ringLocal  = wringLL.map(p=>toL(p.lat,p.lng));   // 완충(inner) 로컬
+  const outerLocal = ll.map(p=>toL(p.lat,p.lng));        // 외곽 로컬
 
-  // 4) module & table footprint (meters)
+  // 3) 모듈/테이블 footprint (방위 무관)
   const mw=(+$('m-w').value)/1000, mh=(+$('m-h').value)/1000, watt=(+$('m-p').value);
   const portrait = $('m-o').value==='portrait';
-  const wRow    = portrait ? mw : mh;         // module width along the row (u)
-  const lSlope1 = portrait ? mh : mw;         // module length along the slope
+  const wRow    = portrait ? mw : mh;
+  const lSlope1 = portrait ? mh : mw;
   const intra=0.02, gapU=0.02;
   const tilt=S.tilt*Math.PI/180;
   const alongSlope = S.stack*lSlope1 + (S.stack-1)*intra;
-  const depth = alongSlope*Math.cos(tilt);    // ground footprint depth (v)
-
-  // 5) row pitch
+  const depth = alongSlope*Math.cos(tilt);
   let pitch;
   if(S.pitchMode==='manual'){ pitch = Math.max(depth+0.1, S.pitch); }
-  else {
-    const altWinter = Math.max(8, (90 - lat0 - 23.44))*Math.PI/180; // winter solstice noon altitude
-    const shadow = alongSlope*Math.sin(tilt)/Math.tan(altWinter);
-    pitch = depth + shadow;
-  }
+  else { const altWinter=Math.max(8,(90-lat0-23.44))*Math.PI/180; pitch = depth + alongSlope*Math.sin(tilt)/Math.tan(altWinter); }
   const stepU = wRow + gapU;
 
-  // 6) grid fill within rotated bbox
-  const xs=wl.map(p=>p.x), ys=wl.map(p=>p.y);
-  const minx=Math.min(...xs), maxx=Math.max(...xs), miny=Math.min(...ys), maxy=Math.max(...ys);
-  const placed=[]; // each: [u,v] lower-left in work frame
-  let guard=0;
-  for(let v=miny; v+depth<=maxy; v+=pitch){
-    for(let u=minx; u+wRow<=maxx; u+=stepU){
-      if(++guard>800000) break;
-      const c=[{x:u,y:v},{x:u+wRow,y:v},{x:u+wRow,y:v+depth},{x:u,y:v+depth}];
-      if(c.every(p=>pnpoly(p,wl))) placed.push([u,v]);
+  // 4) 특정 방위(라디안)에서 격자 배치 → placed
+  function scanAz(azR){
+    const wl = ringLocal.map(p=>rot(p.x,p.y,-azR));
+    const xs=wl.map(p=>p.x), ys=wl.map(p=>p.y);
+    const minx=Math.min(...xs),maxx=Math.max(...xs),miny=Math.min(...ys),maxy=Math.max(...ys);
+    const placed=[]; let guard=0;
+    for(let v=miny; v+depth<=maxy; v+=pitch){
+      for(let u=minx; u+wRow<=maxx; u+=stepU){
+        if(++guard>3000000){ v=maxy+1; break; }
+        const c=[{x:u,y:v},{x:u+wRow,y:v},{x:u+wRow,y:v+depth},{x:u,y:v+depth}];
+        if(c.every(p=>pnpoly(p,wl))) placed.push([u,v]);
+      }
     }
+    return {placed, wl};
   }
 
-  // 7) draw panels (rotate back +az, to latlng)
+  // 5) 방위 결정: 자동 최적화(최다 배치) vs 수동
+  let bestAz, bestDeg=0;
+  if(S.optimize){
+    // 남향 ±30° 안에서 최다 배치 탐색(발전량 손실 최소화하며 부지에 정렬)
+    let best=-1;
+    for(let d=-30; d<=30; d+=10){ const n=scanAz(d*Math.PI/180).placed.length; if(n>best){best=n;bestDeg=d;} }
+    for(let d=Math.max(-30,bestDeg-8); d<=Math.min(30,bestDeg+8); d+=2){ const n=scanAz(d*Math.PI/180).placed.length; if(n>best){best=n;bestDeg=d;} }
+    bestAz = bestDeg*Math.PI/180;
+  } else { bestDeg=S.az; bestAz = S.az*Math.PI/180; }
+  const res = scanAz(bestAz), placed = res.placed, wl = res.wl;
+
+  // 6) 완충 경계선 그리기(주황 점선 — 패널은 이 안쪽에만)
+  bufferLayer.addLayer(L.polygon(wringLL.map(p=>[p.lat,p.lng]),{color:'#ff8a3d',weight:1.5,dashArray:'6,5',fill:false}));
+
+  // 7) 패널 그리기
   const navy = S.type==='roof' ? '#12406e' : '#123a6e';
   placed.forEach(([u,v])=>{
-    const corners=[[u,v],[u+wRow,v],[u+wRow,v+depth],[u,v+depth]].map(([x,y])=>{
-      const r=rot(x,y,az); return toLatLng(r.x,r.y);
-    });
+    const corners=[[u,v],[u+wRow,v],[u+wRow,v+depth],[u,v+depth]].map(([x,y])=>{ const r=rot(x,y,bestAz); return toLatLng(r.x,r.y); });
     L.polygon(corners,{renderer:canvasRenderer,color:'#8fb8ff',weight:.5,fillColor:navy,fillOpacity:.92}).addTo(panelLayer);
   });
 
-  // 8) stats
-  const tables=placed.length;
-  const modules=tables*S.stack;
-  const kw=modules*watt/1000;
-  const occ=tables*wRow*depth;
-  const ratio= landArea>0 ? occ/landArea*100 : 0;
-  const yieldK=1300; // kWh/kWp/yr (KR avg)
+  // 8) 통계
+  const tables=placed.length, modules=tables*S.stack, kw=modules*watt/1000;
+  const occ=tables*wRow*depth, ratio=landArea>0?occ/landArea*100:0, yieldK=1300;
   $('r-count').textContent=modules.toLocaleString();
   $('r-kw').textContent=Math.round(kw).toLocaleString();
   $('r-land').textContent=Math.round(landArea).toLocaleString();
   $('r-ratio').textContent=ratio.toFixed(0);
   $('r-gen').textContent=(kw*yieldK/1000).toFixed(0);
   $('r-tables').textContent=tables.toLocaleString();
-  // 3D 뷰가 재사용할 배치 데이터 저장 (설치유형별 구조물 높이)
-  const base3d = S.type==='carport' ? 2.6 : (S.type==='roof' ? 7.0 : 0.6);
-  window.LAYOUT = { placed, wRow, alongSlope, depth, tiltR:tilt, azRad:az, base:base3d, lat0, lng0, mLat, mLng, wl, type:S.type };
+
+  // 9) 3D용 저장(완충 wl + 외곽 outerWl, work프레임)
+  const base3d = S.type==='carport'?2.6:(S.type==='roof'?7.0:0.6);
+  const outerWl = outerLocal.map(p=>rot(p.x,p.y,-bestAz));
+  window.LAYOUT = { placed, wRow, alongSlope, depth, tiltR:tilt, azRad:bestAz, base:base3d, lat0, lng0, mLat, mLng, wl, outerWl, type:S.type };
   if (document.getElementById('three').style.display !== 'none') rebuild3D();
 
-  setStatus(`✅ 배치 완료 — <b>${modules.toLocaleString()}장</b> · <b>${Math.round(kw).toLocaleString()} kWp</b> · 이용률 ${ratio.toFixed(0)}%`);
+  const azTxt = bestDeg===0?'정남':(bestDeg<0?`남동 ${-bestDeg}°`:`남서 ${bestDeg}°`);
+  setStatus(`✅ 배치 완료 — <b>${modules.toLocaleString()}장</b> · <b>${Math.round(kw).toLocaleString()} kWp</b> · 이용률 ${ratio.toFixed(0)}% · 방위 ${S.optimize?'자동 ':''}${azTxt}`);
 }
 
 function resetStats(){ ['r-count','r-kw','r-land','r-ratio','r-gen','r-tables'].forEach(id=>$(id).textContent='0'); }
@@ -493,9 +504,10 @@ function rebuild3D(){
     });
     inst.instanceMatrix.needsUpdate=true; three.arrayGroup.add(inst);
   }
-  // 부지 경계선
-  const pts=L.wl.map(p=>new THREE.Vector3(p.x, 0.25, -p.y)); if(pts.length) pts.push(pts[0].clone());
-  three.arrayGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({color:0xffd54a})));
+  // 외곽 경계(노랑) + 완충 경계(주황)
+  const mkLine=(ring,color,y)=>{ if(!ring||!ring.length)return; const pts=ring.map(p=>new THREE.Vector3(p.x,y,-p.y)); pts.push(pts[0].clone()); three.arrayGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({color}))); };
+  mkLine(L.outerWl, 0xffd54a, 0.30);
+  mkLine(L.wl, 0xff8a3d, 0.28);
 
   // 위성 바닥
   const xs=L.wl.map(p=>p.x), ys=L.wl.map(p=>p.y);
