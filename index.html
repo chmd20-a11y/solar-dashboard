@@ -312,12 +312,36 @@ async function getRiver(){
   _rivVal = fs.length ? {found:true, name:(fs[0].properties.riv_nm||fs[0].properties.cat_nam||'하천')} : {found:false};
   return _rivVal;
 }
+// 계통(변전소 여유용량·DL·연락처) — grid-capacity 대시보드 데이터 참조
+let _cap=null, _con={};
+async function loadGridData(){
+  if(_cap) return;
+  const B='https://chmd20-a11y.github.io/grid-capacity-dashboard/';
+  try{ const cap=await fetch(B+'capacity.json').then(r=>r.json());
+    _cap = Array.isArray(cap)?cap:(cap.data||cap.substations||Object.values(cap).find(v=>Array.isArray(v))||[]);
+  }catch(e){ _cap=[]; }
+  try{ const con=await fetch(B+'kepco_contacts.json').then(r=>r.json()); _con=con.jisa||{}; }catch(e){ _con={}; }
+}
+async function checkGrid(lat,lng){
+  await loadGridData(); if(!_cap||!_cap.length) return null;
+  const R=6371, toR=x=>x*Math.PI/180; let best=null,bd=1e9;
+  for(const s of _cap){ if(s.lat==null||s.lng==null) continue;
+    const a=Math.sin(toR(s.lat-lat)/2)**2+Math.cos(toR(lat))*Math.cos(toR(s.lat))*Math.sin(toR(s.lng-lng)/2)**2;
+    const d=2*R*Math.asin(Math.sqrt(a)); if(d<bd){bd=d;best=s;} }
+  if(!best) return null;
+  const dls=(best.lines||[]).map(l=>({nm:l.dl_nm,free:Math.max(0,(l.dl_capa||0)-(l.g_dl||0))})).filter(x=>x.nm).sort((a,b)=>b.free-a.free).slice(0,4);
+  const jisa=(best.branch||'').replace('지사','').trim();
+  const tel=_con[jisa]||_con[best.region]||'';
+  return {name:best.name,region:best.region,branch:best.branch,dist:bd,free:best.subst_free_mw,pct:best.subst_free_pct,dls,tel};
+}
 async function renderFeasibility(){
   const body=$('feas-body'); if(!body) return;
   if(!boundaryLayer){ body.innerHTML='<div class="feas-empty">지번 검색 시 이 부지의 설치 타당성이 표시됩니다.</div>'; return; }
   body.innerHTML='<div class="feas-empty">타당성 검토 중…</div>';
   function row(lvl,t,d){ return `<div class="feas-row"><span class="dot ${lvl}"></span><div class="ft"><div class="t">${t}</div><div class="d">${d}</div></div></div>`; }
   let river=null; try{ river=await getRiver(); }catch(e){}
+  let gcenter=null; try{ const cll=ringLatLng(boundaryLayer); gcenter=turf.centroid(turf.polygon([[...cll.map(p=>[p.lng,p.lat]),[cll[0].lng,cll[0].lat]]])).geometry.coordinates; }catch(e){}
+  let grid=null; if(gcenter){ try{ grid=await checkGrid(gcenter[1],gcenter[0]); }catch(e){} }
   const jimok = PARCEL && PARCEL.jimok;
   let jL='na', jD='지목 확인 필요';
   if(jimok){
@@ -341,7 +365,14 @@ async function renderFeasibility(){
   h+=row(rL, '하천 저촉/인접', rD);
   h+=row('na', (region||'지자체')+' 이격거리 조례', `주거·도로 이격 규정 → <a href="https://www.google.com/search?q=${ordQ}" target="_blank">조례 검색</a>`);
   h+=row('na', '용도지역·이용제한', `<a href="https://www.eum.go.kr/web/am/amMain.jsp" target="_blank">토지이음</a>에서 지번(${(PARCEL&&PARCEL.jibun)||'-'}) 조회`);
-  h+=row('na', '계통 연계 여유', '한전 계통정보로 인근 변전소 여유 확인');
+  if(grid){
+    const gL = grid.free>=10?'ok':(grid.free>=1?'warn':'bad');
+    h+=row(gL, '변전소: '+(grid.name||'-')+(grid.region?' ('+grid.region+')':''), `약 ${grid.dist.toFixed(1)}km · 여유 ${grid.free!=null?Math.round(grid.free):'?'}MW (${grid.pct!=null?Math.round(grid.pct):'?'}%)`);
+    h+=row('na', '가능 DL · 남은용량', grid.dls.length? grid.dls.map(d=>`${d.nm} ${d.free.toFixed(1)}MW`).join(' · ') : 'DL 여유 정보 없음');
+    h+=row('na', '관할 연락처', (grid.branch||'-')+(grid.tel?` · <a href="tel:${grid.tel}">${grid.tel}</a>`:''));
+  } else {
+    h+=row('na', '계통 연계 여유', '인근 변전소 조회 실패');
+  }
   h+=`<div class="feas-row"><span class="dot na" style="visibility:hidden"></span><div class="ft"><div class="d">부지 ${area}㎡ · 예상 ${cnt}장 / ${kw}kWp · 공시지가 ${jiga}</div></div></div>`;
   body.innerHTML=h;
 }
