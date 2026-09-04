@@ -8,7 +8,7 @@ function vget(target) {
   return new Promise((resolve, reject) => {
     const r = https.request(
       target,
-      { method: 'GET', headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' } },
+      { method: 'GET', headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json', 'Referer': 'http://localhost' } },
       (up) => {
         const chunks = [];
         up.on('data', (c) => chunks.push(c));
