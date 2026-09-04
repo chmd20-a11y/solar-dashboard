@@ -313,14 +313,13 @@ async function getRiver(){
   return _rivVal;
 }
 // 계통(변전소 여유용량·DL·연락처) — grid-capacity 대시보드 데이터 참조
-let _cap=null, _con={};
+let _cap=null;
 async function loadGridData(){
   if(_cap) return;
   const B='https://chmd20-a11y.github.io/grid-capacity-dashboard/';
   try{ const cap=await fetch(B+'capacity.json').then(r=>r.json());
     _cap = Array.isArray(cap)?cap:(cap.data||cap.substations||Object.values(cap).find(v=>Array.isArray(v))||[]);
   }catch(e){ _cap=[]; }
-  try{ const con=await fetch(B+'kepco_contacts.json').then(r=>r.json()); _con=con.jisa||{}; }catch(e){ _con={}; }
 }
 async function checkGrid(lat,lng){
   await loadGridData(); if(!_cap||!_cap.length) return null;
@@ -330,9 +329,8 @@ async function checkGrid(lat,lng){
     const d=2*R*Math.asin(Math.sqrt(a)); if(d<bd){bd=d;best=s;} }
   if(!best) return null;
   const dls=(best.lines||[]).map(l=>({nm:l.dl_nm,free:Math.max(0,(l.dl_capa||0)-(l.g_dl||0))})).filter(x=>x.nm).sort((a,b)=>b.free-a.free).slice(0,4);
-  const jisa=(best.branch||'').replace('지사','').trim();
-  const tel=_con[jisa]||_con[best.region]||'';
-  return {name:best.name,region:best.region,branch:best.branch,dist:bd,free:best.subst_free_mw,pct:best.subst_free_pct,dls,tel};
+  const of=best.office||{};
+  return {name:best.name,region:best.region,dist:bd,free:best.subst_free_mw,pct:best.subst_free_pct,dls,officeName:of.name||'',tel:of.phone||'',officeAddr:of.addr||''};
 }
 // 용도지역 자동조회(VWorld LT_C_UQ111) — 커버리지 있으면 uname 반환
 let _zKey='', _zVal;
@@ -387,7 +385,7 @@ async function renderFeasibility(){
     const gL = grid.free>=10?'ok':(grid.free>=1?'warn':'bad');
     h+=row(gL, '변전소: '+(grid.name||'-')+(grid.region?' ('+grid.region+')':''), `약 ${grid.dist.toFixed(1)}km · 여유 ${grid.free!=null?Math.round(grid.free):'?'}MW (${grid.pct!=null?Math.round(grid.pct):'?'}%)`);
     h+=row('na', '가능 DL · 남은용량', grid.dls.length? grid.dls.map(d=>`${d.nm} ${d.free.toFixed(1)}MW`).join(' · ') : 'DL 여유 정보 없음');
-    h+=row('na', '관할 연락처', (grid.branch||'-')+(grid.tel?` · <a href="tel:${grid.tel}">${grid.tel}</a>`:''));
+    h+=row('na', '관할 연락처', (grid.officeName||'한전')+(grid.tel?` · <a href="tel:${grid.tel}">${grid.tel}</a>`:''));
   } else {
     h+=row('na', '계통 연계 여유', '인근 변전소 조회 실패');
   }
