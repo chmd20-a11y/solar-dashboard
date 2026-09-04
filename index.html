@@ -117,7 +117,7 @@
       <div class="grid2">
         <div class="fld"><label>가로 (mm)</label><input type="number" id="m-w" value="1134"></div>
         <div class="fld"><label>세로 (mm)</label><input type="number" id="m-h" value="2465"></div>
-        <div class="fld"><label>출력 (W)</label><input type="number" id="m-p" value="620"></div>
+        <div class="fld"><label>출력 (W)</label><input type="number" id="m-p" value="645"></div>
         <div class="fld">
           <label>설치 방향</label>
           <select id="m-o"><option value="portrait">세로(길이↕)</option><option value="landscape">가로(길이↔)</option></select>
@@ -402,8 +402,8 @@ document.querySelectorAll('#seg-opt button').forEach(b=>b.onclick=()=>{ document
 document.querySelectorAll('#seg-mod button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('#seg-mod button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
   const m=b.dataset.m;
-  if(m==='kr'){ $('m-w').value=1134; $('m-h').value=2465; $('m-p').value=620; }
-  else if(m==='cn'){ $('m-w').value=1134; $('m-h').value=2382; $('m-p').value=590; }
+  if(m==='kr'){ $('m-w').value=1134; $('m-h').value=2465; $('m-p').value=645; }
+  else if(m==='cn'){ $('m-w').value=1134; $('m-h').value=2382; $('m-p').value=655; }
 });
 ['m-w','m-h','m-p'].forEach(id=>$(id).addEventListener('input',()=>{ document.querySelectorAll('#seg-mod button').forEach(x=>x.classList.toggle('on', x.dataset.m==='custom')); }));
 
