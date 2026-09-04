@@ -209,14 +209,15 @@ $('btn-sample').onclick = ()=>{
 };
 
 // ---------- VWorld 연결(지번검색 + 자동경계) ----------
-function vwCfg(){ return {key:(localStorage.getItem('vw_key')||'').trim(), proxy:(localStorage.getItem('vw_proxy')||'http://localhost:8799').replace(/\/+$/,'')}; }
+function defaultProxy(){ return /github\.io$/i.test(location.hostname) ? 'https://vworld-proxy.chmd20.workers.dev' : 'http://localhost:8799'; }
+function vwCfg(){ return {key:(localStorage.getItem('vw_key')||'').trim(), proxy:(localStorage.getItem('vw_proxy')||defaultProxy()).replace(/\/+$/,'')}; }
 function vwApplyState(){
   const {key,proxy}=vwCfg(); const on=!!key;
   $('vw-state').textContent = on?'연결됨':'미연결';
   $('vw-state').style.color = on?'#37d67a':'';
   $('addr').disabled=!on; $('btn-search').disabled=!on;
   $('vw-key').value = localStorage.getItem('vw_key')||'';
-  $('vw-proxy').value = localStorage.getItem('vw_proxy')||'http://localhost:8799';
+  $('vw-proxy').value = localStorage.getItem('vw_proxy')||defaultProxy();
 }
 $('vw-save').onclick = ()=>{
   localStorage.setItem('vw_key', $('vw-key').value.trim());
