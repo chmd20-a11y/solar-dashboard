@@ -209,7 +209,11 @@ $('btn-sample').onclick = ()=>{
 };
 
 // ---------- VWorld 연결(지번검색 + 자동경계) ----------
-function defaultProxy(){ return /github\.io$/i.test(location.hostname) ? 'https://vworld-proxy.chmd20.workers.dev' : 'http://localhost:8799'; }
+function defaultProxy(){
+  const h=location.hostname;
+  if(/vercel\.app$/i.test(h)) return '';            // 배포(권장): 같은 도메인 프록시(/req/*)
+  return 'http://localhost:8799';                    // 로컬 개발용 node 프록시
+}
 function vwCfg(){ return {key:(localStorage.getItem('vw_key')||'').trim(), proxy:(localStorage.getItem('vw_proxy')||defaultProxy()).replace(/\/+$/,'')}; }
 function vwApplyState(){
   const {key,proxy}=vwCfg(); const on=!!key;
