@@ -204,6 +204,10 @@ const esri = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/W
   {maxZoom:21, maxNativeZoom:19, attribution:'Esri World Imagery'}).addTo(map);
 const labels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
   {maxZoom:21, maxNativeZoom:19, opacity:.7}).addTo(map);
+// VWorld 항공영상(국토부, 한국 고해상도) — 서울 프록시 경유(키 서버보관)
+const vworldAerial = L.tileLayer(defaultProxy() + '/req/wmts/1.0.0/__KEY__/Satellite/{z}/{y}/{x}.jpeg',
+  {maxZoom:21, maxNativeZoom:19, attribution:'국토부 VWorld 항공영상'});
+L.control.layers({ '🛰️ ESRI 위성': esri, '🇰🇷 VWorld 항공(고해상도)': vworldAerial }, { '지명·경계': labels }, {position:'topright', collapsed:true}).addTo(map);
 
 const panelLayer = L.layerGroup().addTo(map);   // panels
 const bufferLayer = L.layerGroup().addTo(map);  // 완충 경계선
