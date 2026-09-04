@@ -334,6 +334,14 @@ async function checkGrid(lat,lng){
   const tel=_con[jisa]||_con[best.region]||'';
   return {name:best.name,region:best.region,branch:best.branch,dist:bd,free:best.subst_free_mw,pct:best.subst_free_pct,dls,tel};
 }
+// 용도지역 자동조회(VWorld LT_C_UQ111) — 커버리지 있으면 uname 반환
+let _zKey='', _zVal;
+async function getZone(lat,lng){
+  const wkt='POINT('+lng+' '+lat+')'; if(wkt===_zKey) return _zVal; _zKey=wkt;
+  const j=await vwData('LT_C_UQ111', wkt);
+  const fs=(j&&j.response&&j.response.result&&j.response.result.featureCollection&&j.response.result.featureCollection.features)||[];
+  _zVal = fs.length ? (fs[0].properties.uname||null) : null; return _zVal;
+}
 async function renderFeasibility(){
   const body=$('feas-body'); if(!body) return;
   if(!boundaryLayer){ body.innerHTML='<div class="feas-empty">지번 검색 시 이 부지의 설치 타당성이 표시됩니다.</div>'; return; }
@@ -342,6 +350,14 @@ async function renderFeasibility(){
   let river=null; try{ river=await getRiver(); }catch(e){}
   let gcenter=null; try{ const cll=ringLatLng(boundaryLayer); gcenter=turf.centroid(turf.polygon([[...cll.map(p=>[p.lng,p.lat]),[cll[0].lng,cll[0].lat]]])).geometry.coordinates; }catch(e){}
   let grid=null; if(gcenter){ try{ grid=await checkGrid(gcenter[1],gcenter[0]); }catch(e){} }
+  let zone=null; if(gcenter){ try{ zone=await getZone(gcenter[1],gcenter[0]); }catch(e){} }
+  let zL='na', zD='';
+  if(zone){
+    if(/계획관리/.test(zone)){ zL='ok'; zD='태양광 양호'; }
+    else if(/자연녹지|생산관리|보전관리|관리지역/.test(zone)){ zL='warn'; zD='조건부(개발행위허가)'; }
+    else if(/농림|보전녹지|생산녹지|자연환경보전/.test(zone)){ zL='warn'; zD='농지·보전 규제 검토'; }
+    else if(/주거|상업|공업/.test(zone)){ zL='bad'; zD='도시지역 — 태양광 제약'; }
+  }
   const jimok = PARCEL && PARCEL.jimok;
   let jL='na', jD='지목 확인 필요';
   if(jimok){
@@ -353,7 +369,7 @@ async function renderFeasibility(){
   const rL = river? (river.found?'bad':'ok'):'na';
   const rD = river? (river.found? '인접/저촉: '+river.name : '인접 하천 없음') : '확인 필요';
   const parts=((PARCEL&&PARCEL.addr)||'').split(' '); const region=((parts[0]||'')+' '+(parts[1]||'')).trim();
-  const worst=[jL,rL].includes('bad')?'bad':([jL,rL].includes('warn')?'warn':'ok');
+  const worst=[jL,rL,zL].includes('bad')?'bad':([jL,rL,zL].includes('warn')?'warn':'ok');
   const sumTxt=worst==='ok'?'설치 양호':(worst==='warn'?'조건부 가능 (인허가 검토)':'설치 제약 있음');
   const sumIcon=worst==='ok'?'🟢':(worst==='warn'?'🟡':'🔴');
   const area=$('r-land').textContent, kw=$('r-kw').textContent, cnt=$('r-count').textContent;
@@ -364,7 +380,9 @@ async function renderFeasibility(){
   h+=row(jL, '지목: '+(jimok||'미상'), jD);
   h+=row(rL, '하천 저촉/인접', rD);
   h+=row('na', (region||'지자체')+' 이격거리 조례', `주거·도로 이격 규정 → <a href="https://www.google.com/search?q=${ordQ}" target="_blank">조례 검색</a>`);
-  h+=row('na', '용도지역·이용제한', `<a href="https://www.eum.go.kr/web/am/amMain.jsp" target="_blank">토지이음</a>에서 지번(${(PARCEL&&PARCEL.jibun)||'-'}) 조회`);
+  h+= zone
+    ? row(zL, '용도지역: '+zone, zD||'개발행위 검토')
+    : row('na', '용도지역·이용제한', `<a href="https://www.eum.go.kr/web/am/amMain.jsp" target="_blank">토지이음</a>에서 지번(${(PARCEL&&PARCEL.jibun)||'-'}) 조회`);
   if(grid){
     const gL = grid.free>=10?'ok':(grid.free>=1?'warn':'bad');
     h+=row(gL, '변전소: '+(grid.name||'-')+(grid.region?' ('+grid.region+')':''), `약 ${grid.dist.toFixed(1)}km · 여유 ${grid.free!=null?Math.round(grid.free):'?'}MW (${grid.pct!=null?Math.round(grid.pct):'?'}%)`);
