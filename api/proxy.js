@@ -22,6 +22,7 @@ module.exports = async (req, res) => {
   } catch (e) {
     res.statusCode = 502;
     res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ proxy_error: String((e && e.message) || e) }));
+    const cause = e && e.cause ? (e.cause.code || e.cause.message || String(e.cause)) : null;
+    res.end(JSON.stringify({ proxy_error: String((e && e.message) || e), cause }));
   }
 };
