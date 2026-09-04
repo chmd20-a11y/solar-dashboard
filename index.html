@@ -66,7 +66,7 @@
       <div class="fld"><label>인증키 (VWorld apiKey)</label><input type="text" id="vw-key" placeholder="발급받은 인증키 붙여넣기"></div>
       <div class="fld"><label>프록시 주소</label><input type="text" id="vw-proxy" value="http://localhost:8799"></div>
       <button class="btn" id="vw-save">🔌 연결 저장</button>
-      <div class="hint">VWorld는 브라우저 직접호출을 막아(CORS) <b>프록시가 필요</b>합니다. 로컬은 기본값 그대로 두면 됩니다. 배포(Pages) 시엔 Cloudflare 프록시 주소로 교체.</div>
+      <div class="hint">배포본(vercel.app)은 서버 프록시가 내장돼 <b>키 입력 없이 바로 작동</b>합니다. 로컬 개발 시에만 node 프록시(localhost:8799)가 필요합니다.</div>
     </div>
 
     <div class="sec">
@@ -216,7 +216,9 @@ function defaultProxy(){
 }
 function vwCfg(){ return {key:(localStorage.getItem('vw_key')||'').trim(), proxy:(localStorage.getItem('vw_proxy')||defaultProxy()).replace(/\/+$/,'')}; }
 function vwApplyState(){
-  const {key,proxy}=vwCfg(); const on=!!key;
+  const {key}=vwCfg();
+  const serverKey = /vercel\.app$/i.test(location.hostname);   // 배포본은 서버가 키 주입 → 무입력 사용
+  const on = !!key || serverKey;
   $('vw-state').textContent = on?'연결됨':'미연결';
   $('vw-state').style.color = on?'#37d67a':'';
   $('addr').disabled=!on; $('btn-search').disabled=!on;

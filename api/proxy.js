@@ -31,6 +31,8 @@ module.exports = async (req, res) => {
     const u = new URL(req.url, 'http://local');
     const p = u.searchParams.get('__path') || '';   // address, data ...
     u.searchParams.delete('__path');
+    // 브라우저가 키를 안 보내면 서버 환경변수 키를 주입(키 은닉·무입력 사용)
+    if (!u.searchParams.get('key') && process.env.VWORLD_KEY) u.searchParams.set('key', process.env.VWORLD_KEY);
     const target = 'https://api.vworld.kr/req/' + p + '?' + u.searchParams.toString();
     const body = await vget(target);
     res.statusCode = 200;
