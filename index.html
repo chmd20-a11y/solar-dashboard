@@ -51,6 +51,13 @@
   .badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:20px;background:rgba(78,161,255,.15);color:var(--accent2);border:1px solid rgba(78,161,255,.3);margin-left:6px}
   .disc{font-size:10.5px;color:#7f8ea0;line-height:1.5;margin-top:8px;border-top:1px dashed var(--line);padding-top:8px}
   .leaflet-container{background:#0b0f14}
+  #viewtoggle{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:600;display:flex;gap:4px;padding:4px}
+  #viewtoggle button{padding:7px 15px;border:0;border-radius:8px;background:transparent;color:#cdd8e4;font-size:13px;cursor:pointer;font-weight:700}
+  #viewtoggle button.on{background:var(--accent);color:#1a1400}
+  #sunbar{position:absolute;bottom:14px;right:14px;z-index:600;display:flex;align-items:center;gap:8px;padding:8px 12px;font-size:12px;color:#cdd8e4}
+  #sunbar input{width:120px;accent-color:var(--accent)}
+  #sunbar b{color:var(--accent);min-width:42px}
+  #three{position:absolute;inset:0;display:none;background:#0b0f14}
 </style>
 </head>
 <body>
@@ -139,6 +146,12 @@
   <!-- ================= CENTER: MAP ================= -->
   <div id="center" class="col">
     <div id="map"></div>
+    <div id="three"></div>
+    <div id="viewtoggle" class="panel">
+      <button id="v2d" class="on">🗺️ 2D 지도</button>
+      <button id="v3d">🧊 3D 뷰</button>
+    </div>
+    <div id="sunbar" class="panel" style="display:none">☀️ 태양 <input type="range" id="o-sun" min="6" max="18" step="0.25" value="13"><b id="v-sun">13:00</b> · 드래그 회전</div>
     <div id="status">부지를 <b>그리거나</b> 「파주 샘플 부지」를 불러온 뒤 <b>배치 계산</b>을 누르세요.</div>
   </div>
 
@@ -172,6 +185,8 @@
 <script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.14.2/dist/leaflet-geoman.min.js"></script>
 <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
 <script src="https://unpkg.com/leaflet-image@0.4.0/leaflet-image.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
 // ---------- map ----------
 const map = L.map('map', {preferCanvas:true, zoomControl:true}).setView([37.72019,126.70650], 17);
@@ -412,6 +427,11 @@ function runLayout(){
   $('r-ratio').textContent=ratio.toFixed(0);
   $('r-gen').textContent=(kw*yieldK/1000).toFixed(0);
   $('r-tables').textContent=tables.toLocaleString();
+  // 3D 뷰가 재사용할 배치 데이터 저장 (설치유형별 구조물 높이)
+  const base3d = S.type==='carport' ? 2.6 : (S.type==='roof' ? 7.0 : 0.6);
+  window.LAYOUT = { placed, wRow, alongSlope, depth, tiltR:tilt, azRad:az, base:base3d, lat0, lng0, mLat, mLng, wl, type:S.type };
+  if (document.getElementById('three').style.display !== 'none') rebuild3D();
+
   setStatus(`✅ 배치 완료 — <b>${modules.toLocaleString()}장</b> · <b>${Math.round(kw).toLocaleString()} kWp</b> · 이용률 ${ratio.toFixed(0)}%`);
 }
 
@@ -426,6 +446,136 @@ function savePng(){
     setStatus('🖼️ 이미지를 저장했습니다.');
   });
 }
+
+/* ================= 3D 뷰 (실제 배치를 입체로) ================= */
+let three=null, view3D=false, sunT=13;
+
+function initThree(){
+  const el=document.getElementById('three');
+  const scene=new THREE.Scene(); scene.background=new THREE.Color(0x9fc0e0);
+  const camera=new THREE.PerspectiveCamera(48, el.clientWidth/(el.clientHeight||1), 0.5, 8000);
+  const renderer=new THREE.WebGLRenderer({antialias:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.setSize(el.clientWidth, el.clientHeight);
+  renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  renderer.outputEncoding=THREE.sRGBEncoding; renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.05;
+  el.appendChild(renderer.domElement);
+  const controls=new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping=true; controls.dampingFactor=0.08; controls.maxPolarAngle=Math.PI*0.495;
+  const hemi=new THREE.HemisphereLight(0xbcd6f0,0x4b4436,0.55); scene.add(hemi);
+  const sun=new THREE.DirectionalLight(0xffffff,1.1); sun.castShadow=true; sun.shadow.mapSize.set(2048,2048); scene.add(sun); scene.add(sun.target);
+  const arrayGroup=new THREE.Group(); scene.add(arrayGroup);
+  const panelMat=new THREE.MeshStandardMaterial({color:0x14346a, roughness:.35, metalness:.25, side:THREE.DoubleSide});
+  three={el,scene,camera,renderer,controls,hemi,sun,arrayGroup,panelMat,ground:null};
+  addEventListener('resize',()=>{ if(view3D) onResize3D(); });
+  animate();
+}
+function onResize3D(){ if(!three)return; const el=three.el; three.camera.aspect=el.clientWidth/(el.clientHeight||1); three.camera.updateProjectionMatrix(); three.renderer.setSize(el.clientWidth, el.clientHeight); }
+function animate(){ requestAnimationFrame(animate); if(view3D && three){ three.controls.update(); three.renderer.render(three.scene, three.camera); } }
+
+function rebuild3D(){
+  if(!three) return;
+  const L=window.LAYOUT; if(!L){ return; }
+  // 이전 패널/경계 제거
+  for(let i=three.arrayGroup.children.length-1;i>=0;i--){ const c=three.arrayGroup.children[i]; three.arrayGroup.remove(c); if(c.geometry)c.geometry.dispose(); }
+  three.arrayGroup.rotation.y = L.azRad;   // work프레임 → 나침반 정렬
+  const tiltR=L.tiltR, wRow=L.wRow, slope=L.alongSlope, depth=L.depth, base=L.base;
+
+  if(L.placed.length){
+    const geo=new THREE.BoxGeometry(wRow, slope, 0.05);
+    const inst=new THREE.InstancedMesh(geo, three.panelMat, L.placed.length);
+    inst.castShadow=true; inst.receiveShadow=true;
+    const d=new THREE.Object3D();
+    L.placed.forEach(([u,v],i)=>{
+      d.position.set(u+wRow/2, base+(slope*Math.sin(tiltR))/2, -(v+depth/2));
+      d.rotation.set(-Math.PI/2+tiltR, 0, 0);
+      d.updateMatrix(); inst.setMatrixAt(i, d.matrix);
+    });
+    inst.instanceMatrix.needsUpdate=true; three.arrayGroup.add(inst);
+  }
+  // 부지 경계선
+  const pts=L.wl.map(p=>new THREE.Vector3(p.x, 0.25, -p.y)); if(pts.length) pts.push(pts[0].clone());
+  three.arrayGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({color:0xffd54a})));
+
+  // 위성 바닥
+  const xs=L.wl.map(p=>p.x), ys=L.wl.map(p=>p.y);
+  const span=Math.max(Math.max(...xs)-Math.min(...xs), Math.max(...ys)-Math.min(...ys))*1.8 + 24;
+  if(three.ground){ three.scene.remove(three.ground); three.ground.geometry.dispose(); }
+  const gmat=new THREE.MeshStandardMaterial({color:0x556b2f, roughness:1});
+  three.ground=new THREE.Mesh(new THREE.PlaneGeometry(span,span), gmat);
+  three.ground.rotation.x=-Math.PI/2; three.ground.receiveShadow=true; three.scene.add(three.ground);
+  stitchGround(L.lat0, L.lng0, span).then(tex=>{ if(tex){ tex.encoding=THREE.sRGBEncoding; gmat.map=tex; gmat.color.set(0xffffff); gmat.needsUpdate=true; } });
+
+  const sd=span*0.7; const sc=three.sun.shadow.camera;
+  sc.left=-sd; sc.right=sd; sc.top=sd; sc.bottom=-sd; sc.near=1; sc.far=span*4; sc.updateProjectionMatrix();
+  three.controls.target.set(0, base, 0);
+  three.camera.position.set(span*0.30, span*0.48, span*0.62);
+  three.controls.minDistance=8; three.controls.maxDistance=span*2.2;
+  updateSun3D();
+}
+
+function updateSun3D(){
+  if(!three) return;
+  const t=sunT, tN=Math.min(1,Math.max(0,(t-6)/12));
+  const elev=(62*Math.sin(Math.PI*tN))*Math.PI/180;
+  const th=(180*(t-6)/12)*Math.PI/180;   // 동→남→서
+  const dir=new THREE.Vector3(Math.cos(th)*Math.cos(elev), Math.max(0.05,Math.sin(elev)), Math.sin(th)*Math.cos(elev));
+  const span=(three.ground? three.ground.geometry.parameters.width : 200);
+  three.sun.position.copy(dir.multiplyScalar(span*1.1));
+  three.sun.target.position.set(0,0,0);
+  const day=Math.max(0,Math.sin(elev));
+  three.sun.intensity=0.3+1.1*day; three.hemi.intensity=0.35+0.4*day;
+  const warm=Math.min(1,Math.max(0,elev/(25*Math.PI/180)));
+  three.sun.color.setRGB(1, 0.62+0.36*warm, 0.4+0.58*warm);
+  three.scene.background=new THREE.Color().setRGB(0.35+0.28*day, 0.48+0.28*day, 0.62+0.25*day);
+}
+
+// 위성 타일을 브라우저에서 이어붙여 바닥 텍스처 생성 (CORS 오염 시 null 반환 → 초록 바닥)
+function stitchGround(lat,lng,spanM){
+  return new Promise(resolve=>{
+    const rad=lat*Math.PI/180, mpp0=156543.03392*Math.cos(rad);
+    let z=19; for(let zz=20; zz>=13; zz--){ if(spanM/(mpp0/Math.pow(2,zz))<=1400){ z=zz; break; } }
+    const n=Math.pow(2,z), mpp=mpp0/n, worldPx=n*256;
+    const cx=(lng+180)/360*worldPx;
+    const cy=(1-Math.log(Math.tan(rad)+1/Math.cos(rad))/Math.PI)/2*worldPx;
+    const px=spanM/mpp, half=px/2, size=Math.min(2048,Math.ceil(px)), scale=size/px;
+    const cv=document.createElement('canvas'); cv.width=size; cv.height=size; const g=cv.getContext('2d');
+    g.fillStyle='#3d492c'; g.fillRect(0,0,size,size);
+    const x0=cx-half, y0=cy-half;
+    const tx0=Math.floor(x0/256), tx1=Math.floor((cx+half)/256), ty0=Math.floor(y0/256), ty1=Math.floor((cy+half)/256);
+    let pending=0, finished=false;
+    const done=()=>{ if(finished)return; finished=true; try{ g.getImageData(0,0,1,1); }catch(e){ resolve(null); return; } resolve(new THREE.CanvasTexture(cv)); };
+    for(let tx=tx0;tx<=tx1;tx++)for(let ty=ty0;ty<=ty1;ty++){
+      pending++;
+      const img=new Image(); img.crossOrigin='anonymous';
+      img.onload=()=>{ try{ g.drawImage(img,(tx*256-x0)*scale,(ty*256-y0)*scale,256*scale,256*scale);}catch(e){} if(--pending<=0)done(); };
+      img.onerror=()=>{ if(--pending<=0)done(); };
+      img.src='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/'+z+'/'+ty+'/'+tx;
+    }
+    if(pending===0) done();
+    setTimeout(()=>{ if(!finished) done(); }, 9000);
+  });
+}
+
+document.getElementById('o-sun').oninput=e=>{ sunT=parseFloat(e.target.value); const h=Math.floor(sunT),m=Math.round((sunT-h)*60); document.getElementById('v-sun').textContent=(h<10?'0':'')+h+':'+(m<10?'0':'')+m; updateSun3D(); };
+document.getElementById('v3d').onclick=()=>{
+  if(!window.LAYOUT){ setStatus('먼저 <b>배치 계산</b>을 해주세요 — 그 배치를 3D로 보여드립니다.'); return; }
+  view3D=true;
+  document.getElementById('map').style.display='none';
+  document.getElementById('three').style.display='block';
+  document.getElementById('v3d').classList.add('on'); document.getElementById('v2d').classList.remove('on');
+  document.getElementById('sunbar').style.display='flex';
+  if(!three) initThree();
+  onResize3D(); rebuild3D();
+};
+document.getElementById('v2d').onclick=()=>{
+  view3D=false;
+  document.getElementById('three').style.display='none';
+  document.getElementById('map').style.display='block';
+  document.getElementById('v2d').classList.add('on'); document.getElementById('v3d').classList.remove('on');
+  document.getElementById('sunbar').style.display='none';
+  if(typeof map!=='undefined') map.invalidateSize();
+};
 </script>
 </body>
 </html>
