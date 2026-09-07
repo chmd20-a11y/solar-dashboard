@@ -434,6 +434,21 @@ async function getZone(lat,lng){
   }
   _zVal = names.find(n=>zonePat.test(n)) || names[0] || null; return _zVal;
 }
+// 규제구역 저촉(발견 시에만 경고 — '이상없음' 단정 안 함). 개발제한구역=태양광 절대 불가. 확장 가능.
+let _rzKey='', _rzVal=null;
+async function getRestrictZone(lat,lng){
+  const wkt='POINT('+lng+' '+lat+')'; if(wkt===_rzKey) return _rzVal; _rzKey=wkt;
+  const CHK=[['LT_C_UD801','개발제한구역(그린벨트)']];
+  _rzVal=null;
+  for(const [layer,label] of CHK){
+    try{
+      const j=await vwData(layer, wkt);
+      const fs=(j&&j.response&&j.response.result&&j.response.result.featureCollection&&j.response.result.featureCollection.features)||[];
+      if(fs.length){ _rzVal={label, name:(fs[0].properties.uname||label)}; break; }
+    }catch(e){}
+  }
+  return _rzVal;
+}
 // 태양광 설치 불가(부지·면적·패널에서 제외) 지목: 도로·하천·구거·제방·유지
 const EXCLUDE_JIMOK = new Set(['도','천','구','제','유']);
 const jimokOfJibun = s => ((s||'').match(/[가-힣]+$/)||[''])[0];
@@ -531,6 +546,7 @@ async function renderFeasibility(){
   let grid=null; if(gcenter){ try{ grid=await checkGrid(gcenter[1],gcenter[0]); }catch(e){} }
   let zone=null; if(gcenter){ try{ zone=await getZone(gcenter[1],gcenter[0]); }catch(e){} }
   let slope=null; if(gcenter){ try{ slope=await getSlope(gcenter[0],gcenter[1]); }catch(e){} }
+  let restrict=null; if(gcenter){ try{ restrict=await getRestrictZone(gcenter[1],gcenter[0]); }catch(e){} }
   let zL='na', zD='';
   if(zone){
     if(/계획관리/.test(zone)){ zL='ok'; zD='태양광 양호'; }
@@ -559,7 +575,8 @@ async function renderFeasibility(){
     sRow = row('na', '경사도', `대지 태양광은 경사도 중요 — <a href="${ecvam}" target="_blank">국토환경성평가지도</a>에서 확인`);
   }
   const parts=((PARCEL&&PARCEL.addr)||'').split(' '); const region=((parts[0]||'')+' '+(parts[1]||'')).trim();
-  const worst=[jL,rL,zL,sL].includes('bad')?'bad':([jL,rL,zL,sL].includes('warn')?'warn':'ok');
+  const rzL = restrict ? 'bad' : 'na';
+  const worst=[jL,rL,zL,sL,rzL].includes('bad')?'bad':([jL,rL,zL,sL].includes('warn')?'warn':'ok');
   const sumTxt=worst==='ok'?'설치 양호':(worst==='warn'?'조건부 가능 (인허가 검토)':'설치 제약 있음');
   const sumIcon=worst==='ok'?'🟢':(worst==='warn'?'🟡':'🔴');
   const area=$('r-land').textContent, kw=$('r-kw').textContent, cnt=$('r-count').textContent;
@@ -584,6 +601,7 @@ async function renderFeasibility(){
   h+= zone
     ? row(zL, '용도지역: '+zone, zD||'개발행위 검토')
     : row('na', '용도지역·이용제한', `<a href="https://www.eum.go.kr/web/am/amMain.jsp" target="_blank">토지이음</a>에서 지번(${(PARCEL&&PARCEL.jibun)||'-'}) 조회`);
+  if(restrict){ h+=row('bad', '⛔ '+restrict.name+' 저촉', '태양광 설치 불가 규제구역 — 인허가 불가 가능성'); }
   if(grid){
     const gL = grid.free>=10?'ok':(grid.free>=1?'warn':'bad');
     h+=row(gL, '변전소: '+(grid.name||'-')+(grid.region?' ('+grid.region+')':''), `약 ${grid.dist.toFixed(1)}km · 여유 ${grid.free!=null?Math.round(grid.free):'?'}MW (${grid.pct!=null?Math.round(grid.pct):'?'}%)`);
