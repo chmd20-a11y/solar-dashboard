@@ -82,6 +82,17 @@
   .sel-x{flex:0 0 auto;background:transparent;border:0;color:#ff7a7a;cursor:pointer;font-size:13px;padding:0 2px;line-height:1}
   .sep-tip{background:rgba(230,0,122,.92)!important;color:#fff!important;border:none!important;font-size:11px!important;font-weight:700;padding:1px 7px!important;box-shadow:0 1px 4px rgba(0,0,0,.4)}
   .sep-tip::before{border-top-color:rgba(230,0,122,.92)!important}
+  .feas-src{margin-top:10px;border-top:1px solid var(--line);padding-top:9px}
+  .feas-src summary{cursor:pointer;font-size:12px;color:#9fb0c3;font-weight:700;list-style:none}
+  .feas-src summary::-webkit-details-marker{display:none}
+  .feas-src summary::before{content:'▸ ';color:#7fb3ff}
+  .feas-src[open] summary::before{content:'▾ '}
+  .src-body{margin-top:7px;font-size:11.5px;line-height:2;color:#aeb9c6}
+  .src-body>div{padding:1px 0}
+  .src-body b{color:#cdd8e4;font-weight:700;margin-right:2px}
+  .src-body a{color:#7fb3ff;text-decoration:none}
+  .src-body a:hover{text-decoration:underline}
+  .src-n{color:#6b7887;font-size:10.5px}
 </style>
 </head>
 <body>
@@ -600,6 +611,17 @@ async function renderFeasibility(){
     ? `${areaLbl} ${area}㎡ · 예상 ${cnt}장 / ${kw}kWp · 공시지가 ${jiga}`
     : `공시지가 ${jiga} · <b>「배치 계산」</b>을 누르면 실사용면적·예상 장수 표시`;
   h+=`<div class="feas-row"><span class="dot na" style="visibility:hidden"></span><div class="ft"><div class="d">${bottomTxt}</div></div></div>`;
+  // 📚 공식 확인 소스(타당성 정확도 보강) — 필지 딥링크 가능한 곳은 PNU/지역 전달
+  const pnu=(PARCEL&&PARCEL.pnu)||'', sido=encodeURIComponent(parts[0]||''), sgg=encodeURIComponent(parts[1]||'');
+  const A=(u,t)=>`<a href="${u}" target="_blank" rel="noopener">${t}</a>`;
+  const eumU = pnu? `https://www.eum.go.kr/web/ar/lu/luLandDet.jsp?mode=search&pnu=${pnu}` : 'https://www.eum.go.kr/web/am/amMain.jsp';
+  h+=`<details class="feas-src"><summary>공식 확인 소스 (정확도 보강)</summary><div class="src-body">`
+    +`<div><b>토지·지적</b> ${A(eumU,'토지이음')} <span class="src-n">용도·이용계획</span> · ${A('https://www.kras.go.kr/mainView.do','일사편리')} <span class="src-n">종합증명</span> · ${A('https://plus.gov.kr/','정부24')} <span class="src-n">지적도·대장</span></div>`
+    +`<div><b>가격</b> ${A('https://disco.re/','디스코')} <span class="src-n">실거래 평단가(주소검색)</span></div>`
+    +`<div><b>임야·농지</b> ${A('https://gis.kofpi.or.kr/dad_user/WMTSmap.do','임업정보다드림')} <span class="src-n">임상·경사</span> · ${A('https://www.fbo.or.kr/gis/map.do?menuId=020080','농지은행')} <span class="src-n">비축농지</span></div>`
+    +`<div><b>건축물·공장</b> ${A('https://www.eais.go.kr/','세움터')} <span class="src-n">건축물대장</span> · ${A('https://factory.kjuso.kr/?sido='+sido+'&keyword='+sgg,'전국공장정보')}</div>`
+    +`<div><b>수리·조례</b> ${A('https://rims.ekr.or.kr/main.do','농촌용수')} <span class="src-n">저수지 만수면적</span> · ${A('https://www.elis.go.kr/main','자치법규')} <span class="src-n">조례</span></div>`
+    +`</div></details>`;
   body.innerHTML=h;
   drawSepCircle();   // 이격거리 원을 현재 부지 중심으로 갱신
 }
