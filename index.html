@@ -386,8 +386,9 @@ async function setParcelFromCenter(){
   }catch(e){}
   if(!feats.length){ try{ const f=await vwParcel(cLng,cLat); if(f) feats=[f]; }catch(e){} }
   if(feats.length){
-    let rep=feats[0], repA=-1; const addrs=[];
-    feats.forEach(f=>{ const p=f.properties||{}; if(p.addr||p.jibun) addrs.push(p.addr||p.jibun); try{ const a=turf.area(f); if(a>repA){repA=a; rep=f;} }catch(e){} });
+    const addrs=[]; let rep=null, repA=-1;
+    feats.forEach(f=>{ const p=f.properties||{}; if(p.addr||p.jibun) addrs.push(p.addr||p.jibun); try{ if(turf.booleanPointInPolygon([cLng,cLat],f)) rep=f; }catch(e){} });
+    if(!rep){ feats.forEach(f=>{ try{ const a=turf.area(f); if(a>repA){repA=a; rep=f;} }catch(e){} }); rep=rep||feats[0]; }
     const rp=rep.properties||{}, jibunRaw=rp.jibun||'', jimok=(jibunRaw.match(/[가-힣]+$/)||[''])[0];
     const uniq=[...new Set(addrs)];
     PARCEL={ addr:rp.addr||'', jibun:jibunRaw, jimok, pnu:rp.pnu||'', jiga:rp.jiga||'', multi: uniq.length>1?uniq:null };
