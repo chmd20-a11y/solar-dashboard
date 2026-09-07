@@ -39,6 +39,15 @@ module.exports = async (req, res) => {
       res.statusCode = 200; res.setHeader('Content-Type', 'application/xml;charset=UTF-8'); res.end(body); return;
     }
 
+    // ---- DEM (OpenTopoData 표고 → 경사도 산출) ----
+    const dpath = u.searchParams.get('__dpath');
+    if (dpath != null) {
+      u.searchParams.delete('__dpath');
+      const target = 'https://api.opentopodata.org/' + dpath + '?' + u.searchParams.toString();
+      const r = await vget(target);
+      res.statusCode = 200; res.setHeader('Content-Type', 'application/json;charset=UTF-8'); res.end(r.buf); return;
+    }
+
     // ---- VWorld ----
     let p = u.searchParams.get('__path') || '';
     u.searchParams.delete('__path');
