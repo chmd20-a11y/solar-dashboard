@@ -80,6 +80,8 @@
   .sel-item{display:flex;align-items:center;justify-content:space-between;gap:6px;background:rgba(255,213,74,.08);border:1px solid rgba(255,213,74,.25);border-radius:8px;padding:5px 8px;margin-bottom:4px;font-size:12px;color:#eef2f7}
   .sel-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .sel-x{flex:0 0 auto;background:transparent;border:0;color:#ff7a7a;cursor:pointer;font-size:13px;padding:0 2px;line-height:1}
+  .sep-tip{background:rgba(230,0,122,.92)!important;color:#fff!important;border:none!important;font-size:11px!important;font-weight:700;padding:1px 7px!important;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+  .sep-tip::before{border-top-color:rgba(230,0,122,.92)!important}
 </style>
 </head>
 <body>
@@ -100,6 +102,9 @@
         </div>
       </div>
       <div id="sel-list"></div>
+      <div id="sep-radius" style="display:flex;gap:5px;margin-top:8px;align-items:center;flex-wrap:wrap">
+        <span style="font-size:11px;color:#9fb0c3">⭕ 이격거리 원</span>
+      </div>
     </div>
 
     <div class="sec" id="sec-feas">
@@ -418,9 +423,16 @@ async function checkGrid(lat,lng){
 let _zKey='', _zVal;
 async function getZone(lat,lng){
   const wkt='POINT('+lng+' '+lat+')'; if(wkt===_zKey) return _zVal; _zKey=wkt;
-  const j=await vwData('LT_C_UQ111', wkt);
-  const fs=(j&&j.response&&j.response.result&&j.response.result.featureCollection&&j.response.result.featureCollection.features)||[];
-  _zVal = fs.length ? (fs[0].properties.uname||null) : null; return _zVal;
+  const zonePat=/(관리지역|녹지지역|주거지역|상업지역|공업지역|농림지역|자연환경보전지역)/;
+  const names=[];
+  for(const layer of ['LT_C_UQ111','LT_C_UQ112','LT_C_UQ113']){   // UQ111 비면 용도지구/구역 레이어로 구멍 보완
+    try{
+      const j=await vwData(layer, wkt);
+      const fs=(j&&j.response&&j.response.result&&j.response.result.featureCollection&&j.response.result.featureCollection.features)||[];
+      if(fs.length && fs[0].properties.uname) names.push(fs[0].properties.uname);
+    }catch(e){}
+  }
+  _zVal = names.find(n=>zonePat.test(n)) || names[0] || null; return _zVal;
 }
 // 태양광 설치 불가(부지·면적·패널에서 제외) 지목: 도로·하천·구거·제방·유지
 const EXCLUDE_JIMOK = new Set(['도','천','구','제','유']);
@@ -483,6 +495,31 @@ async function getSlope(lng, lat){
   const e=j.results.map(r=>r.elevation), at=(i,k)=>e[(i+1)*3+(k+1)];
   const dzdy=(at(1,0)-at(-1,0))/80, dzdx=(at(0,1)-at(0,-1))/80;       // 80m = 마주보는 두 점 거리
   return { slope: Math.atan(Math.hypot(dzdx,dzdy))*180/Math.PI, elev: at(0,0) };
+}
+
+// 이격거리 원(발전용량 여유 대시보드에서 이식): 부지 중심 기준 반경 원
+let SEP_CIRCLE=null, SEP_RADIUS=0;
+function sepCenter(){
+  if(!boundaryLayer) return null;
+  try{ const ll=ringLatLng(boundaryLayer); const c=turf.centroid(turf.polygon([[...ll.map(p=>[p.lng,p.lat]),[ll[0].lng,ll[0].lat]]])).geometry.coordinates; return [c[1],c[0]]; }catch(e){ return null; }
+}
+function drawSepCircle(){
+  if(SEP_CIRCLE){ map.removeLayer(SEP_CIRCLE); SEP_CIRCLE=null; }
+  const c=sepCenter(); if(!SEP_RADIUS||!c) return;
+  SEP_CIRCLE=L.circle(c,{radius:SEP_RADIUS,color:'#e6007a',weight:2,fillColor:'#e6007a',fillOpacity:0.08,dashArray:'6,5'}).addTo(map);
+  SEP_CIRCLE.bindTooltip('이격 '+SEP_RADIUS+'m',{permanent:true,direction:'top',className:'sep-tip'});
+}
+function renderSepChips(){
+  const box=document.getElementById('sep-radius'); if(!box) return;
+  box.querySelectorAll('.sepchip').forEach(e=>e.remove());
+  [100,200,300,500,0].forEach(r=>{
+    const b=document.createElement('span'); b.className='sepchip';
+    b.textContent=r?r+'m':'끄기';
+    const on=SEP_RADIUS===r;
+    b.style.cssText='cursor:pointer;padding:2px 10px;border-radius:12px;font-size:11px;border:1px solid var(--line,#2a3644);'+(on?'background:#ffd54a;color:#111;font-weight:700':'color:#9fb0c3');
+    b.onclick=()=>{ SEP_RADIUS=r; renderSepChips(); drawSepCircle(); if(SEP_CIRCLE){ try{ map.fitBounds(SEP_CIRCLE.getBounds().pad(0.4)); }catch(e){} } };
+    box.appendChild(b);
+  });
 }
 async function renderFeasibility(){
   const body=$('feas-body'); if(!body) return;
@@ -564,6 +601,7 @@ async function renderFeasibility(){
     : `공시지가 ${jiga} · <b>「배치 계산」</b>을 누르면 실사용면적·예상 장수 표시`;
   h+=`<div class="feas-row"><span class="dot na" style="visibility:hidden"></span><div class="ft"><div class="d">${bottomTxt}</div></div></div>`;
   body.innerHTML=h;
+  drawSepCircle();   // 이격거리 원을 현재 부지 중심으로 갱신
 }
 $('btn-draw').onclick = ()=>{
   clearBoundary(); selected=[]; renderSelList();
@@ -573,7 +611,7 @@ $('btn-draw').onclick = ()=>{
 $('btn-clear').onclick = ()=>{ clearBoundary(); selected=[]; renderSelList(); panelLayer.clearLayers(); bufferLayer.clearLayers(); resetStats(); PARCEL=null; _rivKey=''; renderFeasibility(); setStatus('경계를 지웠습니다.'); };
 map.on('pm:create', e=>{ boundaryLayer = e.layer; map.pm.disableDraw(); selected=[]; renderSelList(); _rivKey=''; setStatus('📍 지번 조회 중…'); setParcelFromCenter(); });
 
-function clearBoundary(){ map.pm.disableDraw(); window.ROADGEOM=null; if(boundaryLayer){ map.removeLayer(boundaryLayer); boundaryLayer=null; } }
+function clearBoundary(){ map.pm.disableDraw(); window.ROADGEOM=null; if(SEP_CIRCLE){ map.removeLayer(SEP_CIRCLE); SEP_CIRCLE=null; } if(boundaryLayer){ map.removeLayer(boundaryLayer); boundaryLayer=null; } }
 
 // sliders
 function bindRange(id, key, fmt, isPitch){
@@ -597,6 +635,7 @@ document.querySelectorAll('#seg-mod button').forEach(b=>b.onclick=()=>{
 ['m-w','m-h','m-p'].forEach(id=>$(id).addEventListener('input',()=>{ document.querySelectorAll('#seg-mod button').forEach(x=>x.classList.toggle('on', x.dataset.m==='custom')); }));
 
 $('btn-run').onclick = runLayout;
+renderSepChips();   // 이격거리 원 칩 초기 렌더
 $('btn-toggle').onclick = ()=>{ const on=map.hasLayer(panelLayer); if(on){map.removeLayer(panelLayer);$('btn-toggle').textContent='패널 보이기';} else {map.addLayer(panelLayer);$('btn-toggle').textContent='패널 숨기기';} };
 $('btn-png').onclick = savePng;
 
