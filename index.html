@@ -204,10 +204,18 @@ const esri = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/W
   {maxZoom:21, maxNativeZoom:19, attribution:'Esri World Imagery'}).addTo(map);
 const labels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
   {maxZoom:21, maxNativeZoom:19, opacity:.7}).addTo(map);
-// VWorld 항공영상(국토부, 한국 고해상도) — 서울 프록시 경유(키 서버보관)
-const vworldAerial = L.tileLayer(defaultProxy() + '/req/wmts/1.0.0/__KEY__/Satellite/{z}/{y}/{x}.jpeg',
-  {maxZoom:21, maxNativeZoom:19, attribution:'국토부 VWorld 항공영상'});
-L.control.layers({ '🛰️ ESRI 위성': esri, '🇰🇷 VWorld 항공(고해상도)': vworldAerial }, { '지명·경계': labels }, {position:'topright', collapsed:true}).addTo(map);
+// VWorld(국토부, 한국 고해상도) — 서울 프록시 경유(키 서버보관)
+const PXY = defaultProxy();
+const vworldAerial = L.tileLayer(PXY + '/req/wmts/1.0.0/__KEY__/Satellite/{z}/{y}/{x}.jpeg', {maxZoom:21, maxNativeZoom:19, attribution:'국토부 VWorld 항공영상'});
+const vworldSat2  = L.tileLayer(PXY + '/req/wmts/1.0.0/__KEY__/Satellite/{z}/{y}/{x}.jpeg', {maxZoom:21, maxNativeZoom:19});
+const vworldHyb   = L.tileLayer(PXY + '/req/wmts/1.0.0/__KEY__/Hybrid/{z}/{y}/{x}.png', {maxZoom:21, maxNativeZoom:19});
+const vworldAerialHybrid = L.layerGroup([vworldSat2, vworldHyb]);   // 위성+지명 한 장
+const jijeok = L.tileLayer.wms(PXY + '/req/wms', { layers:'lp_pa_cbnd_bubun', styles:'lp_pa_cbnd_bubun', format:'image/png', transparent:true, version:'1.3.0', attribution:'VWorld 연속지적도', maxZoom:21 });
+L.control.layers(
+  { '🛰️ ESRI 위성': esri, '🇰🇷 VWorld 항공': vworldAerial, '🇰🇷 VWorld 항공+지명': vworldAerialHybrid },
+  { '지명·경계(ESRI)': labels, '🟨 지적 경계(필지)': jijeok },
+  {position:'topright', collapsed:true}
+).addTo(map);
 
 const panelLayer = L.layerGroup().addTo(map);   // panels
 const bufferLayer = L.layerGroup().addTo(map);  // 완충 경계선
