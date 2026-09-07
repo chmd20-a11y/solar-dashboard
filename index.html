@@ -75,6 +75,11 @@
   .jibun-list div{padding:1px 2px;border-bottom:1px solid rgba(255,255,255,.04)}
   .jibun-list::-webkit-scrollbar{width:7px}
   .jibun-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:4px}
+  #sel-list{margin-top:6px;max-height:180px;overflow-y:auto}
+  .sel-hd{font-size:11px;color:#9fb0c3;margin:2px 0 5px}
+  .sel-item{display:flex;align-items:center;justify-content:space-between;gap:6px;background:rgba(255,213,74,.08);border:1px solid rgba(255,213,74,.25);border-radius:8px;padding:5px 8px;margin-bottom:4px;font-size:12px;color:#eef2f7}
+  .sel-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sel-x{flex:0 0 auto;background:transparent;border:0;color:#ff7a7a;cursor:pointer;font-size:13px;padding:0 2px;line-height:1}
 </style>
 </head>
 <body>
@@ -88,12 +93,13 @@
     <div class="sec">
       <h2><span class="n">1</span> 부지 찾기</h2>
       <div class="fld">
-        <label>지번 / 도로명 주소</label>
+        <label>지번 / 도로명 주소 (여러 개 추가 가능)</label>
         <div class="row">
           <input type="text" id="addr" placeholder="예: 경기도 파주시 문발동 67">
-          <button class="btn" id="btn-search" style="width:auto;padding:8px 12px">검색</button>
+          <button class="btn" id="btn-search" style="width:auto;padding:8px 12px">＋추가</button>
         </div>
       </div>
+      <div id="sel-list"></div>
     </div>
 
     <div class="sec" id="sec-feas">
@@ -239,6 +245,7 @@ L.control.layers(
 const panelLayer = L.layerGroup().addTo(map);   // panels
 const bufferLayer = L.layerGroup().addTo(map);  // 완충 경계선
 let boundaryLayer = null;                        // the parcel polygon (geoman layer)
+let selected = [];                               // 부지 찾기에서 추가한 필지들(여러 지번)
 const canvasRenderer = L.canvas({padding:0.5});
 
 // ---------- state ----------
@@ -255,6 +262,51 @@ function setBoundary(latlngs, fit=true){
   boundaryLayer = poly;
   if(fit) map.fitBounds(poly.getBounds().pad(0.3));
   return poly;
+}
+
+// ---------- 여러 지번 선택(부지 찾기에서 필지 추가) ----------
+function geomToLatLngs(geom){                       // GeoJSON geometry → Leaflet latlngs (홀·멀티 지원)
+  const conv = ring => ring.map(c=>[c[1],c[0]]);
+  if(geom.type==='Polygon') return geom.coordinates.map(conv);
+  if(geom.type==='MultiPolygon') return geom.coordinates.map(poly=>poly.map(conv));
+  return [];
+}
+function addSelectedParcel(f){
+  const info=f.properties||{};
+  const pnu=info.pnu||('p'+selected.length);
+  if(selected.some(s=>s.pnu===pnu)){ setStatus('이미 추가된 지번입니다: <b>'+(info.addr||info.jibun||pnu)+'</b>'); return; }
+  let gj; try{ gj=turf.feature(f.geometry); }catch(e){ return; }
+  selected.push({ addr:info.addr||'', jibun:info.jibun||'', jiga:info.jiga||'', pnu, gj });
+  rebuildSelection(true);
+}
+function rebuildSelection(fit){
+  let uni=null;
+  selected.forEach(s=>{ try{ uni = uni ? turf.union(uni, s.gj) : s.gj; }catch(e){ if(!uni) uni=s.gj; } });
+  clearBoundary();
+  if(uni){
+    boundaryLayer = L.polygon(geomToLatLngs(uni.geometry||uni), {color:'#ffd54a',weight:2,fillOpacity:.06}).addTo(map);
+    try{ boundaryLayer.pm.enable({allowSelfIntersection:false}); }catch(e){}
+    if(fit){ try{ map.fitBounds(boundaryLayer.getBounds().pad(0.3)); }catch(e){} }
+  }
+  let rep=selected[0], ra=-1;                        // 대표필지 = 최대면적
+  selected.forEach(s=>{ try{ const a=turf.area(s.gj); if(a>ra){ra=a; rep=s;} }catch(e){} });
+  const uniqAddrs=[...new Set(selected.map(s=>s.addr||s.jibun).filter(Boolean))];
+  const jimok=rep?((rep.jibun.match(/[가-힣]+$/)||[''])[0]):'';
+  PARCEL = rep ? { addr:rep.addr, jibun:rep.jibun, jimok, pnu:rep.pnu, jiga:rep.jiga, multi: uniqAddrs.length>1?uniqAddrs:null } : null;
+  _rivKey='';
+  renderSelList();
+  runLayout();
+}
+function renderSelList(){
+  const el=document.getElementById('sel-list'); if(!el) return;
+  if(!selected.length){ el.innerHTML=''; return; }
+  el.innerHTML='<div class="sel-hd">선택된 지번 ('+selected.length+') · 합쳐서 부지로 사용</div>'+
+    selected.map((s,i)=>`<div class="sel-item"><span>${s.addr||s.jibun||'-'}</span><button class="sel-x" data-i="${i}" title="제거">✕</button></div>`).join('');
+  el.querySelectorAll('.sel-x').forEach(b=>b.onclick=()=>{
+    selected.splice(+b.dataset.i,1);
+    if(selected.length) rebuildSelection(false);
+    else { clearBoundary(); PARCEL=null; _rivKey=''; renderSelList(); panelLayer.clearLayers(); bufferLayer.clearLayers(); resetStats(); renderFeasibility(); setStatus('선택을 모두 지웠습니다.'); }
+  });
 }
 
 // ---------- VWorld 연결(지번검색 + 자동경계) ----------
@@ -300,17 +352,9 @@ async function doSearch(){
   setStatus('📐 부지 경계 불러오는 중…');
   let f=null; try{ f=await vwParcel(pt.lng,pt.lat); }catch(e){}
   if(f && f.geometry){
-    let coords=f.geometry.coordinates;
-    if(f.geometry.type==='MultiPolygon') coords=coords.slice().sort((a,b)=>turf.area(turf.polygon(b))-turf.area(turf.polygon(a)))[0];
-    const latlngs=coords[0].map(c=>[c[1],c[0]]);
-    setBoundary(latlngs);
-    const info=f.properties||{};
-    const jibunRaw=info.jibun||''; const jimok=(jibunRaw.match(/[가-힣]+$/)||[''])[0];
-    PARCEL = { addr:info.addr||'', jibun:jibunRaw, jimok, pnu:info.pnu||'', jiga:info.jiga||'' };
-    setStatus('✅ 지적 경계 자동취득'+(info.addr?' — '+info.addr:'')+'. 배치 계산합니다…');
-    runLayout();
+    addSelectedParcel(f);           // 선택 목록에 추가(여러 지번 누적) → 합집합을 부지로
+    $('addr').value='';             // 다음 지번 입력 대기
   } else {
-    PARCEL=null;
     L.marker([pt.lat,pt.lng]).addTo(map);
     setStatus('📍 위치는 찾았지만 지적 경계 자동취득 실패 — 「경계 그리기」로 직접 지정하세요.');
   }
@@ -466,12 +510,12 @@ async function renderFeasibility(){
   body.innerHTML=h;
 }
 $('btn-draw').onclick = ()=>{
-  clearBoundary();
+  clearBoundary(); selected=[]; renderSelList();
   map.pm.enableDraw('Polygon', {snappable:true, templineStyle:{color:'#ffd54a'}, hintlineStyle:{color:'#ffd54a',dashArray:'4,4'}, pathOptions:{color:'#ffd54a',weight:2,fillOpacity:.06}});
   setStatus('꼭짓점을 순서대로 클릭, <b>시작점 클릭 또는 더블클릭</b>으로 완성하세요.');
 };
-$('btn-clear').onclick = ()=>{ clearBoundary(); panelLayer.clearLayers(); bufferLayer.clearLayers(); resetStats(); PARCEL=null; _rivKey=''; renderFeasibility(); setStatus('경계를 지웠습니다.'); };
-map.on('pm:create', e=>{ boundaryLayer = e.layer; map.pm.disableDraw(); _rivKey=''; setStatus('📍 지번 조회 중…'); setParcelFromCenter(); });
+$('btn-clear').onclick = ()=>{ clearBoundary(); selected=[]; renderSelList(); panelLayer.clearLayers(); bufferLayer.clearLayers(); resetStats(); PARCEL=null; _rivKey=''; renderFeasibility(); setStatus('경계를 지웠습니다.'); };
+map.on('pm:create', e=>{ boundaryLayer = e.layer; map.pm.disableDraw(); selected=[]; renderSelList(); _rivKey=''; setStatus('📍 지번 조회 중…'); setParcelFromCenter(); });
 
 function clearBoundary(){ map.pm.disableDraw(); if(boundaryLayer){ map.removeLayer(boundaryLayer); boundaryLayer=null; } }
 
@@ -502,10 +546,15 @@ $('btn-png').onclick = savePng;
 
 // ---------- geometry helpers ----------
 function ringLatLng(layer){
-  const gj = layer.toGeoJSON();
-  let coords = gj.geometry.coordinates;
-  while(Array.isArray(coords[0][0])) coords = coords[0];   // handle Polygon/Multi
-  return coords.map(c=>({lng:c[0], lat:c[1]}));             // [lng,lat] -> {lat,lng}
+  const g = (layer.toGeoJSON().geometry)||{};
+  let ring;
+  if(g.type==='MultiPolygon'){                              // 여러 필지 합집합 → 최대면적 폴리곤의 외곽링
+    let best=(g.coordinates[0]||[[]])[0], ba=-1;
+    g.coordinates.forEach(poly=>{ try{ const a=turf.area(turf.polygon(poly)); if(a>ba){ba=a; best=poly[0];} }catch(e){} });
+    ring=best;
+  } else if(g.type==='Polygon'){ ring=g.coordinates[0]; }
+  else { let c=g.coordinates||[]; while(Array.isArray(c[0])&&Array.isArray(c[0][0])) c=c[0]; ring=c; }
+  return (ring||[]).map(c=>({lng:c[0], lat:c[1]}));          // [lng,lat] -> {lat,lng}
 }
 function pnpoly(pt, ring){ // ray casting, ring: [{x,y}]
   let inside=false;
