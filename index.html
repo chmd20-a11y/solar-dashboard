@@ -850,6 +850,23 @@ function rebuild3D(){
       d.updateMatrix(); inst.setMatrixAt(i, d.matrix);
     });
     inst.instanceMatrix.needsUpdate=true; three.arrayGroup.add(inst);
+
+    // 구조물(가대 기둥) — 지붕형 제외. 각 테이블 앞(높음)·뒤(낮음) 다리 2개, InstancedMesh 1드로우콜
+    if(L.type!=='roof'){
+      three.legMat = three.legMat || new THREE.MeshStandardMaterial({color:0x8b949e, metalness:0.55, roughness:0.5});
+      const legGeo=new THREE.BoxGeometry(0.09,1,0.09);
+      const legs=new THREE.InstancedMesh(legGeo, three.legMat, L.placed.length*2);
+      legs.castShadow=true; legs.receiveShadow=true;
+      const o=new THREE.Object3D();
+      const hTall=base+slope*Math.sin(tiltR), hShort=Math.max(0.25, base);   // 높은 모서리=z-(v+depth), 낮은=z-v
+      let li=0;
+      L.placed.forEach(([u,v])=>{
+        const cx=u+wRow/2; o.rotation.set(0,0,0);
+        o.position.set(cx, hTall/2,  -(v+depth)); o.scale.set(1,hTall,1);  o.updateMatrix(); legs.setMatrixAt(li++, o.matrix);
+        o.position.set(cx, hShort/2, -(v));       o.scale.set(1,hShort,1); o.updateMatrix(); legs.setMatrixAt(li++, o.matrix);
+      });
+      legs.instanceMatrix.needsUpdate=true; three.arrayGroup.add(legs);
+    }
   }
   // 외곽 경계(노랑) + 완충 경계(주황)
   const mkLine=(ring,color,y)=>{ if(!ring||!ring.length)return; const pts=ring.map(p=>new THREE.Vector3(p.x,y,-p.y)); pts.push(pts[0].clone()); three.arrayGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({color}))); };
