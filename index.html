@@ -344,6 +344,21 @@ async function getZone(lat,lng){
   const fs=(j&&j.response&&j.response.result&&j.response.result.featureCollection&&j.response.result.featureCollection.features)||[];
   _zVal = fs.length ? (fs[0].properties.uname||null) : null; return _zVal;
 }
+// 직접 그린 부지 → 중심점의 필지 지번·주소 자동 조회
+async function setParcelFromCenter(){
+  if(!boundaryLayer) return;
+  let c; try{ const ll=ringLatLng(boundaryLayer); c=turf.centroid(turf.polygon([[...ll.map(p=>[p.lng,p.lat]),[ll[0].lng,ll[0].lat]]])).geometry.coordinates; }catch(e){ return; }
+  let f=null; try{ f=await vwParcel(c[0], c[1]); }catch(e){}
+  if(f && f.properties){
+    const info=f.properties, jibunRaw=info.jibun||'', jimok=(jibunRaw.match(/[가-힣]+$/)||[''])[0];
+    PARCEL={ addr:info.addr||'', jibun:jibunRaw, jimok, pnu:info.pnu||'', jiga:info.jiga||'' };
+    setStatus('📍 그린 부지: <b>'+(info.addr||jibunRaw||'-')+'</b> · <b>배치 계산</b>을 누르세요.');
+    if(window.LAYOUT) renderFeasibility();
+  } else {
+    PARCEL=null;
+    setStatus('부지 경계 완성. <b>배치 계산</b>을 누르세요. (지번 자동조회 실패)');
+  }
+}
 async function renderFeasibility(){
   const body=$('feas-body'); if(!body) return;
   if(!boundaryLayer){ body.innerHTML='<div class="feas-empty">지번 검색 시 이 부지의 설치 타당성이 표시됩니다.</div>'; return; }
@@ -402,7 +417,7 @@ $('btn-draw').onclick = ()=>{
   setStatus('꼭짓점을 순서대로 클릭, <b>시작점 클릭 또는 더블클릭</b>으로 완성하세요.');
 };
 $('btn-clear').onclick = ()=>{ clearBoundary(); panelLayer.clearLayers(); bufferLayer.clearLayers(); resetStats(); PARCEL=null; _rivKey=''; renderFeasibility(); setStatus('경계를 지웠습니다.'); };
-map.on('pm:create', e=>{ boundaryLayer = e.layer; map.pm.disableDraw(); PARCEL=null; _rivKey=''; setStatus('부지 경계 완성. <b>배치 계산</b>을 누르세요.'); });
+map.on('pm:create', e=>{ boundaryLayer = e.layer; map.pm.disableDraw(); _rivKey=''; setStatus('📍 지번 조회 중…'); setParcelFromCenter(); });
 
 function clearBoundary(){ map.pm.disableDraw(); if(boundaryLayer){ map.removeLayer(boundaryLayer); boundaryLayer=null; } }
 
