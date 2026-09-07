@@ -71,6 +71,10 @@
   .feas-row .ft .d{color:#8a99ab;font-size:11px;margin-top:1px;line-height:1.4}
   .feas-row a{color:var(--accent2);text-decoration:none}
   .feas-row a:hover{text-decoration:underline}
+  .jibun-list{max-height:150px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:6px 8px;margin-top:4px;font-size:11.5px;color:#cdd8e4;line-height:1.75}
+  .jibun-list div{padding:1px 2px;border-bottom:1px solid rgba(255,255,255,.04)}
+  .jibun-list::-webkit-scrollbar{width:7px}
+  .jibun-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:4px}
 </style>
 </head>
 <body>
@@ -367,7 +371,14 @@ async function getZone(lat,lng){
   const fs=(j&&j.response&&j.response.result&&j.response.result.featureCollection&&j.response.result.featureCollection.features)||[];
   _zVal = fs.length ? (fs[0].properties.uname||null) : null; return _zVal;
 }
-// 직접 그린 부지 → 겹치는 모든 필지의 지번·주소 수집(여러 지번 대응). 대표=최대면적 필지.
+// 포함 지번 목록 HTML (전체 스크롤)
+function parcelListHtml(list, repAddr){
+  if(!list || list.length<=1) return `<div class="feas-empty">📍 <b>${(list&&list[0])||repAddr||'-'}</b><br>「배치 계산」을 누르면 상세 타당성이 표시됩니다.</div>`;
+  return `<div class="feas-sum warn" style="background:rgba(255,207,63,.14);color:#ffd54a;border-color:rgba(255,207,63,.35)">📍 ${list.length}개 필지 선택됨</div>`
+    + `<div class="feas-row"><span class="dot na"></span><div class="ft"><div class="t">포함 지번 · 대표 ${repAddr||'-'}</div>`
+    + `<div class="jibun-list">${list.map(a=>'<div>'+a+'</div>').join('')}</div></div></div>`;
+}
+// 직접 그린 부지 → 겹치는 모든 필지의 지번·주소 수집(여러 지번 대응). 대표=중심점 포함 필지.
 async function setParcelFromCenter(){
   if(!boundaryLayer) return;
   let ll, cLng, cLat, wkt;
@@ -392,9 +403,10 @@ async function setParcelFromCenter(){
     const rp=rep.properties||{}, jibunRaw=rp.jibun||'', jimok=(jibunRaw.match(/[가-힣]+$/)||[''])[0];
     const uniq=[...new Set(addrs)];
     PARCEL={ addr:rp.addr||'', jibun:jibunRaw, jimok, pnu:rp.pnu||'', jiga:rp.jiga||'', multi: uniq.length>1?uniq:null };
+    const repAddr = rp.addr||jibunRaw||'-';
     const label = uniq.length<=1 ? (uniq[0]||'-') : `${uniq[0]} 외 ${uniq.length-1}필지 (총 ${uniq.length}개)`;
     setStatus('📍 그린 부지: <b>'+label+'</b> · <b>배치 계산</b>을 누르세요.');
-    if(window.LAYOUT) renderFeasibility();
+    if(window.LAYOUT) renderFeasibility(); else $('feas-body').innerHTML = parcelListHtml(uniq, repAddr);
   } else {
     PARCEL=null;
     setStatus('부지 경계 완성. <b>배치 계산</b>을 누르세요. (지번 자동조회 실패)');
@@ -436,7 +448,7 @@ async function renderFeasibility(){
   let h='';
   h+=`<div class="feas-sum ${worst}">${sumIcon} ${sumTxt}</div>`;
   h+=row(jL, '지목: '+(jimok||'미상')+(PARCEL&&PARCEL.multi?' (대표필지)':''), jD);
-  if(PARCEL && PARCEL.multi){ const L2=PARCEL.multi; h+=row('na', '포함 지번 ('+L2.length+'개)', L2.slice(0,10).join(' · ')+(L2.length>10?' 외 '+(L2.length-10):'')); }
+  if(PARCEL && PARCEL.multi){ h+=`<div class="feas-row"><span class="dot na"></span><div class="ft"><div class="t">포함 지번 (${PARCEL.multi.length}개)</div><div class="jibun-list">${PARCEL.multi.map(a=>'<div>'+a+'</div>').join('')}</div></div></div>`; }
   h+=row(rL, '하천 저촉/인접', rD);
   h+=row('na', '이격거리 (정부기준 주거 ≤200m)', `2026 상한: 주거 200m 이내·도로 이격 폐지. ${(parts[1]||parts[0]||'지자체')} 실제값 <a href="https://www.google.com/search?q=${ordQ}" target="_blank">조례 확인</a>`);
   h+= zone
