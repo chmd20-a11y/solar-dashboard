@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>행정구역 경계 지도 (리·읍면동·시군구) | 해피솔라</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;}
+  #map{position:absolute;inset:0;}
+  .panel{position:absolute;top:12px;left:12px;z-index:1000;background:rgba(255,255,255,.96);
+    border-radius:12px;box-shadow:0 4px 18px rgba(0,0,0,.18);padding:14px 16px;max-width:290px;}
+  .panel h1{font-size:15px;margin:0 0 2px;color:#1a2b4a;}
+  .panel .sub{font-size:11px;color:#7a869a;margin:0 0 10px;}
+  .grp{margin:8px 0 4px;font-size:11px;font-weight:700;color:#5a6b8a;letter-spacing:.02em;}
+  .row{display:flex;align-items:center;gap:8px;font-size:13px;color:#222;padding:3px 0;cursor:pointer;}
+  .row input{width:16px;height:16px;accent-color:#c0392b;cursor:pointer;}
+  .row .sw{width:24px;height:0;border-top:4px solid #e00000;display:inline-block;border-radius:2px;}
+  .row .sw.emd{border-top:4px solid #0050d0;}
+  .row .sw.sig{border-top:4px solid #6a1bb0;}
+  .search{display:flex;gap:6px;margin:2px 0 4px;}
+  .search input{flex:1;min-width:0;font-size:13px;padding:7px 9px;border:1px solid #cfd6e2;border-radius:8px;outline:none;}
+  .search input:focus{border-color:#c0392b;}
+  .search button{font-size:13px;font-weight:700;color:#fff;background:#c0392b;border:0;border-radius:8px;padding:0 12px;cursor:pointer;white-space:nowrap;}
+  .search button:hover{background:#a5311f;}
+  .shint{font-size:11px;color:#9aa3b2;margin:0 0 8px;}
+  .sstat{font-size:12px;color:#c0392b;min-height:15px;margin:0 0 6px;}
+  .note{font-size:11px;color:#8a94a6;margin-top:10px;line-height:1.5;border-top:1px solid #eee;padding-top:8px;}
+  .bd-ri img{filter:brightness(0) saturate(100%) drop-shadow(0.6px 0 0 #e00000) drop-shadow(-0.6px 0 0 #e00000) drop-shadow(0 0.6px 0 #e00000) drop-shadow(0 -0.6px 0 #e00000) drop-shadow(0 0 1.3px #ff2a2a);}
+  .bd-emd img{filter:brightness(0) saturate(100%) drop-shadow(0.6px 0 0 #0050d0) drop-shadow(-0.6px 0 0 #0050d0) drop-shadow(0 0.6px 0 #0050d0) drop-shadow(0 -0.6px 0 #0050d0) drop-shadow(0 0 1.3px #2a7aff);}
+  .bd-sig img{filter:brightness(0) saturate(100%) drop-shadow(0.9px 0 0 #6a1bb0) drop-shadow(-0.9px 0 0 #6a1bb0) drop-shadow(0 0.9px 0 #6a1bb0) drop-shadow(0 -0.9px 0 #6a1bb0) drop-shadow(0 0 1.7px #8e2ee0);}
+  .coord{position:absolute;bottom:10px;left:12px;z-index:1000;background:rgba(26,43,74,.85);color:#fff;
+    font-size:11px;padding:5px 10px;border-radius:8px;font-variant-numeric:tabular-nums;}
+  .leaflet-control-attribution{font-size:10px;}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div class="panel">
+  <h1>행정구역 경계 지도</h1>
+  <p class="sub">국토부 VWorld · 리(里)까지 · 해피솔라</p>
+
+  <div class="grp">지번 검색</div>
+  <div class="search">
+    <input id="q" type="text" placeholder="예) 진도군 군내면 둔전리 800" autocomplete="off">
+    <button id="go">검색</button>
+  </div>
+  <p class="shint">지번 주소 입력 후 Enter (도로명도 가능)</p>
+  <p class="sstat" id="sstat"></p>
+
+  <div class="grp">배경지도</div>
+  <label class="row"><input type="radio" name="base" value="normal" checked> 일반지도 <span style="color:#7a869a;font-size:11px">(지명 표시)</span></label>
+  <label class="row"><input type="radio" name="base" value="sat"> 위성 + 지명</label>
+  <label class="row"><input type="radio" name="base" value="satonly"> 위성만</label>
+
+  <div class="grp">경계 표시</div>
+  <label class="row"><input type="checkbox" id="ri" checked> <span class="sw"></span> 리(里) 경계</label>
+  <label class="row"><input type="checkbox" id="emd"> <span class="sw emd"></span> 읍·면·동 경계</label>
+  <label class="row"><input type="checkbox" id="sig"> <span class="sw sig"></span> 시·군·구 경계</label>
+
+  <p class="note">💡 <b>지도를 클릭</b>하면 그 지점의 <b>법정리 이름</b>이 팝업으로 표시됩니다(리가 없는 동 지역은 읍·면·동으로 표시). ※ 리 이름이 배경지도에 글자로 항상 찍히지는 않아요.<br>
+  마우스 휠·드래그로 확대/이동.</p>
+</div>
+<div class="coord" id="coord">—</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// 모든 VWorld 호출은 같은 도메인 프록시(/req/*)로 → 서버가 키 주입(브라우저 무노출)·서울리전 한국IP·CORS 허용
+const WMTS = (layer, ext) => '/req/wmts/1.0.0/__KEY__/'+layer+'/{z}/{y}/{x}.'+ext;
+const WMS_URL = '/req/wms?DOMAIN=http://localhost';
+
+const baseNormal = L.tileLayer(WMTS('Base','png'),      {maxZoom:19, attribution:'© VWorld (국토교통부)'});
+const satImage   = L.tileLayer(WMTS('Satellite','jpeg'),{maxZoom:19, attribution:'© VWorld (국토교통부)'});
+const hybrid     = L.tileLayer(WMTS('Hybrid','png'),    {maxZoom:19});
+
+const wms = (layer, cls) => L.tileLayer.wms(WMS_URL, {
+  layers:layer, styles:layer, format:'image/png', transparent:true,
+  version:'1.3.0', tileSize:256, maxZoom:19, uppercase:true, className:cls
+});
+const riLayer  = wms('lt_c_adri','bd-ri');
+const emdLayer = wms('lt_c_ademd','bd-emd');
+const sigLayer = wms('lt_c_adsigg','bd-sig');
+
+const map = L.map('map', {center:[34.5205,126.3010], zoom:13, layers:[baseNormal, riLayer], zoomControl:true});
+window.map = map;
+L.control.scale({imperial:false, position:'bottomright'}).addTo(map);
+
+function setBase(v){
+  [baseNormal, satImage, hybrid].forEach(l=>map.removeLayer(l));
+  if(v==='normal') baseNormal.addTo(map);
+  else if(v==='sat'){ satImage.addTo(map); hybrid.addTo(map); }
+  else if(v==='satonly') satImage.addTo(map);
+  [['ri',riLayer],['emd',emdLayer],['sig',sigLayer]].forEach(([id,ly])=>{
+    if(document.getElementById(id).checked){ map.removeLayer(ly); ly.addTo(map); }
+  });
+}
+document.querySelectorAll('input[name=base]').forEach(r=>r.addEventListener('change',e=>setBase(e.target.value)));
+
+function toggle(id, layer){
+  document.getElementById(id).addEventListener('change', e=>{
+    if(e.target.checked) layer.addTo(map); else map.removeLayer(layer);
+  });
+}
+toggle('ri', riLayer); toggle('emd', emdLayer); toggle('sig', sigLayer);
+
+const coord = document.getElementById('coord');
+function upd(){ const c=map.getCenter(); coord.textContent = `중심 ${c.lat.toFixed(5)}, ${c.lng.toFixed(5)} · 줌 ${map.getZoom()}`; }
+map.on('move zoom', upd); upd();
+
+// 지번 검색 (프록시 /req/address)
+let searchMarker = null;
+const qEl = document.getElementById('q');
+const sstat = document.getElementById('sstat');
+async function geocode(addr, type){
+  const r = await fetch('/req/address?service=address&request=getcoord&version=2.0&crs=epsg:4326&format=json&type='+type+'&address='+encodeURIComponent(addr));
+  const d = await r.json();
+  const resp = d.response || {};
+  if(resp.status==='OK'){ const pt=resp.result.point; return {ok:true, lat:+pt.y, lon:+pt.x, refined:(resp.refined&&resp.refined.text)||addr, type}; }
+  return {ok:false};
+}
+async function doSearch(){
+  const addr = qEl.value.trim();
+  if(!addr){ sstat.style.color='#c0392b'; sstat.textContent='주소를 입력하세요.'; return; }
+  sstat.style.color='#7a869a'; sstat.textContent='검색 중…';
+  try{
+    let g = await geocode(addr,'parcel');
+    if(!g.ok) g = await geocode(addr,'road');
+    if(g.ok){
+      map.setView([g.lat,g.lon], 17);
+      if(searchMarker) map.removeLayer(searchMarker);
+      searchMarker = L.marker([g.lat,g.lon]).addTo(map)
+        .bindPopup(`<b>${g.refined}</b><br><span style="color:#666">${g.type==='road'?'도로명':'지번'} · ${g.lat.toFixed(6)}, ${g.lon.toFixed(6)}</span>`)
+        .openPopup();
+      sstat.style.color='#1a7f37'; sstat.textContent='✓ '+g.refined;
+    }else{
+      sstat.style.color='#c0392b'; sstat.textContent='결과 없음 — 주소를 다시 확인하세요.';
+    }
+  }catch(e){ sstat.style.color='#c0392b'; sstat.textContent='검색 오류: '+e.message; }
+}
+document.getElementById('go').addEventListener('click', doSearch);
+qEl.addEventListener('keydown', e=>{ if(e.key==='Enter') doSearch(); });
+
+// 클릭 식별 (프록시 /req/wms GetFeatureInfo) — 리 → 읍면동 → 시군구 폴백
+const IDLAYERS=[['lt_c_adri','리'],['lt_c_ademd','읍면동'],['lt_c_adsigg','시군구']];
+async function identify(lat, lon){
+  const d = 0.0006;
+  const bbox = (lat-d)+','+(lon-d)+','+(lat+d)+','+(lon+d); // 1.3.0 EPSG:4326 = 위도,경도
+  for(const [layer, level] of IDLAYERS){
+    try{
+      const r = await fetch('/req/wms?SERVICE=WMS&REQUEST=GetFeatureInfo&VERSION=1.3.0&LAYERS='+layer+'&QUERY_LAYERS='+layer+'&CRS=EPSG:4326&BBOX='+bbox+'&WIDTH=101&HEIGHT=101&I=50&J=50&INFO_FORMAT=application/json&DOMAIN=http://localhost');
+      const j = await r.json();
+      const f = (j.features||[])[0];
+      if(f){
+        const p = f.properties||{};
+        let name = p.full_nm;
+        if(!name){ name = Object.keys(p).filter(k=>k.endsWith('_nm')&&!k.endsWith('eng_nm')&&p[k]).map(k=>p[k]).join(' '); }
+        if(name) return {ok:true, name, level};
+      }
+    }catch(e){}
+  }
+  return {ok:false};
+}
+map.on('click', async (e)=>{
+  const {lat,lng} = e.latlng;
+  const pop = L.popup({maxWidth:280}).setLatLng(e.latlng).setContent('조회 중…').openOn(map);
+  const d = await identify(lat,lng);
+  if(d.ok){
+    const c = d.level==='리' ? '#e00000' : (d.level==='읍면동' ? '#0050d0' : '#6a1bb0');
+    pop.setContent(`<div style="font-size:14px;font-weight:700;color:#1a2b4a">${d.name}</div>`+
+      `<div style="margin-top:4px"><span style="background:${c};color:#fff;font-size:11px;padding:1px 8px;border-radius:10px">${d.level} 단위</span></div>`);
+  }else{
+    pop.setContent('<span style="color:#888">행정구역 경계 밖이거나 결과 없음</span>');
+  }
+});
+</script>
+</body>
+</html>
