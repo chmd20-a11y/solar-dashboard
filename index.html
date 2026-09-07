@@ -422,13 +422,6 @@ async function getZone(lat,lng){
   const fs=(j&&j.response&&j.response.result&&j.response.result.featureCollection&&j.response.result.featureCollection.features)||[];
   _zVal = fs.length ? (fs[0].properties.uname||null) : null; return _zVal;
 }
-// 포함 지번 목록 HTML (전체 스크롤)
-function parcelListHtml(list, repAddr){
-  if(!list || list.length<=1) return `<div class="feas-empty">📍 <b>${(list&&list[0])||repAddr||'-'}</b><br>「배치 계산」을 누르면 상세 타당성이 표시됩니다.</div>`;
-  return `<div class="feas-sum warn" style="background:rgba(255,207,63,.14);color:#ffd54a;border-color:rgba(255,207,63,.35)">📍 ${list.length}개 필지 선택됨</div>`
-    + `<div class="feas-row"><span class="dot na"></span><div class="ft"><div class="t">포함 지번 · 대표 ${repAddr||'-'}</div>`
-    + `<div class="jibun-list">${list.map(a=>'<div>'+a+'</div>').join('')}</div></div></div>`;
-}
 // 태양광 설치 불가(부지·면적·패널에서 제외) 지목: 도로·하천·구거·제방·유지
 const EXCLUDE_JIMOK = new Set(['도','천','구','제','유']);
 const jimokOfJibun = s => ((s||'').match(/[가-힣]+$/)||[''])[0];
@@ -471,11 +464,10 @@ async function setParcelFromCenter(){
     const uniq=[...new Set((listFeats.length?listFeats:feats).map(f=>(f.properties||{}).addr||(f.properties||{}).jibun).filter(Boolean))];
     const jm={}; (listFeats.length?listFeats:feats).forEach(f=>{ try{ jm[f._jm]=(jm[f._jm]||0)+turf.area(f); }catch(e){} });
     PARCEL={ addr:rp.addr||'', jibun:jibunRaw, jimok, pnu:rp.pnu||'', jiga:rp.jiga||'', multi: uniq.length>1?uniq:null, jimokArea: Object.keys(jm).length?jm:null };
-    const repAddr = rp.addr||jibunRaw||'-';
     const label = uniq.length<=1 ? (uniq[0]||'-') : `${uniq[0]} 외 ${uniq.length-1}필지 (총 ${uniq.length}개)`;
     const roadNote = roadFeats.length? ` · <span style="color:#ffb86b">도로 등 ${roadFeats.length}필지 배치 제외</span>`:'';
     setStatus('📍 그린 부지: <b>'+label+'</b>'+roadNote+' · <b>배치 계산</b>을 누르세요.');
-    if(window.LAYOUT) renderFeasibility(); else $('feas-body').innerHTML = parcelListHtml(uniq, repAddr);
+    window.LAYOUT=null; resetStats(); renderFeasibility();   // 새 부지: 이전 배치 통계 초기화 후 타당성 표시
   } else {
     window.ROADGEOM=null; PARCEL=null;
     setStatus('부지 경계 완성. <b>배치 계산</b>을 누르세요. (지번 자동조회 실패)');
@@ -540,27 +532,37 @@ async function renderFeasibility(){
   h+=row(jL, '지목: '+(jimok||'미상')+(PARCEL&&PARCEL.multi?' (대표필지)':''), jD);
   if(PARCEL && PARCEL.multi){ h+=`<div class="feas-row"><span class="dot na"></span><div class="ft"><div class="t">포함 지번 (${PARCEL.multi.length}개)</div><div class="jibun-list">${PARCEL.multi.map(a=>'<div>'+a+'</div>').join('')}</div></div></div>`; }
   if(PARCEL && PARCEL.jimokArea){
-    const jtxt=Object.entries(PARCEL.jimokArea).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k||'?'} ${Math.round(v).toLocaleString()}㎡`).join(' · ');
-    const rA=(window.LAYOUT&&window.LAYOUT.roadArea)||0;
-    const useTxt = rA>1 ? ` · <span style="color:#7fdca0">실사용(도로 제외) ${Math.round(window.LAYOUT.landArea).toLocaleString()}㎡</span>` : '';
-    h+=row('na', '지목 분포', jtxt+useTxt);
+    const je=Object.entries(PARCEL.jimokArea);
+    const jtxt=je.slice().sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k||'?'} ${Math.round(v).toLocaleString()}㎡`).join(' · ');
+    const buildA=je.filter(([k])=>!isExcludedJimok(k)).reduce((s,[,v])=>s+v,0);
+    const exclA =je.filter(([k])=>isExcludedJimok(k)).reduce((s,[,v])=>s+v,0);
+    const jmL = buildA<=0 ? 'bad' : (buildA>=exclA ? 'ok' : 'warn');
+    const jmD = exclA>1 ? `설치가능 지목 ${Math.round(buildA).toLocaleString()}㎡ · 도로 등 제외 ${Math.round(exclA).toLocaleString()}㎡` : `설치가능 지목 ${Math.round(buildA).toLocaleString()}㎡`;
+    h+=`<div class="feas-row"><span class="dot ${jmL}"></span><div class="ft"><div class="t">지목 분포 · ${jtxt}</div><div class="d">${jmD}</div></div></div>`;
   }
   h+=row(rL, '하천 저촉/인접', rD);
   h+=sRow;
-  h+=row('na', '이격거리 (정부기준 주거 ≤200m)', `2026 상한: 주거 200m 이내·도로 이격 폐지. ${(parts[1]||parts[0]||'지자체')} 실제값 <a href="https://www.elis.go.kr/" target="_blank">자치법규정보시스템</a>에서 조례 확인`);
+  const ordQ=encodeURIComponent(((parts[1]||parts[0]||''))+' 태양광 이격거리');
+  h+=row('na', '이격거리 (정부기준 주거 ≤200m)', `2026 상한: 주거 200m 이내·도로 이격 폐지. ${(parts[1]||parts[0]||'지자체')} <a href="https://www.law.go.kr/ordinSc.do?menuId=3&query=${ordQ}" target="_blank">태양광 조례 바로보기</a> · <a href="https://www.elis.go.kr/" target="_blank">자치법규정보시스템</a>`);
   h+= zone
     ? row(zL, '용도지역: '+zone, zD||'개발행위 검토')
     : row('na', '용도지역·이용제한', `<a href="https://www.eum.go.kr/web/am/amMain.jsp" target="_blank">토지이음</a>에서 지번(${(PARCEL&&PARCEL.jibun)||'-'}) 조회`);
   if(grid){
     const gL = grid.free>=10?'ok':(grid.free>=1?'warn':'bad');
     h+=row(gL, '변전소: '+(grid.name||'-')+(grid.region?' ('+grid.region+')':''), `약 ${grid.dist.toFixed(1)}km · 여유 ${grid.free!=null?Math.round(grid.free):'?'}MW (${grid.pct!=null?Math.round(grid.pct):'?'}%)`);
-    h+=row('na', '가능 DL · 남은용량', grid.dls.length? grid.dls.map(d=>`${d.nm} ${d.free.toFixed(1)}MW`).join(' · ') : 'DL 여유 정보 없음');
+    const bestDL = grid.dls.length? Math.max(...grid.dls.map(d=>d.free)) : 0;
+    const dlL = !grid.dls.length ? 'na' : (bestDL>=3?'ok':(bestDL>=1?'warn':'bad'));
+    h+=row(dlL, '가능 DL · 남은용량', grid.dls.length? grid.dls.map(d=>`${d.nm} ${d.free.toFixed(1)}MW`).join(' · ')+(bestDL>=3?' · 여유 충분':(bestDL>=1?' · 여유 보통':' · 여유 부족')) : 'DL 여유 정보 없음');
     h+=row('na', '관할 연락처', (grid.officeName||'한전')+(grid.tel?` · <a href="tel:${grid.tel}">${grid.tel}</a>`:''));
   } else {
     h+=row('na', '계통 연계 여유', '인근 변전소 조회 실패');
   }
+  const hasLayout = !!(window.LAYOUT && window.LAYOUT.placed && window.LAYOUT.placed.length);
   const areaLbl = ((window.LAYOUT&&window.LAYOUT.roadArea)||0)>1?'실사용부지':'부지';
-  h+=`<div class="feas-row"><span class="dot na" style="visibility:hidden"></span><div class="ft"><div class="d">${areaLbl} ${area}㎡ · 예상 ${cnt}장 / ${kw}kWp · 공시지가 ${jiga}</div></div></div>`;
+  const bottomTxt = hasLayout
+    ? `${areaLbl} ${area}㎡ · 예상 ${cnt}장 / ${kw}kWp · 공시지가 ${jiga}`
+    : `공시지가 ${jiga} · <b>「배치 계산」</b>을 누르면 실사용면적·예상 장수 표시`;
+  h+=`<div class="feas-row"><span class="dot na" style="visibility:hidden"></span><div class="ft"><div class="d">${bottomTxt}</div></div></div>`;
   body.innerHTML=h;
 }
 $('btn-draw').onclick = ()=>{
