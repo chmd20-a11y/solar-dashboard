@@ -381,7 +381,7 @@ async function renderFeasibility(){
   h+=`<div class="feas-sum ${worst}">${sumIcon} ${sumTxt}</div>`;
   h+=row(jL, '지목: '+(jimok||'미상'), jD);
   h+=row(rL, '하천 저촉/인접', rD);
-  h+=row('na', (region||'지자체')+' 이격거리 조례', `주거·도로 이격 규정 → <a href="https://www.google.com/search?q=${ordQ}" target="_blank">조례 검색</a>`);
+  h+=row('na', '이격거리 (정부기준 주거 ≤200m)', `2026 상한: 주거 200m 이내·도로 이격 폐지. ${(parts[1]||parts[0]||'지자체')} 실제값 <a href="https://www.google.com/search?q=${ordQ}" target="_blank">조례 확인</a>`);
   h+= zone
     ? row(zL, '용도지역: '+zone, zD||'개발행위 검토')
     : row('na', '용도지역·이용제한', `<a href="https://www.eum.go.kr/web/am/amMain.jsp" target="_blank">토지이음</a>에서 지번(${(PARCEL&&PARCEL.jibun)||'-'}) 조회`);
