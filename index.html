@@ -381,6 +381,11 @@
   .q-foot{font-size:10px;color:#8a98a8;line-height:1.55;border-top:1px dashed var(--line);padding-top:8px;margin-top:6px}
   .q-set-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
   @media(max-width:620px){ .q-set-grid{grid-template-columns:1fr 1fr} }
+  #q-photo-wrap{position:relative;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#0b1220;min-height:150px;display:flex;align-items:center;justify-content:center}
+  #q-photo{width:100%;display:block}
+  #q-photo-empty{color:var(--muted);font-size:12px;text-align:center;padding:26px 14px;line-height:1.7}
+  #q-photo-note{position:absolute;left:8px;bottom:8px;background:rgba(120,230,90,.92);color:#0a2000;font-size:11px;font-weight:800;padding:5px 9px;border-radius:6px;line-height:1.4;max-width:72%}
+  #q-photo-n{position:absolute;right:9px;top:7px;color:#ff5a5a;font-weight:900;font-size:13px;text-shadow:0 1px 3px rgba(0,0,0,.7);display:none}
 </style>
 <div id="quote-overlay">
   <div id="quote-card">
@@ -409,7 +414,10 @@
           <div class="fld"><label>일 발전시간 (h)</label><input type="number" id="q-hours" value="3.6" step="0.1"></div>
           <div class="fld"><label>발전소(현장) 수</label><input type="number" id="q-plants" value="1" min="1"></div>
         </div>
-        <button class="btn" id="q-reload" style="margin-top:4px">🔄 대시보드 배치값 다시 불러오기</button>
+        <div class="btnrow" style="margin-top:4px;display:flex;gap:6px">
+          <button class="btn" id="q-reload">🔄 배치값 불러오기</button>
+          <button class="btn" id="q-capture" style="border-color:var(--accent2);color:var(--accent2)">🧊 현재 3D 화면 캡처</button>
+        </div>
       </div>
     </div>
 
@@ -488,6 +496,14 @@
             <tr><td>자부담금 (20%)</td><td class="n" id="q-own">0</td></tr>
           </tbody>
         </table>
+
+        <div class="q-sec-h blue" style="margin-top:10px">현장 배치도 (3D)</div>
+        <div id="q-photo-wrap">
+          <div id="q-photo-empty">🧊 상단 <b>🧊 3D 뷰</b>에서 각도를 맞춘 뒤<br><b>⚙️ 영업자 설정 → 3D 화면 캡처</b>로 현장 배치도를 담으세요</div>
+          <img id="q-photo" style="display:none" alt="3D 현장 배치도">
+          <div id="q-photo-note" style="display:none"></div>
+          <div id="q-photo-n">N ▲</div>
+        </div>
       </div>
     </div>
 
@@ -1396,6 +1412,32 @@ function quoteCalc(){
   $('q-payback').textContent=(cf.payback)+' 년';
   $('q-avg1').textContent=won(R6(cf.avg5grace)); $('q-avg2').textContent=won(R6(cf.avg10repay)); $('q-avg3').textContent=won(R6(cf.avg5remain));
   $('q-loan').textContent=won(total*0.8); $('q-own').textContent=won(total*0.2);
+  applyQuotePhoto();
+}
+// 3D 뷰 캡처 → 견적서 현장 배치도로 삽입
+let _quotePhoto=null;
+function captureQuote3D(){
+  if(typeof three==='undefined' || !three){ setStatus('⚠️ 먼저 상단 <b>🧊 3D 뷰</b>를 열어 각도를 맞춘 뒤 캡처해주세요.'); return false; }
+  try{
+    three.renderer.render(three.scene, three.camera);
+    _quotePhoto = three.renderer.domElement.toDataURL('image/png');
+    applyQuotePhoto();
+    setStatus('🧊 3D 화면을 견적서에 담았습니다.');
+    return true;
+  }catch(e){ setStatus('⚠️ 3D 캡처 실패: '+((e&&e.message)||e)); return false; }
+}
+function applyQuotePhoto(){
+  const img=$('q-photo'), empty=$('q-photo-empty'), note=$('q-photo-note'), narrow=$('q-photo-n');
+  if(!img) return;
+  if(_quotePhoto){
+    img.src=_quotePhoto; img.style.display='block'; empty.style.display='none'; note.style.display='block'; narrow.style.display='block';
+    const W=+$('q-w').value||0, qty=+$('q-qty').value||0, kw=Math.round(qty*W/1000*100)/100;
+    const tilt=(typeof S!=='undefined'?S.tilt:15), isNoji=(typeof S!=='undefined' && S.type==='ground');
+    const addr=$('q-addr').value||'';
+    note.innerHTML=`${addr?addr+'<br>':''}모듈각 ${tilt}° · ${isNoji?'노지':'루프탑'}형<br>${qty.toLocaleString()}EA × ${W}W = ${kw.toLocaleString()}kW`;
+  } else {
+    img.style.display='none'; empty.style.display='flex'; note.style.display='none'; narrow.style.display='none';
+  }
 }
 function quotePull(){
   const cnt=parseInt(($('r-count').textContent||'0').replace(/,/g,''))||0;
@@ -1413,7 +1455,7 @@ function quotePull(){
 }
 function quoteOpen(on){
   const ov=$('quote-overlay');
-  if(on){ quotePull(); quoteCalc(); ov.classList.add('open'); }
+  if(on){ quotePull(); quoteCalc(); if(typeof three!=='undefined' && three && !_quotePhoto) captureQuote3D(); applyQuotePhoto(); ov.classList.add('open'); }
   else ov.classList.remove('open');
 }
 $('btn-quote').onclick=()=>quoteOpen(!$('quote-overlay').classList.contains('open'));
@@ -1428,6 +1470,7 @@ document.querySelectorAll('#q-form button').forEach(b=> b.addEventListener('clic
   $('q-apply').value = b.dataset.f==='노지' ? 178 : 188; quoteCalc();
 }));
 $('q-reload').onclick=()=>{ quotePull(); quoteCalc(); };
+$('q-capture').onclick=captureQuote3D;
 
 /* ================= 3D 뷰 (실제 배치를 입체로) ================= */
 let three=null, view3D=false, sunT=13;
