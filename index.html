@@ -21,6 +21,11 @@
   .sec{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
   .sec h2{font-size:12px;color:#cdd8e4;margin:0 0 10px;letter-spacing:.3px;font-weight:700;display:flex;align-items:center;gap:6px}
   .sec h2 .n{width:18px;height:18px;border-radius:50%;background:var(--accent);color:#1a1400;font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:800}
+  .sec h2{cursor:pointer;user-select:none}
+  .sec h2::after{content:'▾';margin-left:auto;font-size:11px;color:#7fb3ff;transition:transform .15s}
+  .sec.collapsed h2{margin-bottom:0}
+  .sec.collapsed h2::after{transform:rotate(-90deg)}
+  .sec.collapsed > :not(h2){display:none !important}
   .fld{margin-bottom:9px}
   .fld label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px}
   .fld .row{display:flex;gap:6px}
@@ -107,12 +112,12 @@
       </div>
     </div>
 
-    <div class="sec" id="sec-feas">
+    <div class="sec collapsed" id="sec-feas">
       <h2><span class="n">2</span> 타당성 검토</h2>
       <div id="feas-body"><div class="feas-empty">지번 검색 시 이 부지의 설치 타당성이 표시됩니다.</div></div>
     </div>
 
-    <div class="sec">
+    <div class="sec collapsed">
       <h2><span class="n">3</span> 부지 경계</h2>
       <div class="btnrow">
         <button class="btn" id="btn-draw">✏️ 경계 그리기</button>
@@ -120,7 +125,7 @@
       </div>
     </div>
 
-    <div class="sec">
+    <div class="sec collapsed">
       <h2><span class="n">4</span> 모듈 규격</h2>
       <div class="fld"><label>모듈 선택</label>
         <div class="seg" id="seg-mod">
@@ -144,7 +149,7 @@
       </div>
     </div>
 
-    <div class="sec">
+    <div class="sec collapsed">
       <h2><span class="n">5</span> 배치 옵션</h2>
       <div class="fld"><label>설치 유형</label>
         <div class="seg" id="seg-type">
@@ -305,7 +310,7 @@ function rebuildSelection(fit){
   PARCEL = rep ? { addr:rep.addr, jibun:rep.jibun, jimok, pnu:rep.pnu, jiga:rep.jiga, multi: uniqAddrs.length>1?uniqAddrs:null, jimokArea:Object.keys(jm).length?jm:null } : null;
   _rivKey='';
   renderSelList();
-  if(uni) runLayout();
+  if(uni){ document.getElementById('sec-feas')?.classList.remove('collapsed'); runLayout(); }
   else { panelLayer.clearLayers(); bufferLayer.clearLayers(); resetStats(); renderFeasibility(); setStatus('⚠️ 도로 지번만 선택됨 — 대지 등 실사용 지번을 추가하세요.'); }
 }
 function renderSelList(){
@@ -495,6 +500,7 @@ async function setParcelFromCenter(){
     const roadNote = roadFeats.length? ` · <span style="color:#ffb86b">도로 등 ${roadFeats.length}필지 배치 제외</span>`:'';
     setStatus('📍 그린 부지: <b>'+label+'</b>'+roadNote+' · <b>배치 계산</b>을 누르세요.');
     window.LAYOUT=null; resetStats(); renderFeasibility();   // 새 부지: 이전 배치 통계 초기화 후 타당성 표시
+    document.getElementById('sec-feas')?.classList.remove('collapsed');   // 새 부지 선택 시 타당성 자동 펼침
   } else {
     window.ROADGEOM=null; PARCEL=null;
     setStatus('부지 경계 완성. <b>배치 계산</b>을 누르세요. (지번 자동조회 실패)');
@@ -654,6 +660,8 @@ document.querySelectorAll('#seg-mod button').forEach(b=>b.onclick=()=>{
 
 $('btn-run').onclick = runLayout;
 renderSepChips();   // 이격거리 원 칩 초기 렌더
+// 섹션 접기/펴기 (헤더 클릭). 기본: 부지찾기만 펼침, 나머지 접힘(HTML의 collapsed 클래스)
+document.querySelectorAll('.sec h2').forEach(h=>h.addEventListener('click',()=>h.parentElement.classList.toggle('collapsed')));
 $('btn-toggle').onclick = ()=>{ const on=map.hasLayer(panelLayer); if(on){map.removeLayer(panelLayer);$('btn-toggle').textContent='패널 보이기';} else {map.addLayer(panelLayer);$('btn-toggle').textContent='패널 숨기기';} };
 $('btn-png').onclick = savePng;
 
