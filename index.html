@@ -910,7 +910,7 @@ function updateSun3D(){
 function stitchGround(lat,lng,spanM){
   return new Promise(resolve=>{
     const rad=lat*Math.PI/180, mpp0=156543.03392*Math.cos(rad);
-    let z=19; for(let zz=20; zz>=13; zz--){ if(spanM/(mpp0/Math.pow(2,zz))<=1400){ z=zz; break; } }
+    let z=18; for(let zz=18; zz>=13; zz--){ if(spanM/(mpp0/Math.pow(2,zz))<=1400){ z=zz; break; } }   // z18 캡: ESRI·VWorld 양쪽 한국 전역 커버(z19는 ESRI 시골 placeholder)
     const n=Math.pow(2,z), mpp=mpp0/n, worldPx=n*256;
     const cx=(lng+180)/360*worldPx;
     const cy=(1-Math.log(Math.tan(rad)+1/Math.cos(rad))/Math.PI)/2*worldPx;
@@ -921,12 +921,21 @@ function stitchGround(lat,lng,spanM){
     const tx0=Math.floor(x0/256), tx1=Math.floor((cx+half)/256), ty0=Math.floor(y0/256), ty1=Math.floor((cy+half)/256);
     let pending=0, finished=false;
     const done=()=>{ if(finished)return; finished=true; try{ g.getImageData(0,0,1,1); }catch(e){ resolve(null); return; } resolve(new THREE.CanvasTexture(cv)); };
+    const PXY=defaultProxy();
     for(let tx=tx0;tx<=tx1;tx++)for(let ty=ty0;ty<=ty1;ty++){
       pending++;
+      const dx=(tx*256-x0)*scale, dy=(ty*256-y0)*scale, dw=256*scale;
+      const draw=im=>{ try{ g.drawImage(im,dx,dy,dw,dw);}catch(e){} };
+      const esriSrc='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/'+z+'/'+ty+'/'+tx;
       const img=new Image(); img.crossOrigin='anonymous';
-      img.onload=()=>{ try{ g.drawImage(img,(tx*256-x0)*scale,(ty*256-y0)*scale,256*scale,256*scale);}catch(e){} if(--pending<=0)done(); };
-      img.onerror=()=>{ if(--pending<=0)done(); };
-      img.src='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/'+z+'/'+ty+'/'+tx;
+      img.onload=()=>{ draw(img); if(--pending<=0)done(); };
+      img.onerror=()=>{                                   // VWorld(한국 전역 위성) 실패 시 ESRI 폴백
+        const im2=new Image(); im2.crossOrigin='anonymous';
+        im2.onload=()=>{ draw(im2); if(--pending<=0)done(); };
+        im2.onerror=()=>{ if(--pending<=0)done(); };
+        im2.src=esriSrc;
+      };
+      img.src=PXY+'/req/wmts/1.0.0/__KEY__/Satellite/'+z+'/'+ty+'/'+tx+'.jpeg';   // VWorld 위성(프록시, 키 서버주입)
     }
     if(pending===0) done();
     setTimeout(()=>{ if(!finished) done(); }, 9000);
