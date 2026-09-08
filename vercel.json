@@ -2,6 +2,7 @@
   "rewrites": [
     { "source": "/req/:path*", "destination": "/api/proxy?__path=:path*" },
     { "source": "/luris/:path*", "destination": "/api/proxy?__lpath=:path*" },
-    { "source": "/dem/:path*", "destination": "/api/proxy?__dpath=:path*" }
+    { "source": "/dem/:path*", "destination": "/api/proxy?__dpath=:path*" },
+    { "source": "/ned/:path*", "destination": "/api/proxy?__npath=:path*" }
   ]
 }

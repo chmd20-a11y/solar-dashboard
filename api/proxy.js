@@ -48,6 +48,21 @@ module.exports = async (req, res) => {
       res.statusCode = 200; res.setHeader('Content-Type', 'application/json;charset=UTF-8'); res.end(r.buf); return;
     }
 
+    // ---- NED (VWorld 국토부 토지소유정보 WMS/WFS 등) ----
+    const npath = u.searchParams.get('__npath');
+    if (npath != null) {
+      u.searchParams.delete('__npath');
+      const NKEY = process.env.VWORLD_KEY;
+      if (NKEY && !u.searchParams.get('key')) u.searchParams.set('key', NKEY);
+      if (!u.searchParams.get('domain')) u.searchParams.set('domain', 'http://localhost');
+      const target = 'https://api.vworld.kr/ned/' + npath + '?' + u.searchParams.toString();
+      const r = await vget(target, 'http://localhost');
+      res.statusCode = 200;
+      res.setHeader('Content-Type', r.type);
+      if (/^image\//.test(r.type)) res.setHeader('Cache-Control', 'public, max-age=86400');
+      res.end(r.buf); return;
+    }
+
     // ---- VWorld ----
     let p = u.searchParams.get('__path') || '';
     u.searchParams.delete('__path');

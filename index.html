@@ -85,6 +85,12 @@
   .sel-item{display:flex;align-items:center;justify-content:space-between;gap:6px;background:rgba(255,213,74,.08);border:1px solid rgba(255,213,74,.25);border-radius:8px;padding:5px 8px;margin-bottom:4px;font-size:12px;color:#eef2f7}
   .sel-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .sel-x{flex:0 0 auto;background:transparent;border:0;color:#ff7a7a;cursor:pointer;font-size:13px;padding:0 2px;line-height:1}
+  #own-legend{position:absolute;left:12px;bottom:56px;z-index:600;background:rgba(15,23,32,.93);border:1px solid var(--line);border-radius:10px;padding:8px 11px;font-size:11.5px;color:#cdd8e4;max-width:225px;display:none;box-shadow:0 4px 14px rgba(0,0,0,.45)}
+  #own-legend > b{color:#fff;font-size:12px}
+  #own-leg-low{color:#ffd54a;line-height:1.5;margin-top:4px}
+  #own-leg-colors > div{display:flex;align-items:center;gap:6px;margin-top:3px;line-height:1.4}
+  #own-leg-colors .ow{display:inline-block;width:14px;height:11px;border-radius:2px;flex:0 0 auto}
+  #own-leg-colors .own-note{display:block;color:#8b98a6;font-size:10px;margin-top:5px;line-height:1.5}
   .sep-tip{background:rgba(230,0,122,.92)!important;color:#fff!important;border:none!important;font-size:11px!important;font-weight:700;padding:1px 7px!important;box-shadow:0 1px 4px rgba(0,0,0,.4)}
   .sep-tip::before{border-top-color:rgba(230,0,122,.92)!important}
 </style>
@@ -183,6 +189,18 @@
     </div>
     <div id="sunbar" class="panel" style="display:none">☀️ 태양 <input type="range" id="o-sun" min="6" max="18" step="0.25" value="13"><b id="v-sun">13:00</b> · 드래그 회전</div>
     <div id="status">위 <b>지번 검색</b> 또는 <b>경계 그리기</b>로 부지를 지정하세요.</div>
+    <div id="own-legend">
+      <b>🏠 필지 소유정보</b>
+      <div id="own-leg-low" style="display:none">🔍 <b>더 확대</b>하면 필지별 소유구분이 색으로 표시됩니다</div>
+      <div id="own-leg-colors">
+        <div><span class="ow" style="background:#90d8f0"></span> 개인</div>
+        <div><span class="ow" style="background:#e0b8f8"></span> 법인</div>
+        <div><span class="ow" style="background:#f8e8b8"></span> 국유지</div>
+        <div><span class="ow" style="background:#e8f8b8"></span> 외국인</div>
+        <div><span class="ow" style="background:transparent;border:1px dashed #8b98a6"></span> 무색: 공유지·도로·미등기 등</div>
+        <div class="own-note">색상=VWorld 국토부 표준 · 필지에 지번·면적 표기<br>※ 소유 변동 지연 가능·현장확인 필요 · 소유자명 미제공(유형만)</div>
+      </div>
+    </div>
   </div>
 
   <!-- ================= RIGHT: RESULTS ================= -->
@@ -246,9 +264,22 @@ async function drawParcels(){
 map.on('overlayadd', e=>{ if(e.layer===parcelLayer){ _parcelOn=true; drawParcels(); } });
 map.on('overlayremove', e=>{ if(e.layer===parcelLayer){ _parcelOn=false; parcelLayer.clearLayers(); } });
 map.on('moveend', ()=>{ if(_parcelOn) drawParcels(); });
+// 필지 소유정보(국토부 토지소유정보 WMS·VWorld getPossessionWMS) — 줌15+ 소유구분 색칠+지번·면적. 프록시(/ned)로 키 숨김
+const ownWms = L.tileLayer.wms(PXY + '/ned/wms/getPossessionWMS', {
+  layers:'dt_d160', styles:'', format:'image/png', transparent:true, version:'1.3.0',
+  minZoom:15, maxNativeZoom:18, maxZoom:21, opacity:0.62, attribution:'토지소유정보 © 국토교통부·VWorld'
+});
+function showOwnLegend(on){
+  const el=document.getElementById('own-legend'); if(!el) return;
+  el.style.display = on ? 'block' : 'none';
+  if(on){ const low=map.getZoom()<16; document.getElementById('own-leg-low').style.display=low?'block':'none'; document.getElementById('own-leg-colors').style.display=low?'none':'block'; }
+}
+map.on('overlayadd', e=>{ if(e.layer===ownWms){ if(map.getZoom()<16) map.setZoom(16); showOwnLegend(true); } });
+map.on('overlayremove', e=>{ if(e.layer===ownWms){ showOwnLegend(false); } });
+map.on('zoomend', ()=>{ if(map.hasLayer(ownWms)) showOwnLegend(true); });
 L.control.layers(
   { '🛰️ ESRI 위성': esri, '🇰🇷 VWorld 항공': vworldAerial, '🇰🇷 VWorld 항공+지명': vworldAerialHybrid },
-  { '지명·경계(ESRI)': labels, '🟨 지적 경계(필지)': parcelLayer },
+  { '지명·경계(ESRI)': labels, '🟨 지적 경계(필지)': parcelLayer, '🏠 필지 소유정보': ownWms },
   {position:'topright', collapsed:true}
 ).addTo(map);
 
