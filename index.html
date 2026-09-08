@@ -938,8 +938,9 @@ function rebuild3D(){
   sc.left=-sd; sc.right=sd; sc.top=sd; sc.bottom=-sd; sc.near=1; sc.far=span*4; sc.updateProjectionMatrix();
   three.controls.target.set(0, base, 0);
   three.camera.position.set(span*0.30, span*0.48, span*0.62);
-  three.controls.minDistance=8; three.controls.maxDistance=span*2.2;
+  three.controls.minDistance=8; three.controls.maxDistance=2000;   // 주변 지형까지 줌아웃 가능
   updateSun3D();
+  buildTerrain(L).then(()=>buildBuildings(L));   // 외부 지형·건물 3D 음영(비동기 로드 후 평면 바닥 교체)
 }
 
 function updateSun3D(){
@@ -958,6 +959,71 @@ function updateSun3D(){
   three.scene.background=new THREE.Color().setRGB(0.35+0.28*day, 0.48+0.28*day, 0.62+0.25*day);
 }
 
+// ── 외부 지형(DEM) 3D 음영: 부지 주변 표고 격자 → 지형 메시(위성텍스처)로 평면 바닥 교체, 시간별 그림자 ──
+async function buildTerrain(L){
+  if(!three) return null;
+  const R=700, n=10;   // ±700m, 10x10=100점(OpenTopoData 1회 한도)
+  const mLat=L.mLat, mLng=L.mLng;
+  const pts=[];         // PlaneGeometry 정점 순서: iy 0..n-1(남→북), ix 0..n-1(서→동)
+  for(let iy=0;iy<n;iy++)for(let ix=0;ix<n;ix++){
+    const y=-R+2*R*iy/(n-1), x=-R+2*R*ix/(n-1);
+    pts.push((L.lat0+y/mLat).toFixed(6)+','+(L.lng0+x/mLng).toFixed(6));
+  }
+  let e, ce;
+  try{
+    const j=await fetch(`${defaultProxy()}/dem/v1/srtm30m?locations=${encodeURIComponent(pts.join('|'))}`).then(r=>r.json());
+    if(!j || j.status!=='OK' || !j.results || j.results.length!==n*n) return null;
+    e=j.results.map(r=>r.elevation);
+    if(e.some(v=>v==null)) return null;
+    ce=e[Math.floor(n/2)*n+Math.floor(n/2)];
+  }catch(err){ return null; }
+  if(!three) return null;
+  const geo=new THREE.PlaneGeometry(2*R,2*R,n-1,n-1);
+  const pa=geo.attributes.position;
+  for(let k=0;k<n*n;k++) pa.setZ(k, e[k]-ce);   // 평면 z=표고(중심기준) → 회전 후 높이
+  pa.needsUpdate=true; geo.computeVertexNormals();
+  const mat=new THREE.MeshStandardMaterial({color:0x6b7a4a, roughness:1});
+  const mesh=new THREE.Mesh(geo, mat); mesh.rotation.x=-Math.PI/2; mesh.receiveShadow=true; mesh.castShadow=true;
+  if(three.ground){ three.scene.remove(three.ground); three.ground.geometry.dispose(); }
+  three.ground=mesh; three.scene.add(mesh);
+  three.demG={e, ce, R, n, mLat, mLng}; three.groundSpan=2*R;
+  stitchGround(L.lat0,L.lng0,2*R).then(tex=>{ if(tex && three && three.ground===mesh){ tex.encoding=THREE.sRGBEncoding; mat.map=tex; mat.color.set(0xffffff); mat.needsUpdate=true; } });
+  const sc=three.sun.shadow.camera; sc.left=-R; sc.right=R; sc.top=R; sc.bottom=-R; sc.near=1; sc.far=R*5; sc.updateProjectionMatrix();
+  updateSun3D();
+  return three.demG;
+}
+// ── 주변 건물 3D 음영: VWorld 건물 외곽선(LT_C_SPBD)+층수(gro_flo_co×3.2m) 입체화, 그림자 ──
+async function buildBuildings(L){
+  if(!three) return;
+  if(three.obstacles){ three.scene.remove(three.obstacles); three.obstacles.traverse(o=>{ if(o.geometry)o.geometry.dispose(); }); }
+  three.obstacles=new THREE.Group(); three.scene.add(three.obstacles);
+  const R=350, mLat=L.mLat, mLng=L.mLng, dLat=R/mLat, dLng=R/mLng;
+  let feats=[];
+  try{
+    const url=`${defaultProxy()}/req/data?service=data&request=GetFeature&data=LT_C_SPBD&format=json&crs=EPSG:4326&geometry=true&attribute=true&size=400&geomFilter=${encodeURIComponent('BOX('+(L.lng0-dLng)+','+(L.lat0-dLat)+','+(L.lng0+dLng)+','+(L.lat0+dLat)+')')}`;
+    const j=await fetch(url).then(r=>r.json());
+    feats=(j&&j.response&&j.response.result&&j.response.result.featureCollection&&j.response.result.featureCollection.features)||[];
+  }catch(e){ return; }
+  if(!three || !three.obstacles) return;
+  const terrainY=(east,north)=>{ const g=three.demG; if(!g) return 0;
+    const gy=(north+g.R)/(2*g.R)*(g.n-1), gx=(east+g.R)/(2*g.R)*(g.n-1);
+    if(gx<0||gx>g.n-1||gy<0||gy>g.n-1) return 0;
+    const i0=Math.floor(gy),j0=Math.floor(gx),i1=Math.min(g.n-1,i0+1),j1=Math.min(g.n-1,j0+1),fy=gy-i0,fx=gx-j0,E=(i,j)=>g.e[i*g.n+j]-g.ce;
+    return E(i0,j0)*(1-fx)*(1-fy)+E(i0,j1)*fx*(1-fy)+E(i1,j0)*(1-fx)*fy+E(i1,j1)*fx*fy; };
+  const mat=new THREE.MeshStandardMaterial({color:0xc2bcae, roughness:0.9});
+  feats.forEach(f=>{ try{
+    let coords=f.geometry.coordinates; if(f.geometry.type==='MultiPolygon') coords=coords[0];
+    const ring=coords[0]; if(!ring||ring.length<4) return;
+    const floors=Math.max(1, parseInt(f.properties.gro_flo_co)||1), h=floors*3.2;
+    const shape=new THREE.Shape();
+    ring.forEach((c,k)=>{ const x=(c[0]-L.lng0)*mLng, yy=(c[1]-L.lat0)*mLat; k===0?shape.moveTo(x,yy):shape.lineTo(x,yy); });
+    const geo=new THREE.ExtrudeGeometry(shape,{depth:h,bevelEnabled:false});
+    const m=new THREE.Mesh(geo,mat); m.castShadow=true; m.receiveShadow=true; m.rotation.x=-Math.PI/2;
+    let cx=0,cz=0; ring.forEach(c=>{ cx+=(c[0]-L.lng0)*mLng; cz+=-(c[1]-L.lat0)*mLat; }); cx/=ring.length; cz/=ring.length;
+    m.position.y=terrainY(cx,cz);
+    three.obstacles.add(m);
+  }catch(e){} });
+}
 // 위성 타일을 브라우저에서 이어붙여 바닥 텍스처 생성 (CORS 오염 시 null 반환 → 초록 바닥)
 function stitchGround(lat,lng,spanM){
   return new Promise(resolve=>{
