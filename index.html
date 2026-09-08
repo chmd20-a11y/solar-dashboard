@@ -10,7 +10,13 @@
   :root{--bg:#0b0f14;--card:#141b24;--line:rgba(255,255,255,.10);--muted:#93a3b5;--accent:#ffd54a;--accent2:#4ea1ff;--good:#37d67a}
   *{box-sizing:border-box}
   html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:#eef2f7}
-  #wrap{display:grid;grid-template-columns:320px 1fr 300px;height:100vh}
+  #wrap{display:grid;grid-template-columns:320px 1fr;height:100vh}          /* 기본: 우측 결과 숨김 → 지도 넓게 */
+  #wrap.results-open{grid-template-columns:320px 1fr 300px}                  /* 배치되면 우측 표시 */
+  #right{display:none}
+  #wrap.results-open #right{display:block}
+  #close-results{margin-left:auto;background:transparent;border:0;color:#8b98a6;cursor:pointer;font-size:15px;line-height:1;padding:0 2px}
+  #close-results:hover{color:#fff}
+  #reopen-results{display:none;position:absolute;top:62px;right:12px;z-index:600;background:var(--accent);color:#1a1400;border:0;border-radius:8px;padding:7px 12px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4)}
   .col{overflow:auto}
   #left{border-right:1px solid var(--line);padding:14px}
   #right{border-left:1px solid var(--line);padding:14px}
@@ -189,6 +195,7 @@
     </div>
     <div id="sunbar" class="panel" style="display:none">☀️ 태양 <input type="range" id="o-sun" min="6" max="18" step="0.25" value="13"><b id="v-sun">13:00</b> · 드래그 회전</div>
     <div id="status">위 <b>지번 검색</b> 또는 <b>경계 그리기</b>로 부지를 지정하세요.</div>
+    <button id="reopen-results" title="배치 결과 보기">📊 배치 결과</button>
     <div id="own-legend">
       <b>🏠 필지 소유정보</b>
       <div id="own-leg-low" style="display:none">🔍 <b>더 확대</b>하면 필지별 소유구분이 색으로 표시됩니다</div>
@@ -205,7 +212,7 @@
 
   <!-- ================= RIGHT: RESULTS ================= -->
   <div id="right" class="col">
-    <h1 style="font-size:14px">📊 배치 결과</h1>
+    <h1 style="font-size:14px;display:flex;align-items:center">📊 배치 결과 <button id="close-results" title="결과 숨기기">✕</button></h1>
     <div class="tag">개략 배치(제안·견적용)</div>
     <div class="stat"><div class="k">총 모듈 수</div><div class="v"><span id="r-count">0</span><small> 장</small></div></div>
     <div class="stat blue"><div class="k">설치 용량</div><div class="v"><span id="r-kw">0</span><small> kWp</small></div></div>
@@ -693,6 +700,16 @@ $('btn-run').onclick = runLayout;
 renderSepChips();   // 이격거리 원 칩 초기 렌더
 // 섹션 접기/펴기 (헤더 클릭). 기본: 부지찾기만 펼침, 나머지 접힘(HTML의 collapsed 클래스)
 document.querySelectorAll('.sec h2').forEach(h=>h.addEventListener('click',()=>h.parentElement.classList.toggle('collapsed')));
+// 우측 배치 결과 패널: 기본 숨김 → 배치 시 표시 → ✕로 숨김 + 📊 버튼으로 재열기
+function showResults(on){
+  const w=document.getElementById('wrap'); if(!w) return;
+  w.classList.toggle('results-open', on);
+  const rb=document.getElementById('reopen-results');
+  if(rb) rb.style.display = (!on && window.LAYOUT) ? 'block' : 'none';
+  setTimeout(()=>{ try{ map.invalidateSize(); }catch(e){} }, 60);   // 그리드 폭 변경 후 지도 리사이즈
+}
+document.getElementById('close-results')?.addEventListener('click', ()=>showResults(false));
+document.getElementById('reopen-results')?.addEventListener('click', ()=>showResults(true));
 $('btn-toggle').onclick = ()=>{ const on=map.hasLayer(panelLayer); if(on){map.removeLayer(panelLayer);$('btn-toggle').textContent='패널 보이기';} else {map.addLayer(panelLayer);$('btn-toggle').textContent='패널 숨기기';} };
 $('btn-png').onclick = savePng;
 
@@ -825,6 +842,7 @@ function runLayout(){
   const azTxt = bestDeg===0?'정남':(bestDeg<0?`남동 ${-bestDeg}°`:`남서 ${bestDeg}°`);
   const roadTxt = roadArea>1 ? ` · <span style="color:#ffb86b">도로 등 ${Math.round(roadArea).toLocaleString()}㎡ 제외</span>` : '';
   setStatus(`✅ 배치 완료 — <b>${modules.toLocaleString()}장</b> · <b>${Math.round(kw).toLocaleString()} kWp</b> · 이용률 ${ratio.toFixed(0)}%${roadTxt} · 방위 ${S.optimize?'자동 ':''}${azTxt}`);
+  showResults(true);   // 배치되면 우측 결과 패널 표시
 }
 
 function resetStats(){ ['r-count','r-kw','r-land','r-ratio','r-gen','r-tables'].forEach(id=>$(id).textContent='0'); }
