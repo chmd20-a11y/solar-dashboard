@@ -74,6 +74,8 @@
   .feas-sum.ok{background:rgba(55,214,122,.14);color:#5fe39a;border:1px solid rgba(55,214,122,.3)}
   .feas-sum.warn{background:rgba(255,213,74,.14);color:#ffd54a;border:1px solid rgba(255,213,74,.3)}
   .feas-sum.bad{background:rgba(255,90,90,.14);color:#ff7a7a;border:1px solid rgba(255,90,90,.3)}
+  .feas-region-h{display:flex;align-items:center;gap:7px;padding:8px 10px;margin:12px 0 4px;border-radius:8px;background:#141b24;font-size:12.5px;color:#dbe4ee}
+  .feas-region-h:first-child{margin-top:0}
   .feas-row{display:flex;align-items:flex-start;gap:8px;padding:7px 2px;font-size:12px;border-top:1px solid var(--line)}
   .feas-row .dot{width:9px;height:9px;border-radius:50%;margin-top:4px;flex:0 0 auto}
   .dot.ok{background:#37d67a}.dot.warn{background:#ffd54a}.dot.bad{background:#ff5a5a}.dot.na{background:#6b7887}
@@ -568,7 +570,10 @@ L.control.layers(
 
 const panelLayer = L.layerGroup().addTo(map);   // panels
 const bufferLayer = L.layerGroup().addTo(map);  // 완충 경계선
-let boundaryLayer = null;                        // the parcel polygon (geoman layer)
+let boundaryLayer = null;                        // 대표(첫) 구역 레이어 — REGIONS[0].layer 호환 alias
+let REGIONS = [];                                // 다중 부지 구역: [{layer, parcel, roadGeom}] (수동 다중그리기·지번검색 공용)
+const REGION_COLORS = ['#ffd54a','#4ea1ff','#37d67a','#ff8a3d','#e06de0','#f2d24a','#5ad1c8','#ff6b9d'];
+function syncPrimary(){ boundaryLayer = REGIONS.length ? REGIONS[0].layer : null; PARCEL = REGIONS.length ? REGIONS[0].parcel : null; window.ROADGEOM = REGIONS.length ? REGIONS[0].roadGeom : null; }
 let selected = [];                               // 부지 찾기에서 추가한 필지들(여러 지번)
 const canvasRenderer = L.canvas({padding:0.5});
 
@@ -609,11 +614,11 @@ function rebuildSelection(fit){
   let uni=null;
   buildSel.forEach(s=>{ try{ uni = uni ? turf.union(uni, s.gj) : s.gj; }catch(e){ if(!uni) uni=s.gj; } });
   clearBoundary();
-  window.ROADGEOM=null;                                // 멀티선택은 도로를 합집합서 제외 → 마스킹 불필요
+  let selLayer=null;
   if(uni){
-    boundaryLayer = L.polygon(geomToLatLngs(uni.geometry||uni), {color:'#ffd54a',weight:2,fillOpacity:.06}).addTo(map);
-    try{ boundaryLayer.pm.enable({allowSelfIntersection:false}); }catch(e){}
-    if(fit){ try{ map.fitBounds(boundaryLayer.getBounds().pad(0.3)); }catch(e){} }
+    selLayer = L.polygon(geomToLatLngs(uni.geometry||uni), {color:'#ffd54a',weight:2,fillOpacity:.06}).addTo(map);
+    try{ selLayer.pm.enable({allowSelfIntersection:false}); }catch(e){}
+    if(fit){ try{ map.fitBounds(selLayer.getBounds().pad(0.3)); }catch(e){} }
   }
   const pool = buildSel.length?buildSel:selected;
   let rep=pool[0], ra=-1;                              // 대표필지 = 최대면적(실사용 우선)
@@ -621,7 +626,9 @@ function rebuildSelection(fit){
   const uniqAddrs=[...new Set(pool.map(s=>s.addr||s.jibun).filter(Boolean))];
   const jimok=rep?jimokOfJibun(rep.jibun):'';
   const jm={}; pool.forEach(s=>{ try{ jm[s.jm||jimokOfJibun(s.jibun)]=(jm[s.jm||jimokOfJibun(s.jibun)]||0)+turf.area(s.gj); }catch(e){} });
-  PARCEL = rep ? { addr:rep.addr, jibun:rep.jibun, jimok, pnu:rep.pnu, jiga:rep.jiga, multi: uniqAddrs.length>1?uniqAddrs:null, jimokArea:Object.keys(jm).length?jm:null } : null;
+  const parcel = rep ? { addr:rep.addr, jibun:rep.jibun, jimok, pnu:rep.pnu, jiga:rep.jiga, multi: uniqAddrs.length>1?uniqAddrs:null, jimokArea:Object.keys(jm).length?jm:null } : null;
+  if(selLayer){ REGIONS=[{layer:selLayer, parcel, roadGeom:null}]; }   // 지번검색 = 단일 구역
+  syncPrimary();
   _rivKey='';
   renderSelList();
   if(uni){ document.getElementById('sec-feas')?.classList.remove('collapsed'); runLayout(); }
@@ -710,14 +717,15 @@ function boundaryWKT(padM){
   let c=gj.geometry.coordinates; if(gj.geometry.type==='MultiPolygon') c=c[0];
   return 'POLYGON(('+c[0].map(p=>p[0]+' '+p[1]).join(', ')+'))';
 }
-async function getRiver(){
-  const wkt=boundaryWKT(15); if(!wkt) return null;
-  if(wkt===_rivKey) return _rivVal;
-  _rivKey=wkt;
+async function regionRiver(ring){
+  if(!ring||!ring.length) return null;
+  let gj; try{ gj=turf.polygon([[...ring.map(p=>[p.lng,p.lat]),[ring[0].lng,ring[0].lat]]]); }catch(e){ return null; }
+  try{ const b=turf.buffer(gj,15,{units:'meters'}); if(b&&b.geometry) gj=b; }catch(e){}
+  let c=gj.geometry.coordinates; if(gj.geometry.type==='MultiPolygon') c=c[0];
+  const wkt='POLYGON(('+c[0].map(p=>p[0]+' '+p[1]).join(', ')+'))';
   const j=await vwData('LT_C_WKMSTRM', wkt);
   const fs=(j&&j.response&&j.response.result&&j.response.result.featureCollection&&j.response.result.featureCollection.features)||[];
-  _rivVal = fs.length ? {found:true, name:(fs[0].properties.riv_nm||fs[0].properties.cat_nam||'하천')} : {found:false};
-  return _rivVal;
+  return fs.length ? {found:true, name:(fs[0].properties.riv_nm||fs[0].properties.cat_nam||'하천')} : {found:false};
 }
 // 계통(변전소 여유용량·DL·연락처) — grid-capacity 대시보드 데이터 참조
 let _cap=null;
@@ -774,12 +782,12 @@ const EXCLUDE_JIMOK = new Set(['도','천','구','제','유']);
 const jimokOfJibun = s => ((s||'').match(/[가-힣]+$/)||[''])[0];
 const isExcludedJimok = jm => { const j=(jm||'').replace(/\s/g,''); return EXCLUDE_JIMOK.has(j) || /도로|하천|구거|제방|유지|수도/.test(j); };
 
-// 직접 그린 부지 → 겹치는 모든 필지의 지번·주소 수집(여러 지번 대응). 도로 등 제외지목 분리.
-async function setParcelFromCenter(){
-  if(!boundaryLayer) return;
+// 그린 구역 → 겹치는 모든 필지의 지번·주소 수집(여러 지번 대응). 도로 등 제외지목 분리. 결과는 region에 저장.
+async function setRegionParcel(region){
+  const layer=region&&region.layer; if(!layer) return;
   let ll, cLng, cLat, wkt;
   try{
-    ll=ringLatLng(boundaryLayer);
+    ll=ringLatLng(layer);
     const gj=turf.polygon([[...ll.map(p=>[p.lng,p.lat]),[ll[0].lng,ll[0].lat]]]);
     const c=turf.centroid(gj).geometry.coordinates; cLng=c[0]; cLat=c[1];
     wkt='POLYGON(('+ll.concat([ll[0]]).map(p=>p.lng+' '+p.lat).join(', ')+'))';
@@ -796,11 +804,9 @@ async function setParcelFromCenter(){
     const drawnGj = turf.polygon([[...ll.map(p=>[p.lng,p.lat]),[ll[0].lng,ll[0].lat]]]);
     feats.forEach(f=>{ const p=f.properties||{}; f._jm=jimokOfJibun(p.jibun); f._road=isExcludedJimok(f._jm);
       try{ const it=turf.intersect(f,drawnGj); f._ov = it? turf.area(it)/Math.max(1,turf.area(f)) : 0; }catch(e){ f._ov=0; } });
-    // 마스킹용: 그린 영역과 겹치는 도로/하천/구거 전부 → 합집합(패널이 이 위엔 안 앉음)
     const roadFeats = feats.filter(f=>f._road);
     let roadGeom=null; roadFeats.forEach(f=>{ try{ roadGeom = roadGeom? turf.union(roadGeom, turf.feature(f.geometry)) : turf.feature(f.geometry); }catch(e){ if(!roadGeom) roadGeom=turf.feature(f.geometry); } });
-    window.ROADGEOM = roadGeom;
-    // 지번 목록: 절반 이상 안에 든 필지만(도로 끝자락 제외)
+    region.roadGeom = roadGeom;
     const listFeats = feats.filter(f=>f._ov>0.5);
     const buildFeats = listFeats.filter(f=>!f._road);
     let rep=null;
@@ -810,16 +816,12 @@ async function setParcelFromCenter(){
     const rp=rep.properties||{}, jibunRaw=rp.jibun||'', jimok=jimokOfJibun(jibunRaw);
     const uniq=[...new Set((listFeats.length?listFeats:feats).map(f=>(f.properties||{}).addr||(f.properties||{}).jibun).filter(Boolean))];
     const jm={}; (listFeats.length?listFeats:feats).forEach(f=>{ try{ jm[f._jm]=(jm[f._jm]||0)+turf.area(f); }catch(e){} });
-    PARCEL={ addr:rp.addr||'', jibun:jibunRaw, jimok, pnu:rp.pnu||'', jiga:rp.jiga||'', multi: uniq.length>1?uniq:null, jimokArea: Object.keys(jm).length?jm:null };
-    const label = uniq.length<=1 ? (uniq[0]||'-') : `${uniq[0]} 외 ${uniq.length-1}필지 (총 ${uniq.length}개)`;
-    const roadNote = roadFeats.length? ` · <span style="color:#ffb86b">도로 등 ${roadFeats.length}필지 배치 제외</span>`:'';
-    setStatus('📍 그린 부지: <b>'+label+'</b>'+roadNote+' · <b>배치 계산</b>을 누르세요.');
-    window.LAYOUT=null; resetStats(); renderFeasibility();   // 새 부지: 이전 배치 통계 초기화 후 타당성 표시
-    document.getElementById('sec-feas')?.classList.remove('collapsed');   // 새 부지 선택 시 타당성 자동 펼침
+    region.parcel={ addr:rp.addr||'', jibun:jibunRaw, jimok, pnu:rp.pnu||'', jiga:rp.jiga||'', multi: uniq.length>1?uniq:null, jimokArea: Object.keys(jm).length?jm:null,
+                    roadCount: roadFeats.length };
   } else {
-    window.ROADGEOM=null; PARCEL=null;
-    setStatus('부지 경계 완성. <b>배치 계산</b>을 누르세요. (지번 자동조회 실패)');
+    region.roadGeom=null; region.parcel=null;
   }
+  syncPrimary();
 }
 // 경사도(SRTM 30m 표고 3×3 샘플 → 기울기°). OpenTopoData 프록시 경유.
 async function getSlope(lng, lat){
@@ -857,17 +859,21 @@ function renderSepChips(){
     box.appendChild(b);
   });
 }
-async function renderFeasibility(){
-  const body=$('feas-body'); if(!body) return;
-  if(!boundaryLayer){ body.innerHTML='<div class="feas-empty">지번 검색 시 이 부지의 설치 타당성이 표시됩니다.</div>'; return; }
-  body.innerHTML='<div class="feas-empty">타당성 검토 중…</div>';
+// 한 구역의 타당성 rows HTML(지목·하천·경사·용도·규제·계통) — 구역별 각각 조회
+async function feasRegionHTML(region, idx, multi){
+  const layer=region&&region.layer, parcel=(region&&region.parcel)||{};
   function row(lvl,t,d){ return `<div class="feas-row"><span class="dot ${lvl}"></span><div class="ft"><div class="t">${t}</div><div class="d">${d}</div></div></div>`; }
-  let river=null; try{ river=await getRiver(); }catch(e){}
-  let gcenter=null; try{ const cll=ringLatLng(boundaryLayer); gcenter=turf.centroid(turf.polygon([[...cll.map(p=>[p.lng,p.lat]),[cll[0].lng,cll[0].lat]]])).geometry.coordinates; }catch(e){}
-  let grid=null; if(gcenter){ try{ grid=await checkGrid(gcenter[1],gcenter[0]); }catch(e){} }
-  let zone=null; if(gcenter){ try{ zone=await getZone(gcenter[1],gcenter[0]); }catch(e){} }
-  let slope=null; if(gcenter){ try{ slope=await getSlope(gcenter[0],gcenter[1]); }catch(e){} }
-  let restrict=null; if(gcenter){ try{ restrict=await getRestrictZone(gcenter[1],gcenter[0]); }catch(e){} }
+  let ring=null, gcenter=null;
+  try{ ring=ringLatLng(layer); gcenter=turf.centroid(turf.polygon([[...ring.map(p=>[p.lng,p.lat]),[ring[0].lng,ring[0].lat]]])).geometry.coordinates; }catch(e){}
+  let river=region._river;
+  if(river===undefined){ try{ river=await regionRiver(ring); }catch(e){ river=null; } region._river=river; }
+  let grid=null,zone=null,slope=null,restrict=null;
+  if(gcenter){
+    try{ grid=await checkGrid(gcenter[1],gcenter[0]); }catch(e){}
+    try{ zone=await getZone(gcenter[1],gcenter[0]); }catch(e){}
+    try{ slope=await getSlope(gcenter[0],gcenter[1]); }catch(e){}
+    try{ restrict=await getRestrictZone(gcenter[1],gcenter[0]); }catch(e){}
+  }
   let zL='na', zD='';
   if(zone){
     if(/계획관리/.test(zone)){ zL='ok'; zD='태양광 양호'; }
@@ -875,7 +881,7 @@ async function renderFeasibility(){
     else if(/농림|보전녹지|생산녹지|자연환경보전/.test(zone)){ zL='warn'; zD='농지·보전 규제 검토'; }
     else if(/주거|상업|공업/.test(zone)){ zL='bad'; zD='도시지역 — 태양광 제약'; }
   }
-  const jimok = PARCEL && PARCEL.jimok;
+  const jimok = parcel.jimok;
   let jL='na', jD='지목 확인 필요';
   if(jimok){
     if(/천|구거|제방|유지|도로|철도|수도/.test(jimok)){ jL='bad'; jD='공작물 설치 제약 지목'; }
@@ -895,19 +901,23 @@ async function renderFeasibility(){
   } else {
     sRow = row('na', '경사도', `대지 태양광은 경사도 중요 — <a href="${ecvam}" target="_blank">국토환경성평가지도</a>에서 확인`);
   }
-  const parts=((PARCEL&&PARCEL.addr)||'').split(' '); const region=((parts[0]||'')+' '+(parts[1]||'')).trim();
+  const parts=(parcel.addr||'').split(' ');
   const rzL = restrict ? 'bad' : 'na';
   const worst=[jL,rL,zL,sL,rzL].includes('bad')?'bad':([jL,rL,zL,sL].includes('warn')?'warn':'ok');
   const sumTxt=worst==='ok'?'설치 양호':(worst==='warn'?'조건부 가능 (인허가 검토)':'설치 제약 있음');
   const sumIcon=worst==='ok'?'🟢':(worst==='warn'?'🟡':'🔴');
-  const area=$('r-land').textContent, kw=$('r-kw').textContent, cnt=$('r-count').textContent;
-  const jiga = (PARCEL&&PARCEL.jiga) ? Number(PARCEL.jiga).toLocaleString()+' 원/㎡' : '—';
+  const jiga = parcel.jiga ? Number(parcel.jiga).toLocaleString()+' 원/㎡' : '—';
   let h='';
-  h+=`<div class="feas-sum ${worst}">${sumIcon} ${sumTxt}</div>`;
-  h+=row(jL, '지목: '+(jimok||'미상')+(PARCEL&&PARCEL.multi?' (대표필지)':''), jD);
-  if(PARCEL && PARCEL.multi){ h+=`<div class="feas-row"><span class="dot na"></span><div class="ft"><div class="t">포함 지번 (${PARCEL.multi.length}개)</div><div class="jibun-list">${PARCEL.multi.map(a=>'<div>'+a+'</div>').join('')}</div></div></div>`; }
-  if(PARCEL && PARCEL.jimokArea){
-    const je=Object.entries(PARCEL.jimokArea);
+  if(multi){
+    const hue=REGION_COLORS[idx%REGION_COLORS.length];
+    h+=`<div class="feas-region-h" style="border-left:4px solid ${hue}"><b>구역 ${idx+1}</b> <span class="dot ${worst}"></span> ${sumTxt}${parcel.addr?` · <span style="color:#9fb0c3">${parcel.addr}</span>`:''}</div>`;
+  } else {
+    h+=`<div class="feas-sum ${worst}">${sumIcon} ${sumTxt}</div>`;
+  }
+  h+=row(jL, '지목: '+(jimok||'미상')+(parcel.multi?' (대표필지)':''), jD);
+  if(parcel.multi){ h+=`<div class="feas-row"><span class="dot na"></span><div class="ft"><div class="t">포함 지번 (${parcel.multi.length}개)</div><div class="jibun-list">${parcel.multi.map(a=>'<div>'+a+'</div>').join('')}</div></div></div>`; }
+  if(parcel.jimokArea){
+    const je=Object.entries(parcel.jimokArea);
     const jtxt=je.slice().sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k||'?'} ${Math.round(v).toLocaleString()}㎡`).join(' · ');
     const buildA=je.filter(([k])=>!isExcludedJimok(k)).reduce((s,[,v])=>s+v,0);
     const exclA =je.filter(([k])=>isExcludedJimok(k)).reduce((s,[,v])=>s+v,0);
@@ -921,7 +931,7 @@ async function renderFeasibility(){
   h+=row('na', '이격거리 (정부기준 주거 ≤200m)', `2026 상한: 주거 200m 이내·도로 이격 폐지. ${(parts[1]||parts[0]||'지자체')} <a href="https://www.law.go.kr/ordinSc.do?menuId=3&query=${ordQ}" target="_blank">태양광 조례 바로보기</a> · <a href="https://www.elis.go.kr/" target="_blank">자치법규정보시스템</a>`);
   h+= zone
     ? row(zL, '용도지역: '+zone, zD||'개발행위 검토')
-    : row('na', '용도지역·이용제한', `<a href="https://www.eum.go.kr/web/am/amMain.jsp" target="_blank">토지이음</a>에서 지번(${(PARCEL&&PARCEL.jibun)||'-'}) 조회`);
+    : row('na', '용도지역·이용제한', `<a href="https://www.eum.go.kr/web/am/amMain.jsp" target="_blank">토지이음</a>에서 지번(${parcel.jibun||'-'}) 조회`);
   if(restrict){ h+=row('bad', '⛔ '+restrict.name+' 저촉', '태양광 설치 불가 규제구역 — 인허가 불가 가능성'); }
   if(grid){
     const gL = grid.free>=10?'ok':(grid.free>=1?'warn':'bad');
@@ -933,24 +943,52 @@ async function renderFeasibility(){
   } else {
     h+=row('na', '계통 연계 여유', '인근 변전소 조회 실패');
   }
+  if(!multi){ h+=row('na', '공시지가', jiga); }
+  return h;
+}
+async function renderFeasibility(){
+  const body=$('feas-body'); if(!body) return;
+  if(!REGIONS.length){ body.innerHTML='<div class="feas-empty">지번 검색 또는 경계 그리기로 부지를 지정하면 타당성이 표시됩니다.</div>'; return; }
+  body.innerHTML='<div class="feas-empty">타당성 검토 중…'+(REGIONS.length>1?` (구역 ${REGIONS.length}개)`:'')+'</div>';
+  const multi = REGIONS.length>1;
+  const sections=[];
+  for(let i=0;i<REGIONS.length;i++){ try{ sections.push(await feasRegionHTML(REGIONS[i], i, multi)); }catch(e){} }
+  const area=$('r-land').textContent, kw=$('r-kw').textContent, cnt=$('r-count').textContent;
   const hasLayout = !!(window.LAYOUT && window.LAYOUT.placed && window.LAYOUT.placed.length);
   const areaLbl = ((window.LAYOUT&&window.LAYOUT.roadArea)||0)>1?'실사용부지':'부지';
-  const bottomTxt = hasLayout
-    ? `${areaLbl} ${area}㎡ · 예상 ${cnt}장 / ${kw}kWp · 공시지가 ${jiga}`
-    : `공시지가 ${jiga} · <b>「배치 계산」</b>을 누르면 실사용면적·예상 장수 표시`;
-  h+=`<div class="feas-row"><span class="dot na" style="visibility:hidden"></span><div class="ft"><div class="d">${bottomTxt}</div></div></div>`;
-  body.innerHTML=h;
-  drawSepCircle();   // 이격거리 원을 현재 부지 중심으로 갱신
+  let bottom;
+  if(hasLayout){
+    bottom = `<div class="feas-row" style="border-top:2px solid var(--line)"><span class="dot ok"></span><div class="ft"><div class="t">${multi?`전체 ${REGIONS.length}개 구역 합계`:'배치 결과'}</div><div class="d">${areaLbl} ${area}㎡ · 예상 <b>${cnt}장 / ${kw}kWp</b></div></div></div>`;
+  } else {
+    bottom = `<div class="feas-row"><span class="dot na" style="visibility:hidden"></span><div class="ft"><div class="d"><b>「배치 계산」</b>을 누르면 ${multi?'전 구역 합계':'실사용면적·예상 장수'} 표시</div></div></div>`;
+  }
+  body.innerHTML = sections.join('') + bottom;
+  drawSepCircle();
 }
 $('btn-draw').onclick = ()=>{
-  clearBoundary(); selected=[]; renderSelList();
-  map.pm.enableDraw('Polygon', {snappable:true, templineStyle:{color:'#ffd54a'}, hintlineStyle:{color:'#ffd54a',dashArray:'4,4'}, pathOptions:{color:'#ffd54a',weight:2,fillOpacity:.06}});
-  setStatus('꼭짓점을 순서대로 클릭, <b>시작점 클릭 또는 더블클릭</b>으로 완성하세요.');
+  const c = REGION_COLORS[REGIONS.length % REGION_COLORS.length];
+  map.pm.enableDraw('Polygon', {snappable:true, templineStyle:{color:c}, hintlineStyle:{color:c,dashArray:'4,4'}, pathOptions:{color:c,weight:2,fillOpacity:.06}});
+  setStatus(REGIONS.length
+    ? `구역 ${REGIONS.length+1} 그리기: 꼭짓점 클릭 → 시작점/더블클릭으로 완성 (여러 구역 추가 가능)`
+    : '꼭짓점을 순서대로 클릭, <b>시작점 클릭 또는 더블클릭</b>으로 완성하세요. (완성 후 다시 눌러 구역 추가 가능)');
 };
-$('btn-clear').onclick = ()=>{ clearBoundary(); selected=[]; renderSelList(); panelLayer.clearLayers(); bufferLayer.clearLayers(); resetStats(); PARCEL=null; _rivKey=''; renderFeasibility(); setStatus('경계를 지웠습니다.'); };
-map.on('pm:create', e=>{ boundaryLayer = e.layer; map.pm.disableDraw(); selected=[]; renderSelList(); _rivKey=''; setStatus('📍 지번 조회 중…'); setParcelFromCenter(); });
+$('btn-clear').onclick = ()=>{ clearBoundary(); selected=[]; renderSelList(); panelLayer.clearLayers(); bufferLayer.clearLayers(); resetStats(); window.LAYOUT=null; _rivKey=''; renderFeasibility(); setStatus('모든 구역을 지웠습니다.'); };
+map.on('pm:create', async e=>{
+  const idx=REGIONS.length;
+  try{ e.layer.setStyle({color:REGION_COLORS[idx%REGION_COLORS.length], weight:2, fillOpacity:.06}); }catch(_){}
+  const region={layer:e.layer, parcel:null, roadGeom:null, _river:undefined};
+  REGIONS.push(region); syncPrimary();
+  map.pm.disableDraw();
+  selected=[]; renderSelList();
+  setStatus(`📍 구역 ${idx+1} 추가 · 지번 조회 중…`);
+  await setRegionParcel(region);
+  window.LAYOUT=null; resetStats();
+  document.getElementById('sec-feas')?.classList.remove('collapsed');
+  renderFeasibility();
+  setStatus(`구역 <b>${REGIONS.length}개</b> 지정됨 · <b>배치 계산</b>을 누르면 전 구역 합산 · ‘경계 그리기’로 더 추가 가능`);
+});
 
-function clearBoundary(){ map.pm.disableDraw(); window.ROADGEOM=null; if(SEP_CIRCLE){ map.removeLayer(SEP_CIRCLE); SEP_CIRCLE=null; } if(boundaryLayer){ map.removeLayer(boundaryLayer); boundaryLayer=null; } }
+function clearBoundary(){ map.pm.disableDraw(); window.ROADGEOM=null; if(SEP_CIRCLE){ map.removeLayer(SEP_CIRCLE); SEP_CIRCLE=null; } REGIONS.forEach(r=>{ try{ map.removeLayer(r.layer); }catch(e){} }); REGIONS=[]; boundaryLayer=null; PARCEL=null; }
 
 // sliders
 function bindRange(id, key, fmt, isPitch){
@@ -1017,44 +1055,11 @@ function pnpoly(pt, ring){ // ray casting, ring: [{x,y}]
 
 // ---------- LAYOUT ENGINE ----------
 function runLayout(){
-  if(!boundaryLayer){ setStatus('⚠️ 먼저 <b>부지 경계</b>를 그리거나 샘플을 불러오세요.'); return; }
+  if(!REGIONS.length){ setStatus('⚠️ 먼저 <b>부지 경계</b>를 그리거나 지번을 검색하세요.'); return; }
   panelLayer.clearLayers();
   bufferLayer.clearLayers();
 
-  // 1) 외곽 경계 + 완충(안쪽 이격) 버퍼
-  const ll = ringLatLng(boundaryLayer);
-  const gjPoly = turf.polygon([[...ll.map(p=>[p.lng,p.lat]), [ll[0].lng,ll[0].lat]]]);
-  // 실사용 면적 = 부지 − 도로/하천/구거(제외지목). 패널도 그 위엔 안 앉힘(아래 마스킹).
-  const roadGeom = window.ROADGEOM || null;
-  const grossArea = turf.area(gjPoly);
-  let landArea = grossArea, roadArea = 0;
-  if(roadGeom){ try{ const d=turf.difference(gjPoly, roadGeom); if(d && d.geometry){ const ba=turf.area(d); if(ba>1){ roadArea=grossArea-ba; landArea=ba; } } }catch(e){} }
-  let work = gjPoly;
-  if(S.setback>0){
-    const buf = turf.buffer(gjPoly, -S.setback, {units:'meters'});
-    if(!buf || !buf.geometry || turf.area(buf)<1){ setStatus('⚠️ 완충거리가 너무 커서 배치 공간이 없습니다.'); resetStats(); return; }
-    work = buf;
-  }
-  let wcoords = work.geometry.coordinates;
-  if(work.geometry.type==='MultiPolygon'){
-    wcoords = work.geometry.coordinates.slice().sort((a,b)=>turf.area(turf.polygon(b))-turf.area(turf.polygon(a)))[0];
-  }
-  const wringLL = wcoords[0].map(c=>({lng:c[0],lat:c[1]}));   // 완충 경계 latlng
-
-  // 2) 로컬 미터 투영(중심 기준) + 회전 헬퍼
-  const cen = turf.centroid(gjPoly).geometry.coordinates;
-  const lng0=cen[0], lat0=cen[1];
-  const mLat=110540, mLng=111320*Math.cos(lat0*Math.PI/180);
-  const toL=(lat,lng)=>({x:(lng-lng0)*mLng, y:(lat-lat0)*mLat});
-  const toLatLng=(x,y)=>[lat0 + y/mLat, lng0 + x/mLng];
-  const rot=(x,y,a)=>({x:x*Math.cos(a)-y*Math.sin(a), y:x*Math.sin(a)+y*Math.cos(a)});
-  const ringLocal  = wringLL.map(p=>toL(p.lat,p.lng));   // 완충(inner) 로컬
-  const outerLocal = ll.map(p=>toL(p.lat,p.lng));        // 외곽 로컬
-  // 도로 마스킹용 로컬 링(제외지목 위엔 패널 배치 안 함)
-  let roadLocalRings=[];
-  if(roadGeom){ try{ const g=roadGeom.geometry; const polys=g.type==='Polygon'?[g.coordinates]:g.coordinates; roadLocalRings=polys.map(p=>p[0].map(c=>toL(c[1],c[0]))); }catch(e){} }
-
-  // 3) 모듈/테이블 footprint (방위 무관)
+  // 모듈/테이블 footprint (전 구역 공통)
   const mw=(+$('m-w').value)/1000, mh=(+$('m-h').value)/1000, watt=(+$('m-p').value);
   const portrait = $('m-o').value==='portrait';
   const wRow    = portrait ? mw : mh;
@@ -1068,43 +1073,73 @@ function runLayout(){
   else { const incR=Math.max(5,S.incidence)*Math.PI/180; pitch = depth + alongSlope*Math.sin(tilt)/Math.tan(incR); }
   const stepU = wRow + gapU;
 
-  // 4) 특정 방위(라디안)에서 격자 배치 → placed
-  function scanAz(azR, mask){
-    const wl = ringLocal.map(p=>rot(p.x,p.y,-azR));
-    const roadWl = (mask && roadLocalRings.length) ? roadLocalRings.map(r=>r.map(p=>rot(p.x,p.y,-azR))) : null;
+  // 방위(전 구역 공통): 자동=정남(0°) 고정 / 수동
+  let bestAz, bestDeg;
+  if(S.optimize){ bestDeg=0; bestAz=0; } else { bestDeg=S.az; bestAz=S.az*Math.PI/180; }
+
+  // 공유 로컬 미터 프레임 = 전 구역 꼭짓점 평균 중심
+  const ringsLL=[]; REGIONS.forEach(rg=>{ try{ ringsLL.push({rg, ll:ringLatLng(rg.layer)}); }catch(e){} });
+  if(!ringsLL.length){ setStatus('⚠️ 부지 경계를 찾을 수 없습니다.'); return; }
+  let sx=0,sy=0,n=0; ringsLL.forEach(o=>o.ll.forEach(p=>{sx+=p.lng; sy+=p.lat; n++;}));
+  const lng0=sx/n, lat0=sy/n;
+  const mLat=110540, mLng=111320*Math.cos(lat0*Math.PI/180);
+  const toL=(lat,lng)=>({x:(lng-lng0)*mLng, y:(lat-lat0)*mLat});
+  const toLatLng=(x,y)=>[lat0 + y/mLat, lng0 + x/mLng];
+  const rot=(x,y,a)=>({x:x*Math.cos(a)-y*Math.sin(a), y:x*Math.sin(a)+y*Math.cos(a)});
+  const toWork=(lat,lng)=>{ const l=toL(lat,lng); return rot(l.x,l.y,-bestAz); };   // 로컬→작업(회전)프레임
+
+  const placedAll=[];          // 전 구역 패널 [u,v] (공유·회전 프레임)
+  const regionsOut=[];         // 각 구역 3D 경계선 {wl, outerWl}(회전 프레임)
+  let grossArea=0, roadArea=0, landArea=0, skipped=0;
+  const navy = S.type==='roof' ? '#12406e' : '#123a6e';
+
+  ringsLL.forEach(({rg, ll})=>{
+    const gjPoly = turf.polygon([[...ll.map(p=>[p.lng,p.lat]), [ll[0].lng,ll[0].lat]]]);
+    const roadGeom = rg.roadGeom || null;
+    const ga = turf.area(gjPoly); grossArea += ga;
+    let la = ga, ra = 0;
+    if(roadGeom){ try{ const d=turf.difference(gjPoly, roadGeom); if(d && d.geometry){ const ba=turf.area(d); if(ba>1){ ra=ga-ba; la=ba; } } }catch(e){} }
+    landArea += la; roadArea += ra;
+
+    // 완충(안쪽 이격)
+    let work = gjPoly;
+    if(S.setback>0){
+      const buf = turf.buffer(gjPoly, -S.setback, {units:'meters'});
+      if(!buf || !buf.geometry || turf.area(buf)<1){ skipped++; return; }   // 이 구역은 공간 없음 → 스킵
+      work = buf;
+    }
+    let wcoords = work.geometry.coordinates;
+    if(work.geometry.type==='MultiPolygon'){ wcoords = work.geometry.coordinates.slice().sort((a,b)=>turf.area(turf.polygon(b))-turf.area(turf.polygon(a)))[0]; }
+    const wringLL = wcoords[0].map(c=>({lng:c[0],lat:c[1]}));
+
+    // 회전 프레임 링
+    const wl = wringLL.map(p=>toWork(p.lat,p.lng));
+    const outerWl = ll.map(p=>toWork(p.lat,p.lng));
+    let roadWl=null;
+    if(roadGeom){ try{ const g=roadGeom.geometry; const polys=g.type==='Polygon'?[g.coordinates]:g.coordinates; roadWl=polys.map(p=>p[0].map(c=>toWork(c[1],c[0]))); }catch(e){} }
+
+    // 격자 스캔(도로 마스킹) → 이 구역 패널
     const xs=wl.map(p=>p.x), ys=wl.map(p=>p.y);
     const minx=Math.min(...xs),maxx=Math.max(...xs),miny=Math.min(...ys),maxy=Math.max(...ys);
-    const placed=[]; let guard=0;
+    let guard=0;
     for(let v=miny; v+depth<=maxy; v+=pitch){
       for(let u=minx; u+wRow<=maxx; u+=stepU){
         if(++guard>3000000){ v=maxy+1; break; }
         const c=[{x:u,y:v},{x:u+wRow,y:v},{x:u+wRow,y:v+depth},{x:u,y:v+depth}];
         if(!c.every(p=>pnpoly(p,wl))) continue;
-        if(roadWl){ const ctr={x:u+wRow/2,y:v+depth/2}; if(roadWl.some(rr=> pnpoly(ctr,rr) || c.some(p=>pnpoly(p,rr)) )) continue; }  // 도로 위 제외
-        placed.push([u,v]);
+        if(roadWl){ const ctr={x:u+wRow/2,y:v+depth/2}; if(roadWl.some(rr=> pnpoly(ctr,rr) || c.some(p=>pnpoly(p,rr)) )) continue; }
+        placedAll.push([u,v]);
+        const corners=[[u,v],[u+wRow,v],[u+wRow,v+depth],[u,v+depth]].map(([x,y])=>{ const r=rot(x,y,bestAz); return toLatLng(r.x,r.y); });
+        L.polygon(corners,{renderer:canvasRenderer,color:'#8fb8ff',weight:.5,fillColor:navy,fillOpacity:.92}).addTo(panelLayer);
       }
     }
-    return {placed, wl};
-  }
-
-  // 5) 방위 결정: 자동 최적화(최다 배치) vs 수동
-  let bestAz, bestDeg;
-  if(S.optimize){ bestDeg=0; bestAz=0; }   // 자동=정남(0°) 고정: 패널당 발전량 최대·시공 표준(직원 도면과 일치). 방위 변경은 '수동 방위'로.
-  else { bestDeg=S.az; bestAz = S.az*Math.PI/180; }
-  const res = scanAz(bestAz, true), placed = res.placed, wl = res.wl;   // 최종 배치는 도로 마스킹 적용
-
-  // 6) 완충 경계선 그리기(주황 점선 — 패널은 이 안쪽에만)
-  bufferLayer.addLayer(L.polygon(wringLL.map(p=>[p.lat,p.lng]),{color:'#ff8a3d',weight:1.5,dashArray:'6,5',fill:false}));
-
-  // 7) 패널 그리기
-  const navy = S.type==='roof' ? '#12406e' : '#123a6e';
-  placed.forEach(([u,v])=>{
-    const corners=[[u,v],[u+wRow,v],[u+wRow,v+depth],[u,v+depth]].map(([x,y])=>{ const r=rot(x,y,bestAz); return toLatLng(r.x,r.y); });
-    L.polygon(corners,{renderer:canvasRenderer,color:'#8fb8ff',weight:.5,fillColor:navy,fillOpacity:.92}).addTo(panelLayer);
+    // 완충 경계선(주황 점선)
+    bufferLayer.addLayer(L.polygon(wringLL.map(p=>[p.lat,p.lng]),{color:'#ff8a3d',weight:1.5,dashArray:'6,5',fill:false}));
+    regionsOut.push({ wl, outerWl });
   });
 
-  // 8) 통계
-  const tables=placed.length, modules=tables*S.stack, kw=modules*watt/1000;
+  // 통계(전 구역 합계)
+  const tables=placedAll.length, modules=tables*S.stack, kw=modules*watt/1000;
   const occ=tables*wRow*depth, ratio=landArea>0?occ/landArea*100:0, yieldK=1300;
   $('r-count').textContent=modules.toLocaleString();
   $('r-kw').textContent=Math.round(kw).toLocaleString();
@@ -1113,17 +1148,20 @@ function runLayout(){
   $('r-gen').textContent=(kw*yieldK/1000).toFixed(0);
   $('r-tables').textContent=tables.toLocaleString();
 
-  // 9) 3D용 저장(완충 wl + 외곽 outerWl, work프레임)
+  // 3D용 저장(다중 구역: regions[], + 첫 구역 wl/outerWl 폴백)
   const base3d = S.type==='carport'?2.6:(S.type==='roof'?7.0:0.6);
-  const outerWl = outerLocal.map(p=>rot(p.x,p.y,-bestAz));
-  window.LAYOUT = { placed, wRow, alongSlope, depth, tiltR:tilt, azRad:bestAz, base:base3d, lat0, lng0, mLat, mLng, wl, outerWl, type:S.type, grossArea, roadArea, landArea };
+  window.LAYOUT = { placed:placedAll, regions:regionsOut, wRow, alongSlope, depth, tiltR:tilt, azRad:bestAz, base:base3d, lat0, lng0, mLat, mLng,
+                    wl:(regionsOut[0]?regionsOut[0].wl:[]), outerWl:(regionsOut[0]?regionsOut[0].outerWl:[]),
+                    type:S.type, grossArea, roadArea, landArea, regionCount:regionsOut.length };
   if (document.getElementById('three').style.display !== 'none') rebuild3D();
   renderFeasibility();
 
   const azTxt = bestDeg===0?'정남':(bestDeg<0?`남동 ${-bestDeg}°`:`남서 ${bestDeg}°`);
   const roadTxt = roadArea>1 ? ` · <span style="color:#ffb86b">도로 등 ${Math.round(roadArea).toLocaleString()}㎡ 제외</span>` : '';
-  setStatus(`✅ 배치 완료 — <b>${modules.toLocaleString()}장</b> · <b>${Math.round(kw).toLocaleString()} kWp</b> · 이용률 ${ratio.toFixed(0)}%${roadTxt} · 방위 ${S.optimize?'자동 ':''}${azTxt}`);
-  showResults(true);   // 배치되면 우측 결과 패널 표시
+  const regTxt = regionsOut.length>1 ? `<b>${regionsOut.length}개 구역</b> 합계 · ` : '';
+  const skipTxt = skipped>0 ? ` <span style="color:#ffb86b">(구역 ${skipped}개는 완충거리 초과로 제외)</span>` : '';
+  setStatus(`✅ 배치 완료 — ${regTxt}<b>${modules.toLocaleString()}장</b> · <b>${Math.round(kw).toLocaleString()} kWp</b> · 이용률 ${ratio.toFixed(0)}%${roadTxt} · 방위 ${S.optimize?'자동 ':''}${azTxt}${skipTxt}`);
+  showResults(true);
 }
 
 function resetStats(){ ['r-count','r-kw','r-land','r-ratio','r-gen','r-tables'].forEach(id=>$(id).textContent='0'); }
@@ -1543,14 +1581,15 @@ function rebuild3D(){
       legs.instanceMatrix.needsUpdate=true; three.arrayGroup.add(legs);
     }
   }
-  // 외곽 경계(노랑) + 완충 경계(주황)
+  // 외곽 경계(노랑) + 완충 경계(주황) — 전 구역
   const mkLine=(ring,color,y)=>{ if(!ring||!ring.length)return; const pts=ring.map(p=>new THREE.Vector3(p.x,y,-p.y)); pts.push(pts[0].clone()); three.arrayGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({color}))); };
-  mkLine(L.outerWl, 0xffd54a, 0.30);
-  mkLine(L.wl, 0xff8a3d, 0.28);
+  const regs = (L.regions&&L.regions.length)?L.regions:[{wl:L.wl,outerWl:L.outerWl}];
+  regs.forEach(r=>{ mkLine(r.outerWl, 0xffd54a, 0.30); mkLine(r.wl, 0xff8a3d, 0.28); });
 
-  // 위성 바닥
-  const xs=L.wl.map(p=>p.x), ys=L.wl.map(p=>p.y);
-  const span=Math.max(Math.max(...xs)-Math.min(...xs), Math.max(...ys)-Math.min(...ys))*1.8 + 24;
+  // 위성 바닥 span — 전 구역 모든 점 포함
+  let allx=[], ally=[]; regs.forEach(r=>{ (r.wl||[]).forEach(p=>{ allx.push(p.x); ally.push(p.y); }); });
+  if(!allx.length){ allx=[0]; ally=[0]; }
+  const span=Math.max(Math.max(...allx)-Math.min(...allx), Math.max(...ally)-Math.min(...ally))*1.8 + 24;
   if(three.ground){ three.scene.remove(three.ground); three.ground.geometry.dispose(); }
   const gmat=new THREE.MeshStandardMaterial({color:0x556b2f, roughness:1});
   three.ground=new THREE.Mesh(new THREE.PlaneGeometry(span,span), gmat);
