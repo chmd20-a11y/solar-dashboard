@@ -238,8 +238,11 @@
     <div class="stat"><div class="k">구조물(테이블) 수</div><div class="v" style="font-size:18px"><span id="r-tables">0</span><small> 개</small></div></div>
 
     <div class="btnrow" style="margin-top:6px">
-      <button class="btn" id="btn-png">🖼️ 이미지 저장</button>
+      <button class="btn" id="btn-png">🖼️ 2D 이미지 저장</button>
       <button class="btn" id="btn-toggle">패널 숨기기</button>
+    </div>
+    <div class="btnrow" style="margin-top:6px">
+      <button class="btn" id="btn-png3d">🧊 3D 화면 저장</button>
     </div>
 
     <div class="disc">
@@ -730,6 +733,7 @@ document.getElementById('menu-fab')?.addEventListener('click', ()=>document.getE
 document.getElementById('close-left')?.addEventListener('click', ()=>document.getElementById('left').classList.remove('m-open'));
 $('btn-toggle').onclick = ()=>{ const on=map.hasLayer(panelLayer); if(on){map.removeLayer(panelLayer);$('btn-toggle').textContent='패널 보이기';} else {map.addLayer(panelLayer);$('btn-toggle').textContent='패널 숨기기';} };
 $('btn-png').onclick = savePng;
+$('btn-png3d').onclick = save3D;
 
 // ---------- geometry helpers ----------
 function ringLatLng(layer){
@@ -871,8 +875,16 @@ function savePng(){
   leafletImage(map, function(err, canvas){
     if(err){ setStatus('⚠️ 이미지 저장 실패: '+err); return; }
     const a=document.createElement('a'); a.download='solar_layout.png'; a.href=canvas.toDataURL(); a.click();
-    setStatus('🖼️ 이미지를 저장했습니다.');
+    setStatus('🖼️ 2D 이미지를 저장했습니다.');
   });
+}
+function save3D(){
+  if(!three || !view3D){ setStatus('⚠️ 먼저 상단 <b>🧊 3D 뷰</b>를 열어주세요.'); return; }
+  try{
+    three.renderer.render(three.scene, three.camera);   // 현재 프레임 렌더 후 캡처
+    const a=document.createElement('a'); a.download='solar_3d.png'; a.href=three.renderer.domElement.toDataURL('image/png'); a.click();
+    setStatus('🧊 3D 화면을 저장했습니다.');
+  }catch(e){ setStatus('⚠️ 3D 저장 실패: '+((e&&e.message)||e)); }
 }
 
 /* ================= 3D 뷰 (실제 배치를 입체로) ================= */
@@ -882,7 +894,7 @@ function initThree(){
   const el=document.getElementById('three');
   const scene=new THREE.Scene(); scene.background=new THREE.Color(0x9fc0e0);
   const camera=new THREE.PerspectiveCamera(48, el.clientWidth/(el.clientHeight||1), 0.5, 8000);
-  const renderer=new THREE.WebGLRenderer({antialias:true});
+  const renderer=new THREE.WebGLRenderer({antialias:true, preserveDrawingBuffer:true});   // 3D 화면 저장(toDataURL) 위해 버퍼 보존
   renderer.setPixelRatio(Math.min(devicePixelRatio,2));
   renderer.setSize(el.clientWidth, el.clientHeight);
   renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
