@@ -993,7 +993,8 @@ async function buildTerrain(L){
     if(!j || j.status!=='OK' || !j.results || j.results.length!==n*n) return null;
     e=j.results.map(r=>r.elevation);
     if(e.some(v=>v==null)) return null;
-    ce=e[Math.floor(n/2)*n+Math.floor(n/2)];
+    const c0=Math.floor((n-1)/2), c1=Math.ceil((n-1)/2);
+    ce=Math.max(e[c0*n+c0],e[c0*n+c1],e[c1*n+c0],e[c1*n+c1]);   // 부지 중앙부 최고표고 기준 → 패널이 지형에 안 묻힘(경사지 대응)
   }catch(err){ return null; }
   if(!three) return null;
   const geo=new THREE.PlaneGeometry(2*R,2*R,n-1,n-1);
