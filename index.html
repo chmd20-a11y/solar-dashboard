@@ -157,7 +157,7 @@
       <div class="fld"><label>음영각도 (입사각)</label><div class="rng"><input type="range" id="o-inc" min="10" max="45" value="25"><b id="v-inc">25°</b></div></div>
       <div class="fld"><label>완충 경계(안쪽 이격)</label><div class="rng"><input type="range" id="o-set" min="0" max="100" value="20"><b id="v-set">2.0 m</b></div></div>
       <div class="fld"><label>패널 최대 배치</label>
-        <div class="seg" id="seg-opt"><button data-o="1" class="on">🎯 자동(최다)</button><button data-o="0">수동 방위</button></div>
+        <div class="seg" id="seg-opt"><button data-o="1" class="on">🎯 자동(정남)</button><button data-o="0">수동 방위</button></div>
       </div>
       <div class="fld" id="az-manual" style="display:none"><label>배열 방위 (정남 기준 회전)</label><div class="rng"><input type="range" id="o-az" min="-90" max="90" value="0"><b id="v-az">정남</b></div></div>
       <div class="fld"><label>열 간격 (그림자 방지)</label>
@@ -751,14 +751,9 @@ function runLayout(){
   }
 
   // 5) 방위 결정: 자동 최적화(최다 배치) vs 수동
-  let bestAz, bestDeg=0;
-  if(S.optimize){
-    // 남향 ±30° 안에서 최다 배치 탐색(발전량 손실 최소화하며 부지에 정렬)
-    let best=-1;
-    for(let d=-30; d<=30; d+=10){ const n=scanAz(d*Math.PI/180,false).placed.length; if(n>best){best=n;bestDeg=d;} }
-    for(let d=Math.max(-30,bestDeg-8); d<=Math.min(30,bestDeg+8); d+=2){ const n=scanAz(d*Math.PI/180,false).placed.length; if(n>best){best=n;bestDeg=d;} }
-    bestAz = bestDeg*Math.PI/180;
-  } else { bestDeg=S.az; bestAz = S.az*Math.PI/180; }
+  let bestAz, bestDeg;
+  if(S.optimize){ bestDeg=0; bestAz=0; }   // 자동=정남(0°) 고정: 패널당 발전량 최대·시공 표준(직원 도면과 일치). 방위 변경은 '수동 방위'로.
+  else { bestDeg=S.az; bestAz = S.az*Math.PI/180; }
   const res = scanAz(bestAz, true), placed = res.placed, wl = res.wl;   // 최종 배치는 도로 마스킹 적용
 
   // 6) 완충 경계선 그리기(주황 점선 — 패널은 이 안쪽에만)
