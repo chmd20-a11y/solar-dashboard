@@ -385,7 +385,6 @@
   #q-photo{width:100%;display:block}
   #q-photo-empty{color:var(--muted);font-size:12px;text-align:center;padding:26px 14px;line-height:1.7}
   #q-photo-note{position:absolute;left:8px;bottom:8px;background:rgba(120,230,90,.92);color:#0a2000;font-size:11px;font-weight:800;padding:5px 9px;border-radius:6px;line-height:1.4;max-width:72%}
-  #q-photo-n{position:absolute;right:9px;top:7px;color:#ff5a5a;font-weight:900;font-size:13px;text-shadow:0 1px 3px rgba(0,0,0,.7);display:none}
 </style>
 <div id="quote-overlay">
   <div id="quote-card">
@@ -502,7 +501,6 @@
           <div id="q-photo-empty">🧊 상단 <b>🧊 3D 뷰</b>에서 각도를 맞춘 뒤<br><b>⚙️ 영업자 설정 → 3D 화면 캡처</b>로 현장 배치도를 담으세요</div>
           <img id="q-photo" style="display:none" alt="3D 현장 배치도">
           <div id="q-photo-note" style="display:none"></div>
-          <div id="q-photo-n">N ▲</div>
         </div>
       </div>
     </div>
@@ -1420,23 +1418,29 @@ function captureQuote3D(){
   if(typeof three==='undefined' || !three){ setStatus('⚠️ 먼저 상단 <b>🧊 3D 뷰</b>를 열어 각도를 맞춘 뒤 캡처해주세요.'); return false; }
   try{
     three.renderer.render(three.scene, three.camera);
-    _quotePhoto = three.renderer.domElement.toDataURL('image/png');
+    const src=three.renderer.domElement, sw=src.width, sh=src.height;
+    // 부지(화면 중앙)를 담은 가로형(1.6:1)으로 중앙 크롭 → 엑셀 배치도처럼
+    let cw=sw, ch=Math.round(sw/1.6); if(ch>sh){ ch=sh; cw=Math.round(sh*1.6); }
+    const sx=Math.round((sw-cw)/2), sy=Math.round((sh-ch)/2);
+    const tmp=document.createElement('canvas'); tmp.width=cw; tmp.height=ch;
+    tmp.getContext('2d').drawImage(src, sx, sy, cw, ch, 0, 0, cw, ch);
+    _quotePhoto = tmp.toDataURL('image/png');
     applyQuotePhoto();
     setStatus('🧊 3D 화면을 견적서에 담았습니다.');
     return true;
   }catch(e){ setStatus('⚠️ 3D 캡처 실패: '+((e&&e.message)||e)); return false; }
 }
 function applyQuotePhoto(){
-  const img=$('q-photo'), empty=$('q-photo-empty'), note=$('q-photo-note'), narrow=$('q-photo-n');
+  const img=$('q-photo'), empty=$('q-photo-empty'), note=$('q-photo-note');
   if(!img) return;
   if(_quotePhoto){
-    img.src=_quotePhoto; img.style.display='block'; empty.style.display='none'; note.style.display='block'; narrow.style.display='block';
+    img.src=_quotePhoto; img.style.display='block'; empty.style.display='none'; note.style.display='block';
     const W=+$('q-w').value||0, qty=+$('q-qty').value||0, kw=Math.round(qty*W/1000*100)/100;
     const tilt=(typeof S!=='undefined'?S.tilt:15), isNoji=(typeof S!=='undefined' && S.type==='ground');
     const addr=$('q-addr').value||'';
     note.innerHTML=`${addr?addr+'<br>':''}모듈각 ${tilt}° · ${isNoji?'노지':'루프탑'}형<br>${qty.toLocaleString()}EA × ${W}W = ${kw.toLocaleString()}kW`;
   } else {
-    img.style.display='none'; empty.style.display='flex'; note.style.display='none'; narrow.style.display='none';
+    img.style.display='none'; empty.style.display='flex'; note.style.display='none';
   }
 }
 function quotePull(){
