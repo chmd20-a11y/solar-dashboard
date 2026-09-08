@@ -196,6 +196,8 @@
       <div class="fld" id="pitch-manual" style="display:none"><label>수동 열 간격</label><div class="rng"><input type="range" id="o-pitch" min="10" max="120" value="50"><b id="v-pitch">5.0 m</b></div></div>
       <button class="btn primary" id="btn-run">⚡ 배치 계산</button>
     </div>
+
+    <button class="btn" id="btn-cost" style="border-color:var(--accent);color:var(--accent);font-weight:700;margin-bottom:12px">💰 원가·마진 계산 <span style="font-weight:500;font-size:11px;color:var(--muted)">· 영업자 전용</span></button>
   </div>
 
   <!-- ================= CENTER: MAP ================= -->
@@ -249,6 +251,92 @@
       ✅ 정확 반영: 부지 경계·입력 모듈규격 기반 수량/용량·이격·열간격·방위<br>
       ⚠️ 미반영: 지형 경사, 나무·건물 음영, 구조물 상세, 전기(스트링) 설계, 지자체별 이격규정 차이<br>
       → 실제 인허가·시공 설계와 다를 수 있는 <b>개략 배치</b>입니다.
+    </div>
+  </div>
+</div>
+
+<!-- ================= 원가·마진 (영업자 전용) ================= -->
+<style>
+  #cost-overlay{position:fixed;inset:0;z-index:3000;display:none;align-items:flex-start;justify-content:center;background:rgba(4,8,13,.74);backdrop-filter:blur(3px);overflow:auto;padding:26px 14px}
+  #cost-overlay.open{display:flex}
+  #cost-card{width:100%;max-width:600px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 18px 22px;box-shadow:0 18px 60px rgba(0,0,0,.6);margin:auto}
+  #cost-card h2{font-size:16px;margin:0 0 2px;display:flex;align-items:center;gap:8px}
+  #cost-card .csub{font-size:11px;color:#ffb45a;margin-bottom:14px}
+  .cost-close{margin-left:auto;background:transparent;border:0;color:var(--muted);font-size:20px;cursor:pointer;line-height:1}
+  .cost-in{background:#0f1620;border:1px solid var(--line);border-radius:12px;padding:12px 12px 4px;margin-bottom:14px}
+  .cost-table{width:100%;border-collapse:collapse;font-size:13px}
+  .cost-table td{padding:7px 4px;border-bottom:1px solid rgba(255,255,255,.06)}
+  .cost-table td.lab{color:#cdd8e4}
+  .cost-table td.val{text-align:right;font-variant-numeric:tabular-nums;color:#eef2f7;font-weight:600;white-space:nowrap}
+  .cost-table tr.em td{background:rgba(78,161,255,.10);font-weight:800}
+  .cost-table tr.em td.lab{color:#cfe0ff}
+  .cost-table tr.em2 td{background:rgba(55,214,122,.12);font-weight:800}
+  .cost-table tr.em2 td.lab{color:#bff2d3}
+  .cost-table tr.rate td{border-top:2px dashed #ff6b6b;border-bottom:2px dashed #ff6b6b;background:rgba(255,107,107,.09);font-weight:900;font-size:15px;color:#ffd7d7}
+  .cost-table tr.sub td.lab{color:var(--muted);font-size:12px;padding-left:12px}
+  .cost-note{font-size:10.5px;color:#7f8ea0;line-height:1.5;margin-top:10px;border-top:1px dashed var(--line);padding-top:8px}
+</style>
+<div id="cost-overlay">
+  <div id="cost-card">
+    <h2>💰 원가·마진 계산서 <button class="cost-close" id="cost-close" title="닫기">✕</button></h2>
+    <div class="csub">⚠️ 영업자 전용 — 고객 화면 노출 주의</div>
+
+    <div class="cost-in">
+      <div class="fld"><label>부지 주소</label><input type="text" id="c-addr" placeholder="지번 검색 시 자동"></div>
+      <div class="grid2">
+        <div class="fld"><label>모듈 출력 (W)</label><input type="number" id="c-w" value="645"></div>
+        <div class="fld"><label>모듈 수량 (매) · 대시보드 자동</label><input type="number" id="c-qty" value="0"></div>
+      </div>
+      <div class="grid2">
+        <div class="fld"><label>설치용량 (kW)</label><input type="text" id="c-kw" value="0" readonly style="color:var(--accent2)"></div>
+        <div class="fld"><label>kW당 설치단가 (원) · 직접입력</label><input type="number" id="c-unit" value="950000"></div>
+      </div>
+      <div class="grid2">
+        <div class="fld"><label>모듈 원가단가</label>
+          <select id="c-modsel">
+            <option value="310">현대 645W · 310원/W</option>
+            <option value="320">한화 645W · 320원/W</option>
+            <option value="225">아이코 655W · 225원/W</option>
+            <option value="230">론지 655W · 230원/W</option>
+            <option value="custom">직접입력</option>
+          </select>
+        </div>
+        <div class="fld"><label>원가단가 (원/W)</label><input type="number" id="c-modwon" value="310"></div>
+      </div>
+      <div class="grid2">
+        <div class="fld"><label>설치형태</label>
+          <div class="seg" id="c-form"><button data-f="노지" class="on">노지</button><button data-f="건물">건물</button></div>
+        </div>
+        <div class="fld"><label>발전소(현장) 수</label><input type="number" id="c-plants" value="1" min="1"></div>
+      </div>
+      <div class="fld" id="c-bldg-row" style="display:none"><label>건물 개수 (사다리비용)</label><input type="number" id="c-bldgs" value="1" min="0"></div>
+    </div>
+
+    <table class="cost-table">
+      <tr class="em"><td class="lab">시공금액 (VAT별도)</td><td class="val" id="cg-amt">0</td></tr>
+      <tr class="sub"><td class="lab">구조검토</td><td class="val" id="cg-review">0</td></tr>
+      <tr class="sub"><td class="lab">모듈</td><td class="val" id="cg-module">0</td></tr>
+      <tr class="sub"><td class="lab">인버터</td><td class="val" id="cg-inv">0</td></tr>
+      <tr class="sub"><td class="lab">접속반 / 계량기함</td><td class="val" id="cg-meter">0</td></tr>
+      <tr class="sub"><td class="lab">구조물 제작</td><td class="val" id="cg-make">0</td></tr>
+      <tr class="sub"><td class="lab">구조물 공사</td><td class="val" id="cg-build">0</td></tr>
+      <tr class="sub"><td class="lab">전기공사</td><td class="val" id="cg-elec">0</td></tr>
+      <tr class="sub"><td class="lab">설계감리</td><td class="val" id="cg-design">0</td></tr>
+      <tr class="sub"><td class="lab">사다리비용-60</td><td class="val" id="cg-ladder">0</td></tr>
+      <tr class="sub"><td class="lab">기술지도 수수료</td><td class="val" id="cg-guide">0</td></tr>
+      <tr class="sub"><td class="lab">사용전검사 수수료</td><td class="val" id="cg-inspect">0</td></tr>
+      <tr class="sub"><td class="lab">안전진단</td><td class="val" id="cg-safety">0</td></tr>
+      <tr class="em"><td class="lab">시 공 비 (VAT별도)</td><td class="val" id="cg-cost">0</td></tr>
+      <tr class="em2"><td class="lab">실행이익 (VAT별도)</td><td class="val" id="cg-profit">0</td></tr>
+      <tr><td class="lab">kW당 시공단가</td><td class="val" id="cg-perkw-cost">0</td></tr>
+      <tr><td class="lab">kW당 실행이익</td><td class="val" id="cg-perkw-profit">0</td></tr>
+      <tr class="rate"><td class="lab">실행이익률</td><td class="val" id="cg-rate">0%</td></tr>
+    </table>
+
+    <div style="margin-top:14px"><button class="btn" id="c-reload">🔄 대시보드 배치값 다시 불러오기</button></div>
+    <div class="cost-note">
+      국산·중국 견적서 원가 로직 반영(인버터 자동선정·계량기함/구조물/전기 용량구간 단가·설계감리·검사·기술지도·안전진단).<br>
+      ※ 모듈 원가단가·kW당 단가는 시세에 따라 조정하세요. VAT 별도 기준.
     </div>
   </div>
 </div>
@@ -917,6 +1005,114 @@ function save3D(){
     setStatus('🧊 3D 화면을 저장했습니다.');
   }catch(e){ setStatus('⚠️ 3D 저장 실패: '+((e&&e.message)||e)); }
 }
+
+/* ================= 원가·마진 (영업자 전용) — 견적서 엑셀 로직 재현 ================= */
+// 인버터 자동선정: 그로와트(125/50/36) vs 화훼이(110/50) 중 저가 조합
+function invCost(kw){
+  const K2=Math.floor(kw/125), L2=kw-125*K2;
+  const gLow = (L2>50?1:0), n125=K2+gLow, n50=(L2>50?0:(L2>36?1:0)), n36=(L2>36?0:1);
+  const grow = n125*5600000 + n50*3800000 + n36*2500000;
+  const K3=Math.floor(kw/110), L3=kw-110*K3;
+  const m110=K3+(L3>50?1:0), m50=(L3>50?0:1);
+  const hua = m110*5100000 + m50*3200000;
+  return Math.min(grow, hua);
+}
+// 계량기함: 용량 구간별
+function meterCost(kw){
+  if(kw<=100) return 1200000;
+  if(kw<=200) return 1550000;
+  if(kw<=300) return 3100000;
+  if(kw<=500) return 11500000;
+  if(kw<=600) return 63500000;
+  if(kw<=700) return 64000000;
+  if(kw<=800) return 64500000;
+  if(kw<=900) return 65000000;
+  return 65500000;
+}
+// 구조물 제작/공사·전기 단가(만원/kW) — 용량구간 × 설치형태
+function structRates(kw, form){
+  const b = kw>700?1000 : kw>500?700 : kw>300?500 : kw>100?300 : kw>50?100 : kw>30?50 : 30;
+  const noji = {30:[15,15,17],50:[15,15,17],100:[14,14,16],300:[13,13,15],500:[12,12,14],700:[11,11,13],1000:[10,10,12]};
+  const bldg = {30:[14,14,18],50:[13,13,17],100:[12,12,16],300:[11,11,15],500:[10,10,14],700:[10,10,14],1000:[10,10,14]};
+  const r = (form==='노지'?noji:bldg)[b];
+  return {make:r[0], build:r[1], elec:r[2]};
+}
+// 사용전검사 수수료: 용량 구간별
+function inspectCost(kw){
+  if(kw<=20) return 81300+kw*292;
+  if(kw<=300) return 138000+kw*611;
+  if(kw<=500) return 239600+kw*426;
+  return 351900+kw*349;
+}
+function won(n){ return Math.round(n).toLocaleString(); }
+function costCalc(){
+  const W=+$('c-w').value||0, qty=+$('c-qty').value||0, unit=+$('c-unit').value||0, modwon=+$('c-modwon').value||0;
+  const form=(document.querySelector('#c-form button.on')||{}).dataset?.f || '노지';
+  const plants=+$('c-plants').value||0, bldgs=+$('c-bldgs').value||0;
+  const kw = qty*W/1000;
+  const amt = unit*kw;                                   // 시공금액
+  const review = 500000*plants;                          // 구조검토
+  const module = W*qty*modwon;                           // 모듈
+  const inv = kw>0 ? invCost(kw) : 0;                     // 인버터
+  const meter = kw>0 ? meterCost(kw) : 0;                // 계량기함
+  const rt = structRates(kw, form);
+  const make = kw*rt.make*10000, build = kw*rt.build*10000, elec = kw*rt.elec*10000;
+  const design = kw>0 ? Math.ceil(kw/100)*700000+100000 : 0;  // 설계감리
+  const ladder = form==='노지' ? 0 : bldgs*600000;       // 사다리비용-60
+  const guide = (amt>200000000?68:(amt>100000000?46:0))*10000*plants; // 기술지도
+  const inspect = kw>0 ? inspectCost(kw) : 0;            // 사용전검사
+  const safety = kw>=500?2500000:(kw>=300?1300000:0);   // 안전진단
+  const cost = review+module+inv+meter+make+build+elec+design+ladder+guide+inspect+safety;
+  const profit = amt-cost;
+  const perKwCost = kw?cost/kw:0, perKwProfit = kw?profit/kw:0, rate = amt?profit/amt*100:0;
+  $('c-kw').value = (Math.round(kw*1000)/1000).toLocaleString();
+  $('cg-amt').textContent = won(amt);
+  $('cg-review').textContent = won(review);
+  $('cg-module').textContent = won(module);
+  $('cg-inv').textContent = won(inv);
+  $('cg-meter').textContent = won(meter);
+  $('cg-make').textContent = won(make);
+  $('cg-build').textContent = won(build);
+  $('cg-elec').textContent = won(elec);
+  $('cg-design').textContent = won(design);
+  $('cg-ladder').textContent = won(ladder);
+  $('cg-guide').textContent = won(guide);
+  $('cg-inspect').textContent = won(inspect);
+  $('cg-safety').textContent = won(safety);
+  $('cg-cost').textContent = won(cost);
+  $('cg-profit').textContent = won(profit);
+  $('cg-perkw-cost').textContent = won(perKwCost);
+  $('cg-perkw-profit').textContent = won(perKwProfit);
+  $('cg-rate').textContent = rate.toFixed(1)+' %';
+}
+function costPull(){   // 대시보드 배치값 → 원가 입력 채우기
+  const cnt=parseInt(($('r-count').textContent||'0').replace(/,/g,''))||0;
+  if(cnt>0) $('c-qty').value=cnt;
+  const w=+$('m-p').value; if(w>0) $('c-w').value=w;
+  const isNoji = (typeof S!=='undefined' && S.type==='ground');
+  document.querySelectorAll('#c-form button').forEach(b=>b.classList.toggle('on', b.dataset.f===(isNoji?'노지':'건물')));
+  $('c-bldg-row').style.display = isNoji ? 'none' : 'block';
+  const first = (typeof selected!=='undefined' && selected.length) ? (selected.find(s=>!s.road)||selected[0]) : null;
+  const addr = first ? (first.addr||first.jibun||'') : '';
+  if(addr && !$('c-addr').value) $('c-addr').value = addr;
+}
+function costOpen(on){
+  const ov=$('cost-overlay');
+  if(on){ costPull(); costCalc(); ov.classList.add('open'); }
+  else ov.classList.remove('open');
+}
+$('btn-cost').onclick = ()=> costOpen(!$('cost-overlay').classList.contains('open'));
+$('cost-close').onclick = ()=> costOpen(false);
+$('cost-overlay').addEventListener('click', e=>{ if(e.target===$('cost-overlay')) costOpen(false); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape' && $('cost-overlay').classList.contains('open')) costOpen(false); });
+['c-w','c-qty','c-unit','c-modwon','c-plants','c-bldgs'].forEach(id=> $(id).addEventListener('input', costCalc));
+$('c-modsel').addEventListener('change', e=>{ if(e.target.value!=='custom'){ $('c-modwon').value=e.target.value; } costCalc(); });
+document.querySelectorAll('#c-form button').forEach(b=> b.addEventListener('click', ()=>{
+  document.querySelectorAll('#c-form button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+  $('c-bldg-row').style.display = b.dataset.f==='건물' ? 'block' : 'none';
+  costCalc();
+}));
+$('c-reload').onclick = ()=>{ costPull(); costCalc(); };
 
 /* ================= 3D 뷰 (실제 배치를 입체로) ================= */
 let three=null, view3D=false, sunT=13;
