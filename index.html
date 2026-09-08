@@ -1417,6 +1417,8 @@ let _quotePhoto=null;
 // 3D 캔버스 → 부지(화면중앙) 담은 가로형(1.6:1) 중앙 크롭 dataURL
 function grab3D(){
   if(typeof three==='undefined' || !three) return null;
+  try{ three.controls.update(); }catch(e){}       // 카메라 방향을 행렬에 반영(캡처 시 부지 정조준 보장)
+  three.camera.updateMatrixWorld(true);
   three.renderer.render(three.scene, three.camera);
   const src=three.renderer.domElement, sw=src.width, sh=src.height;
   let cw=sw, ch=Math.round(sw/1.6); if(ch>sh){ ch=sh; cw=Math.round(sh*1.6); }
@@ -1431,7 +1433,7 @@ function captureQuote3D(){
   catch(e){ setStatus('⚠️ 3D 캡처 실패: '+((e&&e.message)||e)); return false; }
 }
 // 3D 지형·건물 로딩 완료 시점에 조용히 배치도 미리 캡처(견적서 열기 전 준비)
-function quoteAutoCapture(){ requestAnimationFrame(()=>{ try{ const u=grab3D(); if(u){ _quotePhoto=u; applyQuotePhoto(); } }catch(e){} }); }
+function quoteAutoCapture(){ try{ const u=grab3D(); if(u){ _quotePhoto=u; applyQuotePhoto(); } }catch(e){} }
 function applyQuotePhoto(){
   const img=$('q-photo'), empty=$('q-photo-empty'), note=$('q-photo-note');
   if(!img) return;
@@ -1561,7 +1563,7 @@ function rebuild3D(){
   three.camera.position.set(span*0.30, span*0.48, span*0.62);
   three.controls.minDistance=8; three.controls.maxDistance=2000;   // 주변 지형까지 줌아웃 가능
   updateSun3D();
-  buildTerrain(L).then(()=>buildBuildings(L)).then(()=>{ if(view3D && typeof quoteAutoCapture==='function') quoteAutoCapture(); });   // 외부 지형·건물 3D 음영(비동기 로드 후 평면 바닥 교체) + 로딩완료 후 견적서 배치도 미리 캡처
+  buildTerrain(L).then(()=>buildBuildings(L)).catch(()=>{}).then(()=>{ if(view3D && typeof quoteAutoCapture==='function') setTimeout(quoteAutoCapture,150); });   // 외부 지형·건물 3D 음영(비동기 로드 후 평면 바닥 교체) + 로딩완료 후 견적서 배치도 미리 캡처
 }
 
 function updateSun3D(){
