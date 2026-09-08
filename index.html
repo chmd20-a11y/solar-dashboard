@@ -994,12 +994,18 @@ async function buildTerrain(L){
     e=j.results.map(r=>r.elevation);
     if(e.some(v=>v==null)) return null;
     const c0=Math.floor((n-1)/2), c1=Math.ceil((n-1)/2);
-    ce=Math.max(e[c0*n+c0],e[c0*n+c1],e[c1*n+c0],e[c1*n+c1]);   // 부지 중앙부 최고표고 기준 → 패널이 지형에 안 묻힘(경사지 대응)
+    ce=(e[c0*n+c0]+e[c0*n+c1]+e[c1*n+c0]+e[c1*n+c1])/4;   // 부지 중심 지표면 표고(=패널 기준면) → 공중부양 방지
   }catch(err){ return null; }
   if(!three) return null;
   const geo=new THREE.PlaneGeometry(2*R,2*R,n-1,n-1);
   const pa=geo.attributes.position;
-  for(let k=0;k<n*n;k++) pa.setZ(k, e[k]-ce);   // 평면 z=표고(중심기준) → 회전 후 높이
+  const Rflat=130, Rblend=340;   // 부지 주변(정지면)은 평탄화 → 패널 안착, 그 밖은 실제 지형(그림자용)
+  for(let k=0;k<n*n;k++){
+    const iy=Math.floor(k/n), ix=k%n, lx=-R+2*R*ix/(n-1), ly=-R+2*R*iy/(n-1), dist=Math.hypot(lx,ly);
+    let z=e[k]-ce;
+    if(dist<Rflat) z=0; else if(dist<Rblend) z*=(dist-Rflat)/(Rblend-Rflat);
+    pa.setZ(k, z);
+  }
   pa.needsUpdate=true; geo.computeVertexNormals();
   const mat=new THREE.MeshStandardMaterial({color:0x6b7a4a, roughness:1});
   const mesh=new THREE.Mesh(geo, mat); mesh.rotation.x=-Math.PI/2; mesh.receiveShadow=true; mesh.castShadow=true;
@@ -1028,7 +1034,9 @@ async function buildBuildings(L){
     const gy=(north+g.R)/(2*g.R)*(g.n-1), gx=(east+g.R)/(2*g.R)*(g.n-1);
     if(gx<0||gx>g.n-1||gy<0||gy>g.n-1) return 0;
     const i0=Math.floor(gy),j0=Math.floor(gx),i1=Math.min(g.n-1,i0+1),j1=Math.min(g.n-1,j0+1),fy=gy-i0,fx=gx-j0,E=(i,j)=>g.e[i*g.n+j]-g.ce;
-    return E(i0,j0)*(1-fx)*(1-fy)+E(i0,j1)*fx*(1-fy)+E(i1,j0)*(1-fx)*fy+E(i1,j1)*fx*fy; };
+    const raw=E(i0,j0)*(1-fx)*(1-fy)+E(i0,j1)*fx*(1-fy)+E(i1,j0)*(1-fx)*fy+E(i1,j1)*fx*fy;
+    const dist=Math.hypot(east,north);   // 지형 평탄화와 동일 적용(부지 주변 0)
+    return dist<130 ? 0 : (dist<340 ? raw*(dist-130)/210 : raw); };
   const mat=new THREE.MeshStandardMaterial({color:0xc2bcae, roughness:0.9});
   feats.forEach(f=>{ try{
     let coords=f.geometry.coordinates; if(f.geometry.type==='MultiPolygon') coords=coords[0];
