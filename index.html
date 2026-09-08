@@ -185,8 +185,7 @@
           <button data-t="carport">주차장</button>
         </div>
       </div>
-      <div class="fld"><label>경사각 (모듈각도)</label><div class="rng"><input type="range" id="o-tilt" min="0" max="35" value="15"><b id="v-tilt">15°</b></div></div>
-      <div class="fld"><label>음영각도 (입사각)</label><div class="rng"><input type="range" id="o-inc" min="10" max="45" value="25"><b id="v-inc">25°</b></div></div>
+      <div class="fld" style="font-size:11px;color:var(--muted);background:#161e2b;border:1px solid var(--line);border-radius:8px;padding:8px 10px">🔒 <b style="color:#cdd8e4">고정값</b> · 모듈각도 15° · 입사각(음영각) 25° · 2단 적재 시 모듈 간격 10mm</div>
       <div class="fld"><label>완충 경계(안쪽 이격)</label><div class="rng"><input type="range" id="o-set" min="0" max="100" value="20"><b id="v-set">2.0 m</b></div></div>
       <div class="fld"><label>패널 최대 배치</label>
         <div class="seg" id="seg-opt"><button data-o="1" class="on">🎯 자동(정남)</button><button data-o="0">수동 방위</button></div>
@@ -995,8 +994,7 @@ function bindRange(id, key, fmt, isPitch){
   $(id).oninput = e=>{ let v=parseFloat(e.target.value); if(isPitch) v/=10; if(id==='o-set') v/=10; S[key]=v; $(fmt.el).innerHTML=fmt.f(v); };
 }
 $('m-stack').oninput = e=>{ S.stack=+e.target.value; $('v-stack').innerHTML=S.stack+' 장'; };
-$('o-tilt').oninput = e=>{ S.tilt=+e.target.value; $('v-tilt').innerHTML=S.tilt+'°'; };
-$('o-inc').oninput = e=>{ S.incidence=+e.target.value; $('v-inc').innerHTML=S.incidence+'°'; };
+// 모듈각도(15°)·입사각(25°)은 고정 — 조절 UI 제거(S.tilt/S.incidence 기본값 사용)
 $('o-az').oninput = e=>{ S.az=+e.target.value; $('v-az').innerHTML = S.az===0?'정남':(S.az<0?'남동 '+(-S.az)+'°':'남서 '+S.az+'°'); };
 $('o-set').oninput = e=>{ S.setback=(+e.target.value)/10; $('v-set').innerHTML=S.setback.toFixed(1)+' m'; };
 $('o-pitch').oninput = e=>{ S.pitch=(+e.target.value)/10; $('v-pitch').innerHTML=S.pitch.toFixed(1)+' m'; };
@@ -1064,7 +1062,7 @@ function runLayout(){
   const portrait = $('m-o').value==='portrait';
   const wRow    = portrait ? mw : mh;
   const lSlope1 = portrait ? mh : mw;
-  const intra=0.02, gapU=0.02;
+  const intra=0.01, gapU=0.02;   // intra=적재 모듈 사이 이격 10mm(고정), gapU=테이블 열 간격
   const tilt=S.tilt*Math.PI/180;
   const alongSlope = S.stack*lSlope1 + (S.stack-1)*intra;
   const depth = alongSlope*Math.cos(tilt);
