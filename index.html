@@ -1414,22 +1414,24 @@ function quoteCalc(){
 }
 // 3D 뷰 캡처 → 견적서 현장 배치도로 삽입
 let _quotePhoto=null;
+// 3D 캔버스 → 부지(화면중앙) 담은 가로형(1.6:1) 중앙 크롭 dataURL
+function grab3D(){
+  if(typeof three==='undefined' || !three) return null;
+  three.renderer.render(three.scene, three.camera);
+  const src=three.renderer.domElement, sw=src.width, sh=src.height;
+  let cw=sw, ch=Math.round(sw/1.6); if(ch>sh){ ch=sh; cw=Math.round(sh*1.6); }
+  const sx=Math.round((sw-cw)/2), sy=Math.round((sh-ch)/2);
+  const tmp=document.createElement('canvas'); tmp.width=cw; tmp.height=ch;
+  tmp.getContext('2d').drawImage(src, sx, sy, cw, ch, 0, 0, cw, ch);
+  return tmp.toDataURL('image/png');
+}
 function captureQuote3D(){
   if(typeof three==='undefined' || !three){ setStatus('⚠️ 먼저 상단 <b>🧊 3D 뷰</b>를 열어 각도를 맞춘 뒤 캡처해주세요.'); return false; }
-  try{
-    three.renderer.render(three.scene, three.camera);
-    const src=three.renderer.domElement, sw=src.width, sh=src.height;
-    // 부지(화면 중앙)를 담은 가로형(1.6:1)으로 중앙 크롭 → 엑셀 배치도처럼
-    let cw=sw, ch=Math.round(sw/1.6); if(ch>sh){ ch=sh; cw=Math.round(sh*1.6); }
-    const sx=Math.round((sw-cw)/2), sy=Math.round((sh-ch)/2);
-    const tmp=document.createElement('canvas'); tmp.width=cw; tmp.height=ch;
-    tmp.getContext('2d').drawImage(src, sx, sy, cw, ch, 0, 0, cw, ch);
-    _quotePhoto = tmp.toDataURL('image/png');
-    applyQuotePhoto();
-    setStatus('🧊 3D 화면을 견적서에 담았습니다.');
-    return true;
-  }catch(e){ setStatus('⚠️ 3D 캡처 실패: '+((e&&e.message)||e)); return false; }
+  try{ _quotePhoto=grab3D(); applyQuotePhoto(); setStatus('🧊 3D 화면을 견적서에 담았습니다.'); return true; }
+  catch(e){ setStatus('⚠️ 3D 캡처 실패: '+((e&&e.message)||e)); return false; }
 }
+// 3D 지형·건물 로딩 완료 시점에 조용히 배치도 미리 캡처(견적서 열기 전 준비)
+function quoteAutoCapture(){ requestAnimationFrame(()=>{ try{ const u=grab3D(); if(u){ _quotePhoto=u; applyQuotePhoto(); } }catch(e){} }); }
 function applyQuotePhoto(){
   const img=$('q-photo'), empty=$('q-photo-empty'), note=$('q-photo-note');
   if(!img) return;
@@ -1559,7 +1561,7 @@ function rebuild3D(){
   three.camera.position.set(span*0.30, span*0.48, span*0.62);
   three.controls.minDistance=8; three.controls.maxDistance=2000;   // 주변 지형까지 줌아웃 가능
   updateSun3D();
-  buildTerrain(L).then(()=>buildBuildings(L));   // 외부 지형·건물 3D 음영(비동기 로드 후 평면 바닥 교체)
+  buildTerrain(L).then(()=>buildBuildings(L)).then(()=>{ if(view3D && typeof quoteAutoCapture==='function') quoteAutoCapture(); });   // 외부 지형·건물 3D 음영(비동기 로드 후 평면 바닥 교체) + 로딩완료 후 견적서 배치도 미리 캡처
 }
 
 function updateSun3D(){
