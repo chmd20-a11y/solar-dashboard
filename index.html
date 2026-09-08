@@ -1088,7 +1088,7 @@ function runLayout(){
 
   const placedAll=[];          // 전 구역 패널 [u,v] (공유·회전 프레임)
   const regionsOut=[];         // 각 구역 3D 경계선 {wl, outerWl}(회전 프레임)
-  let grossArea=0, roadArea=0, landArea=0, skipped=0;
+  let grossArea=0, roadArea=0, landArea=0, skipped=0, roadOverridden=0;
   const navy = S.type==='roof' ? '#12406e' : '#123a6e';
 
   ringsLL.forEach(({rg, ll})=>{
@@ -1116,21 +1116,33 @@ function runLayout(){
     let roadWl=null;
     if(roadGeom){ try{ const g=roadGeom.geometry; const polys=g.type==='Polygon'?[g.coordinates]:g.coordinates; roadWl=polys.map(p=>p[0].map(c=>toWork(c[1],c[0]))); }catch(e){} }
 
-    // 격자 스캔(도로 마스킹) → 이 구역 패널
+    // 격자 스캔 → 후보 수집(도로 마스킹 여부만 표시, 배치 판단은 뒤에서)
     const xs=wl.map(p=>p.x), ys=wl.map(p=>p.y);
     const minx=Math.min(...xs),maxx=Math.max(...xs),miny=Math.min(...ys),maxy=Math.max(...ys);
-    let guard=0;
+    let guard=0; const cand=[];
     for(let v=miny; v+depth<=maxy; v+=pitch){
       for(let u=minx; u+wRow<=maxx; u+=stepU){
         if(++guard>3000000){ v=maxy+1; break; }
         const c=[{x:u,y:v},{x:u+wRow,y:v},{x:u+wRow,y:v+depth},{x:u,y:v+depth}];
         if(!c.every(p=>pnpoly(p,wl))) continue;
-        if(roadWl){ const ctr={x:u+wRow/2,y:v+depth/2}; if(roadWl.some(rr=> pnpoly(ctr,rr) || c.some(p=>pnpoly(p,rr)) )) continue; }
-        placedAll.push([u,v]);
-        const corners=[[u,v],[u+wRow,v],[u+wRow,v+depth],[u,v+depth]].map(([x,y])=>{ const r=rot(x,y,bestAz); return toLatLng(r.x,r.y); });
-        L.polygon(corners,{renderer:canvasRenderer,color:'#8fb8ff',weight:.5,fillColor:navy,fillOpacity:.92}).addTo(panelLayer);
+        let masked=false;
+        if(roadWl){ const ctr={x:u+wRow/2,y:v+depth/2}; if(roadWl.some(rr=> pnpoly(ctr,rr) || c.some(p=>pnpoly(p,rr)) )) masked=true; }
+        cand.push([u,v,masked]);
       }
     }
+    // 도로 마스킹이 이 구역을 통째로 지우면(직접 그린 구역인데 전부 제외지목) → 그린 영역 우선(사용자 의도)
+    const nonMasked = cand.filter(t=>!t[2]);
+    const use = nonMasked.length>0 ? nonMasked : cand;
+    if(nonMasked.length===0 && cand.length>0) roadOverridden++;
+    const md=lSlope1*Math.cos(tilt), stepMod=(lSlope1+intra)*Math.cos(tilt);   // 모듈1장 footprint / 모듈+10mm간격
+    use.forEach(([u,v])=>{
+      placedAll.push([u,v]);
+      for(let k=0;k<S.stack;k++){   // 적재된 모듈을 각각 그려 사이 10mm 간격 표시
+        const v0=v+k*stepMod;
+        const corners=[[u,v0],[u+wRow,v0],[u+wRow,v0+md],[u,v0+md]].map(([x,y])=>{ const r=rot(x,y,bestAz); return toLatLng(r.x,r.y); });
+        L.polygon(corners,{renderer:canvasRenderer,color:'#8fb8ff',weight:.5,fillColor:navy,fillOpacity:.92}).addTo(panelLayer);
+      }
+    });
     // 완충 경계선(주황 점선)
     bufferLayer.addLayer(L.polygon(wringLL.map(p=>[p.lat,p.lng]),{color:'#ff8a3d',weight:1.5,dashArray:'6,5',fill:false}));
     regionsOut.push({ wl, outerWl });
@@ -1149,6 +1161,7 @@ function runLayout(){
   // 3D용 저장(다중 구역: regions[], + 첫 구역 wl/outerWl 폴백)
   const base3d = S.type==='carport'?2.6:(S.type==='roof'?7.0:0.6);
   window.LAYOUT = { placed:placedAll, regions:regionsOut, wRow, alongSlope, depth, tiltR:tilt, azRad:bestAz, base:base3d, lat0, lng0, mLat, mLng,
+                    mLen:lSlope1, intra, stack:S.stack,
                     wl:(regionsOut[0]?regionsOut[0].wl:[]), outerWl:(regionsOut[0]?regionsOut[0].outerWl:[]),
                     type:S.type, grossArea, roadArea, landArea, regionCount:regionsOut.length };
   if (document.getElementById('three').style.display !== 'none') rebuild3D();
@@ -1158,7 +1171,8 @@ function runLayout(){
   const roadTxt = roadArea>1 ? ` · <span style="color:#ffb86b">도로 등 ${Math.round(roadArea).toLocaleString()}㎡ 제외</span>` : '';
   const regTxt = regionsOut.length>1 ? `<b>${regionsOut.length}개 구역</b> 합계 · ` : '';
   const skipTxt = skipped>0 ? ` <span style="color:#ffb86b">(구역 ${skipped}개는 완충거리 초과로 제외)</span>` : '';
-  setStatus(`✅ 배치 완료 — ${regTxt}<b>${modules.toLocaleString()}장</b> · <b>${Math.round(kw).toLocaleString()} kWp</b> · 이용률 ${ratio.toFixed(0)}%${roadTxt} · 방위 ${S.optimize?'자동 ':''}${azTxt}${skipTxt}`);
+  const ovTxt = roadOverridden>0 ? ` <span style="color:#ffb86b">(구역 ${roadOverridden}개는 전부 도로·구거 지목이라 그린 영역대로 배치)</span>` : '';
+  setStatus(`✅ 배치 완료 — ${regTxt}<b>${modules.toLocaleString()}장</b> · <b>${Math.round(kw).toLocaleString()} kWp</b> · 이용률 ${ratio.toFixed(0)}%${roadTxt} · 방위 ${S.optimize?'자동 ':''}${azTxt}${skipTxt}${ovTxt}`);
   showResults(true);
 }
 
@@ -1551,14 +1565,18 @@ function rebuild3D(){
   const tiltR=L.tiltR, wRow=L.wRow, slope=L.alongSlope, depth=L.depth, base=L.base;
 
   if(L.placed.length){
-    const geo=new THREE.BoxGeometry(wRow, slope, 0.05);
-    const inst=new THREE.InstancedMesh(geo, three.panelMat, L.placed.length);
+    const stack=L.stack||1, mLen=L.mLen||slope, intra=L.intra||0;   // 적재 모듈 개별 렌더(사이 10mm 간격)
+    const geo=new THREE.BoxGeometry(wRow, mLen, 0.05);
+    const inst=new THREE.InstancedMesh(geo, three.panelMat, L.placed.length*stack);
     inst.castShadow=true; inst.receiveShadow=true;
-    const d=new THREE.Object3D();
-    L.placed.forEach(([u,v],i)=>{
-      d.position.set(u+wRow/2, base+(slope*Math.sin(tiltR))/2, -(v+depth/2));
-      d.rotation.set(-Math.PI/2+tiltR, 0, 0);
-      d.updateMatrix(); inst.setMatrixAt(i, d.matrix);
+    const d=new THREE.Object3D(); let mi=0;
+    L.placed.forEach(([u,v])=>{
+      for(let k=0;k<stack;k++){
+        const sc=k*(mLen+intra)+mLen/2;   // 모듈 중심의 경사면상 거리(테이블 근단 기준)
+        d.position.set(u+wRow/2, base+sc*Math.sin(tiltR), -(v+sc*Math.cos(tiltR)));
+        d.rotation.set(-Math.PI/2+tiltR, 0, 0);
+        d.updateMatrix(); inst.setMatrixAt(mi++, d.matrix);
+      }
     });
     inst.instanceMatrix.needsUpdate=true; three.arrayGroup.add(inst);
 
