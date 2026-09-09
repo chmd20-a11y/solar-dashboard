@@ -753,6 +753,8 @@
   .plan-clus{border-radius:9px;background:#f0a53a;color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;box-shadow:0 0 0 1.5px rgba(0,0,0,.15),0 2px 8px rgba(0,0,0,.25)}
   #gc-panel{position:absolute;top:14px;right:14px;z-index:600;width:302px;max-height:calc(100% - 96px);overflow-y:auto;background:#fff;border:1px solid #e4e8ef;border-radius:16px;box-shadow:0 12px 36px rgba(21,32,46,.18);padding:14px;display:none;font-size:13px;color:#15202e}
   #gc-panel.on{display:block}
+  .leaflet-top.leaflet-right{transition:margin-right .2s ease}
+  @media (min-width:861px){ body.gc-panel-on .leaflet-top.leaflet-right{margin-right:322px} }
   #gc-panel .gcp-head{display:flex;align-items:center;justify-content:space-between;font-weight:800;font-size:14px;margin-bottom:11px}
   #gc-panel .gcp-x{background:none;border:0;font-size:21px;line-height:1;color:#8b95a6;cursor:pointer;padding:0 2px}
   #gc-panel .gcp-tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
@@ -824,7 +826,7 @@ map.on('zoomend', ()=>{ if(map.hasLayer(ownWms)) showOwnLegend(true); });
 L.control.layers(
   { '위성 + 지명': vworldAerialHybrid, '위성만': vworldAerial, '일반지도': vworldBase },
   { '지적 경계(필지)': parcelLayer, '필지 소유정보': ownWms },
-  {position:'bottomright', collapsed:true}
+  {position:'topright', collapsed:true}
 ).addTo(map);
 
 const panelLayer = L.layerGroup().addTo(map);   // panels
@@ -2173,7 +2175,7 @@ initAuth();
   function legendEl(){ let el=document.getElementById('gc-legend'); if(!el){ el=document.createElement('div'); el.id='gc-legend'; el.className='gc-legend'; el.innerHTML=`<b>계통 여유용량</b> · 원 색 = 선로 최대 연계가능<div style="margin-top:6px"><span class="sw"><span class="dot" style="background:#0f8a3c"></span>10MW+</span><span class="sw"><span class="dot" style="background:#3fae57"></span>5–10</span><span class="sw"><span class="dot" style="background:#eab000"></span>1–5</span><span class="sw"><span class="dot" style="background:#f57c00"></span>0–1</span><span class="sw"><span class="dot" style="background:#d5443f"></span>0(불가)</span></div><div style="margin-top:5px;font-size:10.5px;color:#8b95a6">한전 분산전원 연계정보(22.9kV)·추정치</div>`; (document.getElementById('center')||document.body).appendChild(el); } return el; }
   async function load(){ if(DATA||loading) return; loading=true; btn.style.opacity='.6'; try{ DATA=await fetch('/capacity.json?_'+Date.now()).then(r=>r.json()); buildLayer(); stats(); }catch(e){ alert('계통 데이터를 불러오지 못했습니다.'); } loading=false; btn.style.opacity=''; }
   async function setOn(v){
-    on=v; btn.classList.toggle('on',v);
+    on=v; btn.classList.toggle('on',v); document.body.classList.toggle('gc-panel-on',v);
     const lbl=btn.querySelector('.gc-lbl'),sub=btn.querySelector('.gc-sub');
     if(v){ await load(); if(LAYER) map.addLayer(LAYER); legendEl().classList.add('on'); panel().classList.add('on'); stats(); if(lbl)lbl.textContent='계통 여유용량 끄기'; if(sub)sub.textContent='· 변전소 켜짐'; }
     else { if(LAYER) map.removeLayer(LAYER); if(PLAN_LAYER) map.removeLayer(PLAN_LAYER); if(SRCH){map.removeLayer(SRCH);SRCH=null;} legendEl().classList.remove('on'); const pn=document.getElementById('gc-panel'); if(pn){pn.classList.remove('on'); const tg=document.getElementById('gcp_plan_tg'); if(tg)tg.checked=false;} if(lbl)lbl.textContent='계통 여유용량 분석'; if(sub)sub.textContent='· 변전소 접속여유'; }
