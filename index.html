@@ -599,7 +599,7 @@
   @media(max-width:620px){ .q-set-grid{grid-template-columns:1fr 1fr} }
   #q-photo-wrap{position:relative;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface-2);min-height:150px;display:flex;align-items:center;justify-content:center}
   #q-photo{width:100%;display:block}
-  #q-photo-empty{color:var(--muted);font-size:12px;text-align:center;padding:26px 14px;line-height:1.7}
+  #q-photo-empty{color:var(--muted);font-size:12px;text-align:center;padding:26px 14px;line-height:1.7;word-break:keep-all;overflow-wrap:break-word}
   #q-photo-note{position:absolute;left:8px;bottom:8px;background:rgba(120,230,90,.92);color:#0a2000;font-size:11px;font-weight:800;padding:5px 9px;border-radius:6px;line-height:1.4;max-width:72%}
   .q-pdf{margin-left:auto;background:var(--accent,#0e7c66);color:#fff;border:0;border-radius:8px;padding:6px 11px;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}
   .q-pdf:hover{background:#0b6a58}
@@ -733,7 +733,7 @@
 
         <div class="q-sec-h blue" style="margin-top:10px">현장 배치도 (3D)</div>
         <div id="q-photo-wrap">
-          <div id="q-photo-empty">🧊 상단 <b>🧊 3D 뷰</b>에서 각도를 맞춘 뒤<br><b>⚙️ 영업자 설정 → 3D 화면 캡처</b>로 현장 배치도를 담으세요</div>
+          <div id="q-photo-empty">🖼️ 아직 현장 배치도가 없습니다<br>상단 <b>🧊 3D 뷰</b>에서 각도를 맞춘 뒤,<br><b>⚙️ 영업자 설정 → 🧊 현재 3D 화면 캡처</b>를 누르면<br>여기에 배치도가 담깁니다</div>
           <img id="q-photo" style="display:none" alt="3D 현장 배치도">
           <div id="q-photo-note" style="display:none"></div>
         </div>
