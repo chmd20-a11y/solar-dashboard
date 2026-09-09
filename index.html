@@ -650,7 +650,8 @@
         </div>
         <div class="btnrow" style="margin-top:4px;display:flex;gap:6px">
           <button class="btn" id="q-reload">🔄 배치값 불러오기</button>
-          <button class="btn" id="q-capture" style="border-color:var(--accent2);color:var(--accent2)">🧊 현재 3D 화면 캡처</button>
+          <button class="btn" id="q-cap2d" style="border-color:var(--accent2);color:var(--accent2)">🗺️ 2D 지도 담기</button>
+          <button class="btn" id="q-cap3d" style="border-color:var(--accent2);color:var(--accent2)">🧊 3D 뷰 담기</button>
         </div>
       </div>
     </div>
@@ -734,7 +735,7 @@
 
         <div class="q-sec-h blue" style="margin-top:10px">현장 배치도 (3D)</div>
         <div id="q-photo-wrap">
-          <div id="q-photo-empty">🖼️ 아직 현장 배치도가 없습니다<br>상단 <b>🧊 3D 뷰</b>에서 각도를 맞춘 뒤,<br><b>⚙️ 영업자 설정 → 🧊 현재 3D 화면 캡처</b>를 누르면<br>여기에 배치도가 담깁니다</div>
+          <div id="q-photo-empty">🖼️ 아직 현장 배치도가 없습니다<br><b>⚙️ 영업자 설정</b>에서 <b>🗺️ 2D 지도 담기</b> 또는 <b>🧊 3D 뷰 담기</b>를<br>누르면 여기에 배치도가 담깁니다</div>
           <img id="q-photo" style="display:none" alt="3D 현장 배치도">
           <div id="q-photo-note" style="display:none"></div>
         </div>
@@ -1900,6 +1901,39 @@ function captureQuote3D(){
   try{ _quotePhoto=grab3D(); applyQuotePhoto(); setStatus('🧊 3D 화면을 견적서에 담았습니다.'); return true; }
   catch(e){ setStatus('⚠️ 3D 캡처 실패: '+((e&&e.message)||e)); return false; }
 }
+// 2D 지도(타일+벡터) 합성 → 가로형 dataURL
+function grab2D(){
+  try{
+    if(view3D) return null;
+    const container=map.getContainer(), size=map.getSize();
+    if(!size.x||!size.y) return null;
+    const out=document.createElement('canvas'); out.width=size.x; out.height=size.y;
+    const octx=out.getContext('2d'); octx.fillStyle='#0a1526'; octx.fillRect(0,0,size.x,size.y);
+    const b=container.getBoundingClientRect();
+    const place=(el)=>{const r=el.getBoundingClientRect();return{x:r.left-b.left,y:r.top-b.top,w:r.width,h:r.height};};
+    container.querySelectorAll('.leaflet-tile-pane img.leaflet-tile').forEach(img=>{ if(!img.complete||!img.naturalWidth)return; const op=(img.style.opacity==='')?1:parseFloat(img.style.opacity); const p=place(img); octx.globalAlpha=isNaN(op)?1:op; try{octx.drawImage(img,p.x,p.y,p.w,p.h);}catch(e){} });
+    octx.globalAlpha=1;
+    container.querySelectorAll('.leaflet-pane canvas').forEach(cv=>{ if(!cv.width||!cv.height)return; const p=place(cv); try{octx.drawImage(cv,p.x,p.y,p.w,p.h);}catch(e){} });
+    const sw=out.width, sh=out.height; let cw=sw, ch=Math.round(sw/1.6); if(ch>sh){ch=sh;cw=Math.round(sh*1.6);} const sx=Math.round((sw-cw)/2), sy=Math.round((sh-ch)/2);
+    const tmp=document.createElement('canvas'); tmp.width=cw; tmp.height=ch; tmp.getContext('2d').drawImage(out,sx,sy,cw,ch,0,0,cw,ch);
+    return tmp.toDataURL('image/png');
+  }catch(e){ return null; }
+}
+// 견적서 배치도 이미지: 2D 지도 or 3D 뷰 선택 담기(필요 시 뷰 자동 전환)
+async function captureQuoteImg(mode){
+  try{
+    if(mode==='2d'){
+      if(view3D){ document.getElementById('v2d').click(); await new Promise(r=>setTimeout(r,900)); }
+      if(view3D){ setStatus('⚠️ 2D 지도로 전환하지 못했습니다.'); return; }
+      const u=grab2D(); if(!u){ setStatus('⚠️ 2D 캡처 실패 — 배치를 표시한 뒤 다시 시도해주세요.'); return; }
+      _quotePhoto=u; applyQuotePhoto(); setStatus('🗺️ 2D 지도를 견적서에 담았습니다.');
+    } else {
+      if(typeof three==='undefined'||!three){ if(!window.LAYOUT){ setStatus('⚠️ 먼저 <b>배치 계산</b> 후 3D를 담을 수 있습니다.'); return; } document.getElementById('v3d').click(); await new Promise(r=>setTimeout(r,1200)); }
+      const u=grab3D(); if(!u){ setStatus('⚠️ 3D 캡처 실패'); return; }
+      _quotePhoto=u; applyQuotePhoto(); setStatus('🧊 3D 뷰를 견적서에 담았습니다.');
+    }
+  }catch(e){ setStatus('⚠️ 캡처 실패: '+((e&&e.message)||e)); }
+}
 // 3D 지형·건물 로딩 완료 시점에 조용히 배치도 미리 캡처(견적서 열기 전 준비)
 function quoteAutoCapture(){ try{ const u=grab3D(); if(u){ _quotePhoto=u; applyQuotePhoto(); } }catch(e){} }
 function applyQuotePhoto(){
@@ -1948,7 +1982,8 @@ document.querySelectorAll('#q-form button').forEach(b=> b.addEventListener('clic
   $('q-apply').value = b.dataset.f==='노지' ? 178 : 188; quoteCalc();
 }));
 $('q-reload').onclick=()=>{ quotePull(); quoteCalc(); };
-$('q-capture').onclick=captureQuote3D;
+$('q-cap2d').onclick=()=>captureQuoteImg('2d');
+$('q-cap3d').onclick=()=>captureQuoteImg('3d');
 $('q-pdf').onclick=()=>window.print();   // A4 인쇄 → PDF 저장
 
 /* ================= 3D 뷰 (실제 배치를 입체로) ================= */
