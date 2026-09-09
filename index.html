@@ -936,7 +936,8 @@ const vworldHyb   = L.tileLayer(PXY + '/req/wmts/1.0.0/__KEY__/Hybrid/{z}/{y}/{x
 const vworldBase  = L.tileLayer(PXY + '/req/wmts/1.0.0/__KEY__/Base/{z}/{y}/{x}.png', {maxZoom:21, maxNativeZoom:19, crossOrigin:'anonymous', attribution:'국토부 VWorld 일반지도'});   // 일반지도(경기북부 등 위성 차단지역 대체)
 // 글로벌 위성(ESRI World Imagery) — VWorld가 가리는 경기북부 등 접경지역 커버. referrer 잠금 공개키(ArcGIS Location Platform, 무료 월200만타일·상업 라이선스 포함)
 const esriImagery = L.tileLayer('https://ibasemaps-api.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}?token=AAPTaytfUeo7C7MRN9mARMUtboA..lPWl9RjrGEQNBN3Ra9DsAmJ9WDMLVAHmiCXIPRtHMx4lacZvwGVXviC10EuYtG4t2Bc6yo6QO1sUyRl-LSGMYiTQ5Wag041nrHxyGJi0UGnwXOMI2ue-HVam5-ZZifJBU44ArrzDXzwmrQOIc2qsXcwVh7terVxUxL2h3eU27vKCZs1_X4ebU2d3r50LHZAs2aObPoUDhne1glRtAdnaPo_OGLB8LIuatyncN2ZlXxUjXQiql4ibTsx-2TAbAT1_O06amV19', {maxZoom:21, maxNativeZoom:19, crossOrigin:'anonymous', attribution:'© Esri · Maxar · Earthstar Geographics'});
-const vworldAerialHybrid = L.layerGroup([vworldSat2, vworldHyb]).addTo(map);   // 기본 = 위성+지명(VWorld)
+const vworldAerialHybrid = L.layerGroup([vworldSat2, vworldHyb]);
+esriImagery.addTo(map);   // 기본 = 위성(글로벌·경기북부 커버). 로그인 시 계정 설정으로 applyDefmap
 // 지적 경계(주변 필지) — WMS는 3857 미렌더라, 데이터API로 뷰 안 필지를 직접 그림
 const parcelLayer = L.layerGroup();
 let _parcelOn = false;
@@ -2298,7 +2299,7 @@ async function initAuth(){
 }
 /* ===== 설정 화면(⚙️) — 7탭 (일반/타당성/경계/모듈/배치/원가/견적) · localStorage 저장 ===== */
 const SET_KEY='solarfit_settings';
-const SET_DEFAULTS={ company:'',phone:'',defmap:'hybrid', gz:true,slope:15,setres:200, buffer:2,roadmask:true, krBrand:'현대',krW:645,krX:1134,krY:2465, cnBrand:'AIKO',cnW:655,cnX:1134,cnY:2382, tilt:15,incid:25,gap:10, modcost:310,kwunit:950000,margin:5, apply:178,hours:3.6,rate:2.5,defer:5,repay:10,loanpct:80 };
+const SET_DEFAULTS={ company:'',phone:'',defmap:'esri', gz:true,slope:15,setres:200, buffer:2,roadmask:true, krBrand:'현대',krW:645,krX:1134,krY:2465, cnBrand:'AIKO',cnW:655,cnX:1134,cnY:2382, tilt:15,incid:25,gap:10, modcost:310,kwunit:950000,margin:5, apply:178,hours:3.6,rate:2.5,defer:5,repay:10,loanpct:80 };
 function loadSettings(){ try{ return Object.assign({},SET_DEFAULTS,JSON.parse(localStorage.getItem(SET_KEY)||'{}')); }catch(e){ return Object.assign({},SET_DEFAULTS); } }
 function accKey(){ return (typeof _authUser!=='undefined'&&_authUser)?('solarfit_settings_'+_authUser.id):null; }   // 계정별 저장 키
 let SETTINGS=Object.assign({},SET_DEFAULTS);   // 초기=기본값(로그인 시 계정별 설정 로드)
