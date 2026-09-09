@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>태양광 부지 배치 대시보드</title>
+<title>솔라핏 SolarFit · 태양광 부지 분석·배치</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.14.2/dist/leaflet-geoman.css">
 <style>
@@ -282,6 +282,21 @@
   .au-msg{font-size:12px;min-height:15px;margin-bottom:8px;color:var(--bad);font-weight:600}
   .au-msg.ok{color:var(--good)}
   .au-note{font-size:11px;color:var(--muted);text-align:center;margin-top:13px;line-height:1.5}
+  /* 핀+태양 브랜드 로고(컬러 마크, 박스 없음) */
+  .brand .logo-pin{width:38px;height:38px;flex:0 0 auto;display:flex;align-items:center;justify-content:center}
+  .brand .logo-pin svg{width:38px;height:38px}
+  /* ===== 하이브리드 플로팅 레이아웃 (데스크톱 ≥861px): 지도 전체 + 좌/우 플로팅 카드 ===== */
+  @media (min-width:861px){
+    #wrap{display:block;position:relative;height:100vh}
+    #center{position:absolute;inset:0}
+    #left{position:absolute;top:14px;left:14px;width:340px;max-height:calc(100vh - 28px);overflow-y:auto;overflow-x:hidden;background:var(--card);border:1px solid var(--line);border-right:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:15px 15px 16px;z-index:600}
+    #left .sec{background:transparent;border:0;box-shadow:none;border-top:1px solid var(--line-2);border-radius:0;padding:14px 3px;margin:0}
+    #left .sec:first-of-type{border-top:0;padding-top:2px}
+    #left #btn-cost{margin-top:12px}
+    #left .lp-foot{margin-top:10px}
+    #right{position:absolute;top:14px;right:14px;width:320px;max-height:calc(100vh - 28px);overflow-y:auto;overflow-x:hidden;background:var(--bg);border:1px solid var(--line);border-left:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:15px 14px 16px;z-index:600;display:none}
+    #wrap.results-open #right{display:block}
+  }
   @media (max-width:860px){
     #wrap{grid-template-columns:1fr !important}
     #left,#right{background:var(--card);box-shadow:0 10px 40px rgba(21,32,46,.22)}
@@ -294,8 +309,8 @@
 <div id="auth-gate">
   <div class="auth-card">
     <div class="auth-brand">
-      <div class="logo"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></div>
-      <div><div class="an">SolarSite</div><div class="as">태양광 부지 분석 · 자동 배치</div></div>
+      <div class="logo-pin" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;flex:0 0 auto"><svg viewBox="0 0 24 24" style="width:44px;height:44px"><path d="M12 1.7C7.6 1.7 4.1 5.2 4.1 9.5c0 5.6 7.9 12.8 7.9 12.8s7.9-7.2 7.9-12.8C19.9 5.2 16.4 1.7 12 1.7z" fill="#0e7c66"/><circle cx="12" cy="9.2" r="2.5" fill="#f7b32b"/><g stroke="#f7b32b" stroke-width="1.5" stroke-linecap="round"><path d="M12 4.2v1.3"/><path d="M12 12.9v1.3"/><path d="M6.6 9.2h1.3"/><path d="M16.1 9.2h1.3"/><path d="M8.2 5.4l.9.9"/><path d="M14.9 12.1l.9.9"/><path d="M15.8 5.4l-.9.9"/><path d="M8 12.1l-.9.9"/></g></svg></div>
+      <div><div class="an">솔라핏 <span style="font-size:12px;color:var(--muted)">SolarFit</span></div><div class="as">태양광 부지 분석 · 자동 배치</div></div>
     </div>
     <div class="auth-tabs"><button id="au-tab-login" class="on">로그인</button><button id="au-tab-signup">회원가입</button></div>
     <div class="fld"><label>이메일</label><input type="email" id="au-email" placeholder="name@example.com" autocomplete="email"></div>
@@ -311,8 +326,8 @@
   <!-- ================= LEFT: INPUTS ================= -->
   <div id="left" class="col">
     <div class="brand">
-      <div class="logo"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></div>
-      <div class="bt"><h1>SolarSite</h1><div class="sub">태양광 부지 분석 · 자동 배치</div></div>
+      <div class="logo-pin"><svg viewBox="0 0 24 24"><path d="M12 1.7C7.6 1.7 4.1 5.2 4.1 9.5c0 5.6 7.9 12.8 7.9 12.8s7.9-7.2 7.9-12.8C19.9 5.2 16.4 1.7 12 1.7z" fill="#0e7c66"/><circle cx="12" cy="9.2" r="2.5" fill="#f7b32b"/><g stroke="#f7b32b" stroke-width="1.5" stroke-linecap="round"><path d="M12 4.2v1.3"/><path d="M12 12.9v1.3"/><path d="M6.6 9.2h1.3"/><path d="M16.1 9.2h1.3"/><path d="M8.2 5.4l.9.9"/><path d="M14.9 12.1l.9.9"/><path d="M15.8 5.4l-.9.9"/><path d="M8 12.1l-.9.9"/></g></svg></div>
+      <div class="bt"><h1>솔라핏 <span style="font-size:12px;font-weight:700;color:var(--muted)">SolarFit</span></h1><div class="sub">태양광 부지 분석 · 자동 배치</div></div>
       <button id="close-left" title="메뉴 닫기">✕</button>
     </div>
 
@@ -718,7 +733,8 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
 // ---------- map ----------
-const map = L.map('map', {preferCanvas:true, zoomControl:true}).setView([36.35,127.9], 7);   // 초기 시야 = 대한민국 전체
+const map = L.map('map', {preferCanvas:true, zoomControl:false}).setView([36.35,127.9], 7);   // 초기 시야 = 대한민국 전체
+L.control.zoom({position:'bottomright'}).addTo(map);   // 플로팅 좌측 카드와 겹치지 않도록 줌을 우하단으로
 // 기본 지도 = 국토부 VWorld(상업 이용 가능). ESRI는 상업 라이선스 필요 → 기본/컨트롤에서 제외(3D 바닥 stitch 폴백에서만 내부 사용).
 const esri = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
   {maxZoom:21, maxNativeZoom:19, crossOrigin:'anonymous', attribution:'Esri World Imagery'});
@@ -762,7 +778,7 @@ map.on('zoomend', ()=>{ if(map.hasLayer(ownWms)) showOwnLegend(true); });
 L.control.layers(
   { '위성 + 지명': vworldAerialHybrid, '위성만': vworldAerial },
   { '지적 경계(필지)': parcelLayer, '필지 소유정보': ownWms },
-  {position:'topright', collapsed:true}
+  {position:'bottomright', collapsed:true}
 ).addTo(map);
 
 const panelLayer = L.layerGroup().addTo(map);   // panels
