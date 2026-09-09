@@ -601,10 +601,22 @@
   #q-photo{width:100%;display:block}
   #q-photo-empty{color:var(--muted);font-size:12px;text-align:center;padding:26px 14px;line-height:1.7}
   #q-photo-note{position:absolute;left:8px;bottom:8px;background:rgba(120,230,90,.92);color:#0a2000;font-size:11px;font-weight:800;padding:5px 9px;border-radius:6px;line-height:1.4;max-width:72%}
+  .q-pdf{margin-left:auto;background:var(--accent,#0e7c66);color:#fff;border:0;border-radius:8px;padding:6px 11px;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+  .q-pdf:hover{background:#0b6a58}
+  @media print {
+    @page { size: A4; margin: 10mm; }
+    html,body{ background:#fff !important; height:auto !important; overflow:visible !important }
+    body > *:not(#quote-overlay){ display:none !important }
+    #quote-overlay{ position:static !important; display:block !important; background:#fff !important; padding:0 !important; margin:0 !important; inset:auto !important; overflow:visible !important }
+    #quote-card{ position:static !important; width:100% !important; max-width:none !important; max-height:none !important; overflow:visible !important; box-shadow:none !important; border:0 !important; border-radius:0 !important; transform:none !important; margin:0 !important; padding:0 !important; font-size:10px }
+    #q-set, .q-pdf, .quote-close, #q-photo-empty { display:none !important }
+    #quote-card h2, .q-title{ font-size:15pt }
+    #quote-card .q-sec-h, #quote-card table, #quote-card .q-grid > div > div, #q-photo-wrap { break-inside: avoid }
+  }
 </style>
 <div id="quote-overlay">
   <div id="quote-card">
-    <h2>📄 태양광 발전사업 제안서 <button class="quote-close" id="quote-close" title="닫기">✕</button></h2>
+    <h2>📄 태양광 발전사업 제안서 <button class="q-pdf" id="q-pdf" title="A4 PDF로 저장(인쇄)">📄 PDF 저장</button><button class="quote-close" id="quote-close" title="닫기">✕</button></h2>
     <div id="q-set" class="closed">
       <div class="q-set-hd" id="q-set-hd">⚙️ 영업자 설정 — 조정 후 접으면 고객 화면에서 숨겨집니다</div>
       <div class="q-set-body">
@@ -1824,6 +1836,7 @@ document.querySelectorAll('#q-form button').forEach(b=> b.addEventListener('clic
 }));
 $('q-reload').onclick=()=>{ quotePull(); quoteCalc(); };
 $('q-capture').onclick=captureQuote3D;
+$('q-pdf').onclick=()=>window.print();   // A4 인쇄 → PDF 저장
 
 /* ================= 3D 뷰 (실제 배치를 입체로) ================= */
 let three=null, view3D=false, sunT=13;

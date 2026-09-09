@@ -149,7 +149,7 @@ function render(){
     const paid=u.plan==='paid';
     return `<tr>
       <td class="email">${u.email||'-'}${u.is_admin?'<span class="pill admin">관리자</span>':''}</td>
-      <td class="muted">${u.name||'-'}${u.company?(' · '+u.company):''}</td>
+      <td class="muted editname" style="cursor:pointer" data-editname="${u.id}" title="클릭해서 이름 수정">${u.name?u.name:'<span style="color:#d5443f">이름 입력</span>'}${u.company?(' · '+u.company):''} <span style="opacity:.45">✏️</span></td>
       <td><span class="pill ${paid?'paid':'free'}">${paid?'유료':'무료'}</span></td>
       <td class="muted">${fmt(u.created_at)}</td>
       <td style="text-align:right;white-space:nowrap"><button class="btn sm" data-reset="${u.id}" style="margin-right:6px">비밀번호 초기화</button><button class="btn sm ${paid?'':'primary'}" data-id="${u.id}" data-to="${paid?'free':'paid'}">${paid?'무료로 전환':'유료로 전환'}</button></td>
@@ -157,6 +157,15 @@ function render(){
   }).join('');
   $('rows').querySelectorAll('button[data-id]').forEach(b=>b.onclick=()=>setPlan(b.dataset.id,b.dataset.to,b));
   $('rows').querySelectorAll('button[data-reset]').forEach(b=>b.onclick=()=>resetPw(b.dataset.reset,b));
+  $('rows').querySelectorAll('td[data-editname]').forEach(td=>td.onclick=()=>editName(td.dataset.editname));
+}
+async function editName(id){
+  const u=_all.find(x=>x.id===id); const cur=(u&&u.name)||'';
+  const v=prompt('담당자(회원) 이름을 입력하세요.', cur);
+  if(v===null) return;
+  const name=v.trim();
+  try{ const { error }=await sb.from('profiles').update({name}).eq('id',id); if(error) throw error; if(u) u.name=name; render(); }
+  catch(e){ alert('이름 저장 실패: '+((e&&e.message)||e)); }
 }
 async function resetPw(id,btn){
   if(!confirm('이 회원의 비밀번호를 123qwe 로 초기화할까요?')) return;
