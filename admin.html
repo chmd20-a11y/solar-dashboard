@@ -91,8 +91,8 @@
       </div>
       <div class="tbl-wrap">
         <table>
-          <thead><tr><th>이메일</th><th>요금제</th><th>가입일</th><th style="text-align:right">관리</th></tr></thead>
-          <tbody id="rows"><tr><td colspan="4" class="empty">불러오는 중…</td></tr></tbody>
+          <thead><tr><th>이메일</th><th>회사</th><th>요금제</th><th>가입일</th><th style="text-align:right">관리</th></tr></thead>
+          <tbody id="rows"><tr><td colspan="5" class="empty">불러오는 중…</td></tr></tbody>
         </table>
       </div>
       <div class="note">요금제 버튼으로 <b>무료 ↔ 유료</b>를 전환합니다. 변경은 즉시 저장되며, 해당 회원이 다음 접속 시 반영됩니다.<br>
@@ -135,7 +135,7 @@ async function loadUsers(){
     if(error) throw error;
     _all = data||[];
     render();
-  }catch(e){ $('rows').innerHTML='<tr><td colspan="4" class="empty">불러오기 실패: '+((e&&e.message)||e)+'</td></tr>'; }
+  }catch(e){ $('rows').innerHTML='<tr><td colspan="5" class="empty">불러오기 실패: '+((e&&e.message)||e)+'</td></tr>'; }
 }
 function render(){
   const q=($('q').value||'').toLowerCase();
@@ -143,11 +143,12 @@ function render(){
   $('s-total').textContent=_all.length;
   $('s-paid').textContent=_all.filter(u=>u.plan==='paid').length;
   $('s-free').textContent=_all.filter(u=>u.plan!=='paid').length;
-  if(!list.length){ $('rows').innerHTML='<tr><td colspan="4" class="empty">회원이 없습니다.</td></tr>'; return; }
+  if(!list.length){ $('rows').innerHTML='<tr><td colspan="5" class="empty">회원이 없습니다.</td></tr>'; return; }
   $('rows').innerHTML=list.map(u=>{
     const paid=u.plan==='paid';
     return `<tr>
       <td class="email">${u.email||'-'}${u.is_admin?'<span class="pill admin">관리자</span>':''}</td>
+      <td class="muted">${u.company||'-'}${u.name?(' · '+u.name):''}</td>
       <td><span class="pill ${paid?'paid':'free'}">${paid?'유료':'무료'}</span></td>
       <td class="muted">${fmt(u.created_at)}</td>
       <td style="text-align:right"><button class="btn sm ${paid?'':'primary'}" data-id="${u.id}" data-to="${paid?'free':'paid'}">${paid?'무료로 전환':'유료로 전환'}</button></td>

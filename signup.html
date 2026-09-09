@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>솔라핏 SolarFit · 회원가입</title>
+<style>
+  :root{--card:#fff;--ink:#15202e;--muted:#647184;--faint:#8b95a6;--line:#e4e8ef;--field:#f5f7fa;
+    --accent:#0e7c66;--accent-h:#0b6a58;--accent-soft:#e1f2ee;--good:#12925a;--bad:#d5443f;--shadow:0 24px 70px rgba(0,0,0,.28)}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;
+    background:linear-gradient(150deg,#0e7c66,#0b5346);
+    font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;-webkit-font-smoothing:antialiased;color:var(--ink)}
+  .card{width:100%;max-width:440px;background:var(--card);border-radius:20px;padding:30px 28px 24px;box-shadow:var(--shadow)}
+  .brand{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+  .brand svg{width:44px;height:44px;flex:0 0 auto}
+  .brand .an{font-size:20px;font-weight:800;letter-spacing:-.02em}
+  .brand .an small{font-size:12px;color:var(--muted);font-weight:700;margin-left:5px}
+  .brand .as{font-size:11px;color:var(--muted);margin-top:2px}
+  h1{font-size:18px;font-weight:800;margin:20px 0 3px}
+  .lead{font-size:12.5px;color:var(--muted);margin:0 0 18px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .fld{margin-bottom:13px}
+  label{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px}
+  label .opt{color:var(--faint);font-weight:500}
+  input{width:100%;padding:10px 12px;border-radius:10px;background:var(--field);border:1px solid var(--line);color:var(--ink);font-size:14px;font-family:inherit}
+  input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .consent{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--muted);margin:4px 0 12px}
+  .consent input{width:auto;margin-top:2px}
+  .consent a{color:var(--accent);font-weight:600}
+  .msg{font-size:12.5px;font-weight:600;color:var(--bad);min-height:16px;margin-bottom:10px}
+  .msg.ok{color:var(--good)}
+  .btn{width:100%;padding:13px;border-radius:11px;border:0;background:var(--accent);color:#fff;font-size:14.5px;font-weight:700;cursor:pointer;font-family:inherit}
+  .btn:hover{background:var(--accent-h)}
+  .btn:disabled{opacity:.6;cursor:default}
+  .foot{text-align:center;font-size:12.5px;color:var(--muted);margin-top:16px}
+  .foot a{color:var(--accent);font-weight:700;text-decoration:none}
+  .beta{text-align:center;font-size:11px;color:var(--faint);margin-top:12px;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="brand">
+    <svg viewBox="0 0 24 24"><path d="M12 1.7C7.6 1.7 4.1 5.2 4.1 9.5c0 5.6 7.9 12.8 7.9 12.8s7.9-7.2 7.9-12.8C19.9 5.2 16.4 1.7 12 1.7z" fill="#0e7c66"/><circle cx="12" cy="9.2" r="2.5" fill="#f7b32b"/><g stroke="#f7b32b" stroke-width="1.5" stroke-linecap="round"><path d="M12 4.2v1.3"/><path d="M12 12.9v1.3"/><path d="M6.6 9.2h1.3"/><path d="M16.1 9.2h1.3"/><path d="M8.2 5.4l.9.9"/><path d="M14.9 12.1l.9.9"/><path d="M15.8 5.4l-.9.9"/><path d="M8 12.1l-.9.9"/></g></svg>
+    <div><div class="an">솔라핏 <small>SolarFit</small></div><div class="as">태양광 부지 분석 · 자동 배치</div></div>
+  </div>
+  <h1>회원가입</h1>
+  <p class="lead">가입 후 <b>무료 베타</b>로 모든 기능을 이용하실 수 있습니다.</p>
+
+  <div class="fld"><label>이메일 <span style="color:var(--bad)">*</span></label><input type="email" id="email" placeholder="name@example.com" autocomplete="email"></div>
+  <div class="grid2">
+    <div class="fld"><label>비밀번호 <span style="color:var(--bad)">*</span></label><input type="password" id="pw" placeholder="6자 이상" autocomplete="new-password"></div>
+    <div class="fld"><label>비밀번호 확인 <span style="color:var(--bad)">*</span></label><input type="password" id="pw2" placeholder="다시 입력" autocomplete="new-password"></div>
+  </div>
+  <div class="fld"><label>회사명 <span class="opt">(선택)</span></label><input type="text" id="company" placeholder="예: (주)해피솔라"></div>
+  <div class="grid2">
+    <div class="fld"><label>담당자명 <span class="opt">(선택)</span></label><input type="text" id="name" placeholder="예: 정덕진"></div>
+    <div class="fld"><label>연락처 <span class="opt">(선택)</span></label><input type="text" id="phone" placeholder="예: 010-1234-5678"></div>
+  </div>
+  <label class="consent"><input type="checkbox" id="consent"><span><a href="/legal.html" target="_blank">이용약관 · 개인정보처리방침</a>에 동의합니다. <span style="color:var(--bad)">*</span></span></label>
+  <div class="msg" id="msg"></div>
+  <button class="btn" id="submit">회원가입</button>
+  <div class="foot">이미 계정이 있으신가요? <a href="/">로그인</a></div>
+  <div class="beta">가입 시 이메일·(선택)회사정보가 서비스 제공 목적으로 저장됩니다.</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+const SUPA_URL='https://rejgvqeliqdjpavjvtjt.supabase.co';
+const SUPA_KEY='sb_publishable_SAJNSZSfhPgl3M9XiG7hYg_R0tSWUOb';
+const $=id=>document.getElementById(id);
+let sb=null;
+function msg(t,ok){ const el=$('msg'); el.textContent=t||''; el.className='msg'+(ok?' ok':''); }
+try{ sb = window.supabase.createClient(SUPA_URL, SUPA_KEY); }catch(e){ msg('인증 서버 연결 실패'); }
+
+async function submit(){
+  const email=($('email').value||'').trim(), pw=$('pw').value||'', pw2=$('pw2').value||'';
+  const company=($('company').value||'').trim(), name=($('name').value||'').trim(), phone=($('phone').value||'').trim();
+  if(!email){ msg('이메일을 입력하세요.'); return; }
+  if(pw.length<6){ msg('비밀번호는 6자 이상이어야 합니다.'); return; }
+  if(pw!==pw2){ msg('비밀번호가 일치하지 않습니다.'); return; }
+  if(!$('consent').checked){ msg('약관에 동의해주세요.'); return; }
+  if(!sb){ msg('인증 서버 연결 전입니다. 잠시 후 다시 시도하세요.'); return; }
+  $('submit').disabled=true; msg('가입 처리 중…');
+  try{
+    const { data, error } = await sb.auth.signUp({ email, password:pw, options:{ data:{ plan:'free', company, name, phone } } });
+    if(error) throw error;
+    if(data.session){ msg('가입 완료! 잠시 후 이동합니다…', true); setTimeout(()=>location.href='/', 900); }
+    else { msg('가입 완료! 이메일 인증 링크를 확인한 뒤 로그인해 주세요.', true); }
+  }catch(e){
+    const m=(e&&e.message)||'';
+    msg(/already registered|already been registered/i.test(m)?'이미 가입된 이메일입니다. 로그인해 주세요.'
+      :(/at least 6/i.test(m)?'비밀번호는 6자 이상이어야 합니다.'
+      :(/invalid/i.test(m)&&/email/i.test(m)?'올바른 이메일 형식이 아닙니다.':'오류: '+m)));
+    $('submit').disabled=false;
+  }
+}
+$('submit').onclick=submit;
+['email','pw','pw2','company','name','phone'].forEach(id=>$(id).addEventListener('keydown',e=>{ if(e.key==='Enter') submit(); }));
+</script>
+</body>
+</html>

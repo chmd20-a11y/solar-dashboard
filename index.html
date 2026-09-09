@@ -2040,7 +2040,7 @@ async function initAuth(){
   // 로그인 UI 배선(항상)
   const tl=$('au-tab-login'), ts=$('au-tab-signup'), sb=$('au-submit');
   if(tl) tl.onclick=()=>setAuMode('login');
-  if(ts) ts.onclick=()=>setAuMode('signup');
+  if(ts) ts.onclick=()=>{ location.href='/signup.html'; };   // 회원가입은 별도 페이지로
   if(sb) sb.onclick=auSubmit;
   ['au-email','au-pw'].forEach(id=>{ const el=$(id); if(el) el.addEventListener('keydown',e=>{ if(e.key==='Enter') auSubmit(); }); });
   if(!AUTH.enabled || !AUTH.url || !AUTH.anon) return;   // OFF → 앱 개방(게이트 안 띄움)

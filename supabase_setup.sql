@@ -8,16 +8,27 @@
 create table if not exists public.profiles (
   id         uuid primary key references auth.users(id) on delete cascade,
   email      text,
+  company    text,
+  name       text,
+  phone      text,
   plan       text    not null default 'free',      -- 'free' | 'paid'
   is_admin   boolean not null default false,
   created_at timestamptz not null default now()
 );
+-- 이미 테이블이 있던 경우를 위한 컬럼 추가(안전)
+alter table public.profiles add column if not exists company text;
+alter table public.profiles add column if not exists name    text;
+alter table public.profiles add column if not exists phone   text;
 
--- 2) 회원가입 시 profiles 행 자동 생성
+-- 2) 회원가입 시 profiles 행 자동 생성 (회사/담당자/연락처 복사, 지정 이메일은 자동 관리자)
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
-  insert into public.profiles (id, email) values (new.id, new.email)
+  insert into public.profiles (id, email, is_admin, company, name, phone)
+  values (new.id, new.email, new.email = 'chmd20@gmail.com',   -- 전용 관리자 이메일
+          new.raw_user_meta_data->>'company',
+          new.raw_user_meta_data->>'name',
+          new.raw_user_meta_data->>'phone')
   on conflict (id) do nothing;
   return new;
 end;
