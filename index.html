@@ -970,11 +970,7 @@ L.control.layers(
   { '지적 경계(필지)': parcelLayer, '필지 소유정보': ownWms },
   {position:'topright', collapsed:true}
 ).addTo(map);
-// 설정(⚙️ 일반설정)의 기본 지도 적용
-try{ const _dm=(JSON.parse(localStorage.getItem('solarfit_settings')||'{}').defmap)||'hybrid';
-  if(_dm==='esri'){ map.removeLayer(vworldAerialHybrid); esriImagery.addTo(map); }
-  else if(_dm==='base'){ map.removeLayer(vworldAerialHybrid); vworldBase.addTo(map); }
-}catch(e){}
+// 기본 지도는 로그인 시 계정별 설정으로 applyDefmap()에서 적용(초기 기본=위성+지명)
 
 const panelLayer = L.layerGroup().addTo(map);   // panels
 const bufferLayer = L.layerGroup().addTo(map);  // 완충 경계선
@@ -2212,7 +2208,7 @@ function renderAccount(){
   const el=$('acct'); if(!el) return;
   if(_authUser){ el.className='on'; el.innerHTML=`<span class="em">${_authUser.email||'로그인됨'}</span>${_isAdmin?'<a class="adm" href="/admin.html">관리자</a>':''}<button class="setbtn" id="acct-set" title="설정">⚙️</button><button class="lo" id="au-logout">로그아웃</button>`;
     { const _gs=$('acct-set'); if(_gs) _gs.onclick=openSettings; }
-    $('au-logout').onclick=async()=>{ try{ await _sb.auth.signOut(); }catch(e){} _authUser=null; _isAdmin=false; el.className=''; el.innerHTML=''; showAuthGate(); };
+    $('au-logout').onclick=async()=>{ try{ await _sb.auth.signOut(); }catch(e){} _authUser=null; _isAdmin=false; try{ SETTINGS=Object.assign({},SET_DEFAULTS); applySettings(); }catch(e){} el.className=''; el.innerHTML=''; showAuthGate(); };
   } else { el.className=''; el.innerHTML=''; }
 }
 function showAuthGate(){ const g=$('auth-gate'); if(g){ g.classList.add('open'); document.body.classList.add('gated'); } }
@@ -2269,7 +2265,8 @@ async function initAuth(){
 const SET_KEY='solarfit_settings';
 const SET_DEFAULTS={ company:'',phone:'',defmap:'hybrid', gz:true,slope:15,setres:200, buffer:2,roadmask:true, krBrand:'현대',krW:645,krX:1134,krY:2465, cnBrand:'AIKO',cnW:655,cnX:1134,cnY:2382, tilt:15,incid:25,gap:10, modcost:310,kwunit:950000,margin:5, apply:178,hours:3.6,rate:2.5,defer:5,repay:10,loanpct:80 };
 function loadSettings(){ try{ return Object.assign({},SET_DEFAULTS,JSON.parse(localStorage.getItem(SET_KEY)||'{}')); }catch(e){ return Object.assign({},SET_DEFAULTS); } }
-let SETTINGS=loadSettings();
+function accKey(){ return (typeof _authUser!=='undefined'&&_authUser)?('solarfit_settings_'+_authUser.id):null; }   // 계정별 저장 키
+let SETTINGS=Object.assign({},SET_DEFAULTS);   // 초기=기본값(로그인 시 계정별 설정 로드)
 const SET_MAP=[['st-company','company','t'],['st-phone','phone','t'],['st-defmap','defmap','t'],
   ['st-gz','gz','c'],['st-slope','slope','n'],['st-setres','setres','n'],
   ['st-buffer','buffer','n'],['st-roadmask','roadmask','c'],
@@ -2281,8 +2278,17 @@ const SET_MAP=[['st-company','company','t'],['st-phone','phone','t'],['st-defmap
 function populateSettings(){ SET_MAP.forEach(([id,key,t])=>{ const el=$(id); if(!el) return; if(t==='c') el.checked=!!SETTINGS[key]; else el.value=SETTINGS[key]; }); }
 function collectSettings(){ SET_MAP.forEach(([id,key,t])=>{ const el=$(id); if(!el) return; if(t==='c') SETTINGS[key]=el.checked; else if(t==='n') SETTINGS[key]=parseFloat(el.value)||0; else SETTINGS[key]=(el.value||'').trim(); }); }
 function applySettings(){ try{ if(typeof S!=='undefined'&&S){ S.tilt=(+SETTINGS.tilt)||15; S.incidence=(+SETTINGS.incid)||25; S.setback=(SETTINGS.buffer!=null?(+SETTINGS.buffer):2); } window.__stackGap=(+SETTINGS.gap)||10; const fv=$('fixedvals'); if(fv) fv.textContent=`모듈각도 ${SETTINGS.tilt}° · 입사각 ${SETTINGS.incid}° · 2단 적재 간격 ${SETTINGS.gap}mm`; }catch(e){} }
-// Supabase 클라우드 동기화(로그인 계정별) — 테이블 없거나 미로그인 시 localStorage로 폴백
-async function loadSettingsCloud(){ try{ if(_sb&&_authUser){ const {data}=await _sb.from('user_settings').select('settings').eq('id',_authUser.id).single(); if(data&&data.settings){ SETTINGS=Object.assign({},SET_DEFAULTS,data.settings); try{ localStorage.setItem(SET_KEY,JSON.stringify(SETTINGS)); }catch(e){} applySettings(); if(document.querySelector('#set-modal.open')) populateSettings(); } } }catch(e){} }
+// 기본지도(defmap) 적용 — 로그인 시 1회
+function applyDefmap(){ try{ const dm=SETTINGS.defmap||'hybrid'; const T={hybrid:vworldAerialHybrid,esri:esriImagery,base:vworldBase}; [vworldAerialHybrid,vworldAerial,esriImagery,vworldBase].forEach(L=>{ if(L&&map.hasLayer(L)) map.removeLayer(L); }); (T[dm]||vworldAerialHybrid).addTo(map); }catch(e){} }
+// 계정별 설정 로드(로그인 시): 이전 계정 잔재 제거 → 계정 로컬캐시 → 클라우드. 없으면 기본값(남의 값 노출 방지).
+async function loadSettingsCloud(){
+  SETTINGS=Object.assign({},SET_DEFAULTS);
+  try{ const k=accKey();
+    if(k){ const c=JSON.parse(localStorage.getItem(k)||'null'); if(c) SETTINGS=Object.assign({},SET_DEFAULTS,c); }
+    if(_sb&&_authUser){ const {data}=await _sb.from('user_settings').select('settings').eq('id',_authUser.id).single(); if(data&&data.settings){ SETTINGS=Object.assign({},SET_DEFAULTS,data.settings); if(k) try{ localStorage.setItem(k,JSON.stringify(SETTINGS)); }catch(e){} } }
+  }catch(e){}
+  applySettings(); applyDefmap(); if(document.querySelector('#set-modal.open')) populateSettings();
+}
 async function saveSettingsCloud(){ try{ if(_sb&&_authUser){ await _sb.from('user_settings').upsert({id:_authUser.id, settings:SETTINGS}); } }catch(e){} }
 function openSettings(){ const m=$('set-modal'); if(!m) return; const e=$('set-email'); if(e) e.textContent=(_authUser&&_authUser.email)||'–'; const msg=$('set-msg'); if(msg){ msg.textContent=''; msg.className='set-msg'; } if($('set-pw1'))$('set-pw1').value=''; if($('set-pw2'))$('set-pw2').value=''; populateSettings(); const sm=$('st-savemsg'); if(sm){ sm.textContent=''; sm.className='set-msg'; } m.classList.add('open'); }
 (function(){ const bk=$('set-modal'); if(!bk) return; const x=$('set-x'), sv=$('set-save');
@@ -2290,7 +2296,7 @@ function openSettings(){ const m=$('set-modal'); if(!m) return; const e=$('set-e
   if(x) x.onclick=close;
   bk.addEventListener('click',e=>{ if(e.target===bk) close(); });
   document.querySelectorAll('#set-tabs .st-tab').forEach(t=>t.onclick=()=>{ const name=t.getAttribute('data-tab'); document.querySelectorAll('#set-tabs .st-tab').forEach(x=>x.classList.toggle('on',x===t)); document.querySelectorAll('#set-modal .st-pane').forEach(p=>p.classList.toggle('on',p.getAttribute('data-pane')===name)); });
-  const sa=$('st-saveall'); if(sa) sa.onclick=()=>{ collectSettings(); try{ localStorage.setItem(SET_KEY,JSON.stringify(SETTINGS)); }catch(e){} applySettings(); saveSettingsCloud(); const m=$('st-savemsg'); if(m){ m.textContent='저장되었습니다 ✓'; m.className='set-msg ok'; setTimeout(()=>{ if(m.textContent.indexOf('저장')>=0){m.textContent='';m.className='set-msg';} },2200); } };
+  const sa=$('st-saveall'); if(sa) sa.onclick=()=>{ collectSettings(); try{ const k=accKey()||SET_KEY; localStorage.setItem(k,JSON.stringify(SETTINGS)); }catch(e){} applySettings(); saveSettingsCloud(); const m=$('st-savemsg'); if(m){ m.textContent='저장되었습니다 ✓'; m.className='set-msg ok'; setTimeout(()=>{ if(m.textContent.indexOf('저장')>=0){m.textContent='';m.className='set-msg';} },2200); } };
   if(sv) sv.onclick=async()=>{ const p1=($('set-pw1').value||''),p2=($('set-pw2').value||''),m=$('set-msg'); const setM=(t,ok)=>{ m.textContent=t; m.className='set-msg'+(ok?' ok':''); };
     if(p1.length<6){ setM('비밀번호는 6자 이상이어야 합니다.'); return; }
     if(p1!==p2){ setM('비밀번호가 일치하지 않습니다.'); return; }
