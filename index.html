@@ -213,7 +213,7 @@
 
   /* view toggle + sun bar */
   #viewtoggle{background:rgba(255,255,255,.97);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:4px;top:14px}
-  #viewtoggle button{color:var(--muted);font-weight:700;font-size:13px;padding:7px 15px;border-radius:9px;display:inline-flex;align-items:center;gap:7px}
+  #viewtoggle button{color:var(--muted);font-weight:700;font-size:13px;padding:8px 16px;border-radius:9px;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
   #viewtoggle button.on{background:var(--accent);color:#fff}
   #sunbar{background:rgba(255,255,255,.97);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);color:var(--ink);padding:9px 14px}
   #sunbar input{accent-color:var(--accent)}
@@ -256,6 +256,32 @@
   .leaflet-control-layers-toggle{background-color:var(--card)!important}
   .leaflet-control-attribution{background:rgba(255,255,255,.8)!important;color:#8b95a6!important;font-size:10px!important}
 
+  /* account chip + legal footer */
+  #acct{display:none;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:12px;color:var(--ink);margin-bottom:8px;box-shadow:var(--shadow-sm)}
+  #acct.on{display:flex}
+  #acct .em{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;color:var(--muted)}
+  #acct .lo{background:transparent;border:0;color:var(--bad);font-weight:700;cursor:pointer;font-size:12px;white-space:nowrap}
+  .lp-foot{text-align:center;margin-top:8px}
+  .lp-foot a{font-size:10.5px;color:var(--faint);text-decoration:none}
+  .lp-foot a:hover{color:var(--accent);text-decoration:underline}
+  /* auth gate (기본 숨김) */
+  #auth-gate{position:fixed;inset:0;z-index:5000;display:none;align-items:center;justify-content:center;padding:20px;background:linear-gradient(150deg,#0e7c66,#0b5346)}
+  #auth-gate.open{display:flex}
+  body.gated #wrap{filter:blur(4px);pointer-events:none;user-select:none}
+  .auth-card{width:100%;max-width:388px;background:var(--card);border-radius:18px;padding:26px 24px 20px;box-shadow:0 30px 80px rgba(0,0,0,.4)}
+  .auth-brand{display:flex;align-items:center;gap:11px;margin-bottom:20px}
+  .auth-brand .logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(140deg,#12a184,#0e7c66);display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .auth-brand .logo svg{width:23px;height:23px;stroke:#fff;fill:none;stroke-width:2}
+  .auth-brand .an{font-size:19px;font-weight:800;letter-spacing:-.02em;color:var(--ink)}
+  .auth-brand .as{font-size:11px;color:var(--muted);margin-top:1px}
+  .auth-tabs{display:flex;gap:4px;background:var(--surface-2);padding:4px;border-radius:11px;border:1px solid var(--line);margin-bottom:16px}
+  .auth-tabs button{flex:1;padding:9px;border:0;background:transparent;border-radius:8px;font-weight:700;font-size:13px;color:var(--muted);cursor:pointer}
+  .auth-tabs button.on{background:var(--card);color:var(--accent);box-shadow:var(--shadow-sm)}
+  #auth-gate .fld{margin-bottom:12px}
+  #auth-gate label{font-size:11px;color:var(--muted);font-weight:600;display:block;margin-bottom:5px}
+  .au-msg{font-size:12px;min-height:15px;margin-bottom:8px;color:var(--bad);font-weight:600}
+  .au-msg.ok{color:var(--good)}
+  .au-note{font-size:11px;color:var(--muted);text-align:center;margin-top:13px;line-height:1.5}
   @media (max-width:860px){
     #wrap{grid-template-columns:1fr !important}
     #left,#right{background:var(--card);box-shadow:0 10px 40px rgba(21,32,46,.22)}
@@ -264,6 +290,22 @@
 </style>
 </head>
 <body>
+<!-- ============ 로그인 게이트 (AUTH.enabled=true + Supabase 키 입력 시 활성) ============ -->
+<div id="auth-gate">
+  <div class="auth-card">
+    <div class="auth-brand">
+      <div class="logo"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></div>
+      <div><div class="an">SolarSite</div><div class="as">태양광 부지 분석 · 자동 배치</div></div>
+    </div>
+    <div class="auth-tabs"><button id="au-tab-login" class="on">로그인</button><button id="au-tab-signup">회원가입</button></div>
+    <div class="fld"><label>이메일</label><input type="email" id="au-email" placeholder="name@example.com" autocomplete="email"></div>
+    <div class="fld"><label>비밀번호</label><input type="password" id="au-pw" placeholder="6자 이상" autocomplete="current-password"></div>
+    <label id="au-consent-row" style="display:none;font-size:11.5px;color:var(--muted);align-items:flex-start;gap:7px"><input type="checkbox" id="au-consent" style="width:auto;margin-top:2px"><span><a href="/legal.html" target="_blank">이용약관·개인정보처리방침</a>에 동의합니다.</span></label>
+    <div id="au-msg" class="au-msg"></div>
+    <button class="btn primary" id="au-submit" style="width:100%">로그인</button>
+    <div class="au-note">현재 <b>무료 베타</b> — 가입 후 모든 기능을 무료로 이용하실 수 있습니다.</div>
+  </div>
+</div>
 <div id="wrap">
 
   <!-- ================= LEFT: INPUTS ================= -->
@@ -350,6 +392,8 @@
 
     <button class="btn" id="btn-cost" style="margin-bottom:8px"><svg class="ic ic-sm" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="14" x2="8.01" y2="14"/><line x1="12" y1="14" x2="12.01" y2="14"/><line x1="16" y1="14" x2="16" y2="18"/><line x1="8" y1="18" x2="12" y2="18"/></svg>원가·마진 계산 <span style="font-weight:500;font-size:11px;color:var(--muted)">· 내부용</span></button>
     <button class="btn" id="btn-quote" style="margin-bottom:12px"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>고객 견적서 <span style="font-weight:500;font-size:11px;color:var(--muted)">· 고객 제시용</span></button>
+    <div id="acct"></div>
+    <div class="lp-foot"><a href="/legal.html" target="_blank">이용약관 · 개인정보처리방침 · 면책조항</a></div>
   </div>
 
   <!-- ================= CENTER: MAP ================= -->
@@ -1920,6 +1964,78 @@ document.getElementById('v2d').onclick=()=>{
   document.getElementById('sunbar').style.display='none';
   if(typeof map!=='undefined') map.invalidateSize();
 };
+
+/* ================= 로그인/회원 (Supabase) — 무료 베타 게이트. 기본 OFF ================= */
+/* 활성화: 아래 AUTH.enabled=true 로 바꾸고 Supabase 프로젝트 URL/anon key 입력.
+   (anon key는 공개용이라 클라이언트 노출 정상) — 키 없거나 실패 시 앱은 그대로 열림(막지 않음). */
+const AUTH = { enabled:false, url:'', anon:'' };
+let _sb=null, _authUser=null;
+function getPlan(){ return (_authUser && _authUser.user_metadata && _authUser.user_metadata.plan) || 'free'; }   // 유료 전환 대비 등급 훅(현재 전원 free)
+function auMsg(t,ok){ const el=$('au-msg'); if(el){ el.textContent=t||''; el.className='au-msg'+(ok?' ok':''); } }
+function loadSupabase(){
+  return new Promise((res,rej)=>{
+    if(window.supabase&&window.supabase.createClient) return res();
+    const s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js';
+    s.onload=res; s.onerror=()=>rej(new Error('supabase load fail')); document.head.appendChild(s);
+  });
+}
+function renderAccount(){
+  const el=$('acct'); if(!el) return;
+  if(_authUser){ el.className='on'; el.innerHTML=`<span class="em">${_authUser.email||'로그인됨'}</span><button class="lo" id="au-logout">로그아웃</button>`;
+    $('au-logout').onclick=async()=>{ try{ await _sb.auth.signOut(); }catch(e){} _authUser=null; el.className=''; el.innerHTML=''; showAuthGate(); };
+  } else { el.className=''; el.innerHTML=''; }
+}
+function showAuthGate(){ const g=$('auth-gate'); if(g){ g.classList.add('open'); document.body.classList.add('gated'); } }
+function hideAuthGate(){ const g=$('auth-gate'); if(g){ g.classList.remove('open'); document.body.classList.remove('gated'); } }
+let _auMode='login';
+function setAuMode(m){ _auMode=m;
+  $('au-tab-login').classList.toggle('on',m==='login'); $('au-tab-signup').classList.toggle('on',m==='signup');
+  $('au-consent-row').style.display = m==='signup'?'flex':'none';
+  $('au-submit').textContent = m==='signup'?'회원가입':'로그인';
+  $('au-pw').setAttribute('autocomplete', m==='signup'?'new-password':'current-password');
+  auMsg('');
+}
+async function auSubmit(){
+  const email=($('au-email').value||'').trim(), pw=$('au-pw').value||'';
+  if(!email||!pw){ auMsg('이메일과 비밀번호를 입력하세요.'); return; }
+  if(_auMode==='signup' && !$('au-consent').checked){ auMsg('약관에 동의해주세요.'); return; }
+  if(!_sb){ auMsg('인증 서버 연결 전입니다. 잠시 후 다시 시도하세요.'); return; }
+  $('au-submit').disabled=true; auMsg('처리 중…');
+  try{
+    if(_auMode==='signup'){
+      const { data, error } = await _sb.auth.signUp({ email, password:pw, options:{ data:{ plan:'free' } } });
+      if(error) throw error;
+      if(data.session){ _authUser=data.user; hideAuthGate(); renderAccount(); }
+      else auMsg('가입 완료! 이메일 인증 링크를 확인한 뒤 로그인하세요.', true);
+    } else {
+      const { data, error } = await _sb.auth.signInWithPassword({ email, password:pw });
+      if(error) throw error;
+      _authUser=data.user; hideAuthGate(); renderAccount();
+    }
+  }catch(e){
+    const m=(e&&e.message)||'';
+    auMsg(/Invalid login/i.test(m)?'이메일 또는 비밀번호가 올바르지 않습니다.':(/already registered/i.test(m)?'이미 가입된 이메일입니다.':(/at least 6/i.test(m)?'비밀번호는 6자 이상이어야 합니다.':('오류: '+m))));
+  }
+  $('au-submit').disabled=false;
+}
+async function initAuth(){
+  // 로그인 UI 배선(항상)
+  const tl=$('au-tab-login'), ts=$('au-tab-signup'), sb=$('au-submit');
+  if(tl) tl.onclick=()=>setAuMode('login');
+  if(ts) ts.onclick=()=>setAuMode('signup');
+  if(sb) sb.onclick=auSubmit;
+  ['au-email','au-pw'].forEach(id=>{ const el=$(id); if(el) el.addEventListener('keydown',e=>{ if(e.key==='Enter') auSubmit(); }); });
+  if(!AUTH.enabled || !AUTH.url || !AUTH.anon) return;   // OFF → 앱 개방(게이트 안 띄움)
+  try{
+    await loadSupabase();
+    _sb = window.supabase.createClient(AUTH.url, AUTH.anon);
+    const { data:{ session } } = await _sb.auth.getSession();
+    if(session){ _authUser=session.user; renderAccount(); }
+    else showAuthGate();
+    _sb.auth.onAuthStateChange((_e,s)=>{ _authUser = s? s.user : null; if(_authUser){ hideAuthGate(); } renderAccount(); });
+  }catch(e){ console.warn('[auth] 초기화 실패 — 앱 개방:', e); hideAuthGate(); }
+}
+initAuth();
 </script>
 </body>
 </html>
