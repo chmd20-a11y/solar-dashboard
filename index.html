@@ -261,6 +261,8 @@
   #acct.on{display:flex}
   #acct .em{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;color:var(--muted)}
   #acct .lo{background:transparent;border:0;color:var(--bad);font-weight:700;cursor:pointer;font-size:12px;white-space:nowrap}
+  #acct .adm{background:var(--accent-soft,#e1f2ee);border:1px solid var(--line);color:var(--accent,#0e7c66);font-weight:700;font-size:12px;text-decoration:none;padding:4px 9px;border-radius:8px;white-space:nowrap}
+  #acct .adm:hover{background:var(--accent,#0e7c66);color:#fff}
   .lp-foot{text-align:center;margin-top:8px}
   .lp-foot a{font-size:10.5px;color:var(--faint);text-decoration:none}
   .lp-foot a:hover{color:var(--accent);text-decoration:underline}
@@ -1986,9 +1988,9 @@ document.getElementById('v2d').onclick=()=>{
    (anon key는 공개용이라 클라이언트 노출 정상) — 키 없거나 실패 시 앱은 그대로 열림(막지 않음). */
 const AUTH = { enabled:true, url:'https://rejgvqeliqdjpavjvtjt.supabase.co', anon:'sb_publishable_SAJNSZSfhPgl3M9XiG7hYg_R0tSWUOb' };
 let _sb=null, _authUser=null;
-let _plan='free';
+let _plan='free', _isAdmin=false;
 function getPlan(){ return _plan; }   // 유료 전환 대비 등급(profiles.plan 반영)
-async function refreshPlan(){ _plan='free'; try{ if(_sb&&_authUser){ const {data}=await _sb.from('profiles').select('plan').eq('id',_authUser.id).single(); if(data&&data.plan) _plan=data.plan; } }catch(e){} }
+async function refreshPlan(){ _plan='free'; _isAdmin=false; try{ if(_sb&&_authUser){ const {data}=await _sb.from('profiles').select('plan,is_admin').eq('id',_authUser.id).single(); if(data){ if(data.plan) _plan=data.plan; _isAdmin=!!data.is_admin; } } }catch(e){} renderAccount(); }
 function auMsg(t,ok){ const el=$('au-msg'); if(el){ el.textContent=t||''; el.className='au-msg'+(ok?' ok':''); } }
 function loadSupabase(){
   return new Promise((res,rej)=>{
@@ -1999,8 +2001,8 @@ function loadSupabase(){
 }
 function renderAccount(){
   const el=$('acct'); if(!el) return;
-  if(_authUser){ el.className='on'; el.innerHTML=`<span class="em">${_authUser.email||'로그인됨'}</span><button class="lo" id="au-logout">로그아웃</button>`;
-    $('au-logout').onclick=async()=>{ try{ await _sb.auth.signOut(); }catch(e){} _authUser=null; el.className=''; el.innerHTML=''; showAuthGate(); };
+  if(_authUser){ el.className='on'; el.innerHTML=`<span class="em">${_authUser.email||'로그인됨'}</span>${_isAdmin?'<a class="adm" href="/admin.html">관리자</a>':''}<button class="lo" id="au-logout">로그아웃</button>`;
+    $('au-logout').onclick=async()=>{ try{ await _sb.auth.signOut(); }catch(e){} _authUser=null; _isAdmin=false; el.className=''; el.innerHTML=''; showAuthGate(); };
   } else { el.className=''; el.innerHTML=''; }
 }
 function showAuthGate(){ const g=$('auth-gate'); if(g){ g.classList.add('open'); document.body.classList.add('gated'); } }
@@ -2023,12 +2025,12 @@ async function auSubmit(){
     if(_auMode==='signup'){
       const { data, error } = await _sb.auth.signUp({ email, password:pw, options:{ data:{ plan:'free' } } });
       if(error) throw error;
-      if(data.session){ _authUser=data.user; hideAuthGate(); renderAccount(); }
+      if(data.session){ _authUser=data.user; hideAuthGate(); renderAccount(); refreshPlan(); }
       else auMsg('가입 완료! 이메일 인증 링크를 확인한 뒤 로그인하세요.', true);
     } else {
       const { data, error } = await _sb.auth.signInWithPassword({ email, password:pw });
       if(error) throw error;
-      _authUser=data.user; hideAuthGate(); renderAccount();
+      _authUser=data.user; hideAuthGate(); renderAccount(); refreshPlan();
     }
   }catch(e){
     const m=(e&&e.message)||'';
