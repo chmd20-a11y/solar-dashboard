@@ -604,14 +604,21 @@
   .q-pdf{margin-left:auto;background:var(--accent,#0e7c66);color:#fff;border:0;border-radius:8px;padding:6px 11px;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}
   .q-pdf:hover{background:#0b6a58}
   @media print {
-    @page { size: A4; margin: 10mm; }
-    html,body{ background:#fff !important; height:auto !important; overflow:visible !important }
+    @page { size: A4 portrait; margin: 10mm; }
+    html,body{ background:#fff !important; height:auto !important; overflow:visible !important; margin:0 !important; padding:0 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact }
     body > *:not(#quote-overlay){ display:none !important }
     #quote-overlay{ position:static !important; display:block !important; background:#fff !important; padding:0 !important; margin:0 !important; inset:auto !important; overflow:visible !important }
-    #quote-card{ position:static !important; width:100% !important; max-width:none !important; max-height:none !important; overflow:visible !important; box-shadow:none !important; border:0 !important; border-radius:0 !important; transform:none !important; margin:0 !important; padding:0 !important; font-size:10px }
+    #quote-card{ position:static !important; width:100% !important; max-width:100% !important; max-height:none !important; overflow:visible !important; box-shadow:none !important; border:0 !important; border-radius:0 !important; transform:none !important; margin:0 !important; padding:0 !important; font-size:9.5px !important; box-sizing:border-box }
+    #quote-card *{ box-sizing:border-box }
     #q-set, .q-pdf, .quote-close, #q-photo-empty { display:none !important }
-    #quote-card h2, .q-title{ font-size:15pt }
-    #quote-card .q-sec-h, #quote-card table, #quote-card .q-grid > div > div, #q-photo-wrap { break-inside: avoid }
+    /* 2단 → 1단(세로 쌓기), 폭 100% 고정으로 A4 잘림 방지 */
+    #quote-card .q-grid{ display:block !important; width:100% !important; gap:0 !important }
+    #quote-card .q-grid > div{ width:100% !important; max-width:100% !important; margin-bottom:8px }
+    #quote-card table{ width:100% !important; max-width:100% !important; table-layout:auto; border-collapse:collapse }
+    #quote-card td, #quote-card th{ word-break:keep-all; overflow-wrap:anywhere }
+    #quote-card img{ max-width:100% !important; height:auto !important }
+    #quote-card h2, .q-title{ font-size:14pt !important }
+    #quote-card .q-sec-h, #quote-card table, #quote-card .q-box, #q-photo-wrap { break-inside: avoid }
   }
 </style>
 <div id="quote-overlay">
