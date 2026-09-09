@@ -753,7 +753,7 @@
   .plan-clus{border-radius:9px;background:#f0a53a;color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;box-shadow:0 0 0 1.5px rgba(0,0,0,.15),0 2px 8px rgba(0,0,0,.25)}
   #gc-panel{position:absolute;top:14px;right:14px;z-index:600;width:302px;max-height:calc(100% - 96px);overflow-y:auto;background:#fff;border:1px solid #e4e8ef;border-radius:16px;box-shadow:0 12px 36px rgba(21,32,46,.18);padding:14px;display:none;font-size:13px;color:#15202e}
   #gc-panel.on{display:block}
-  .leaflet-top.leaflet-right{transition:margin-right .2s ease}
+  .leaflet-top.leaflet-right{transition:right .2s ease}
   #gc-panel .gcp-head{display:flex;align-items:center;justify-content:space-between;font-weight:800;font-size:14px;margin-bottom:11px}
   #gc-panel .gcp-x{background:none;border:0;font-size:21px;line-height:1;color:#8b95a6;cursor:pointer;padding:0 2px}
   #gc-panel .gcp-tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
@@ -2108,7 +2108,7 @@ initAuth();
   let DATA=null, PLANS=null, LAYER=null, PLAN_LAYER=null, MARKERS={}, SRCH=null, on=false, loading=false, mode='addr';
   const T='#15202e', LN='#e4e8ef', A2='#2f74d0';
   // 우측상단 패널(계통 패널 or 배치결과창)이 뜨면 레이어(지도변경) 컨트롤을 왼쪽으로 밀어 겹침 방지
-  function updateRightShift(){ try{ const tr=document.querySelector('.leaflet-top.leaflet-right'); if(!tr) return; const wrap=document.getElementById('wrap'), gc=document.getElementById('gc-panel'); const rightOpen=wrap&&wrap.classList.contains('results-open'), gcOpen=gc&&gc.classList.contains('on'); tr.style.marginRight=((window.innerWidth>=861)&&(rightOpen||gcOpen))?'338px':''; }catch(e){} }
+  function updateRightShift(){ try{ const tr=document.querySelector('.leaflet-top.leaflet-right'); if(!tr) return; const wrap=document.getElementById('wrap'), gc=document.getElementById('gc-panel'); const rightOpen=wrap&&wrap.classList.contains('results-open'), gcOpen=gc&&gc.classList.contains('on'); tr.style.right=((window.innerWidth>=861)&&(rightOpen||gcOpen))?'338px':''; }catch(e){} }
   function colorConn(mw){ return mw>=10?'#0f8a3c':mw>=5?'#3fae57':mw>=1?'#eab000':mw>0?'#f57c00':'#d5443f'; }
   window.toggleSupply=function(code){ const el=document.getElementById('sup-'+code); if(el) el.style.display=el.style.display==='none'?'block':'none'; };
   function hav(a,b,c,d){ const R=6371,r=Math.PI/180,dLa=(c-a)*r,dLo=(d-b)*r,s=Math.sin(dLa/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin(dLo/2)**2; return 2*R*Math.asin(Math.sqrt(s)); }
@@ -2178,8 +2178,11 @@ initAuth();
   async function setOn(v){
     on=v; btn.classList.toggle('on',v); document.body.classList.toggle('gc-panel-on',v); updateRightShift();
     const lbl=btn.querySelector('.gc-lbl'),sub=btn.querySelector('.gc-sub');
-    if(v){ await load(); if(LAYER) map.addLayer(LAYER); legendEl().classList.add('on'); panel().classList.add('on'); stats(); if(lbl)lbl.textContent='계통 여유용량 끄기'; if(sub)sub.textContent='· 변전소 켜짐'; }
-    else { if(LAYER) map.removeLayer(LAYER); if(PLAN_LAYER) map.removeLayer(PLAN_LAYER); if(SRCH){map.removeLayer(SRCH);SRCH=null;} legendEl().classList.remove('on'); const pn=document.getElementById('gc-panel'); if(pn){pn.classList.remove('on'); const tg=document.getElementById('gcp_plan_tg'); if(tg)tg.checked=false;} if(lbl)lbl.textContent='계통 여유용량 분석'; if(sub)sub.textContent='· 변전소 접속여유'; }
+    if(lbl)lbl.textContent=v?'계통 여유용량 끄기':'계통 여유용량 분석';   // 라벨 즉시 반영(로드 대기 전)
+    if(sub)sub.textContent=v?'· 변전소 켜짐':'· 변전소 접속여유';
+    if(v){ await load(); if(!on) return;   // 로드 중 사용자가 껐으면 중단(반대로 작동 방지)
+      if(LAYER) map.addLayer(LAYER); legendEl().classList.add('on'); panel().classList.add('on'); stats(); }
+    else { if(LAYER) map.removeLayer(LAYER); if(PLAN_LAYER) map.removeLayer(PLAN_LAYER); if(SRCH){map.removeLayer(SRCH);SRCH=null;} legendEl().classList.remove('on'); const pn=document.getElementById('gc-panel'); if(pn){pn.classList.remove('on'); const tg=document.getElementById('gcp_plan_tg'); if(tg)tg.checked=false;} }
   }
   btn.addEventListener('click',e=>{ e.preventDefault(); setOn(!on); });
   // 배치결과창(#wrap.results-open) 표시 변화 감지 → 레이어 컨트롤 자동 이동
