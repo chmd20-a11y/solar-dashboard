@@ -718,7 +718,7 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
 // ---------- map ----------
-const map = L.map('map', {preferCanvas:true, zoomControl:true}).setView([37.72019,126.70650], 17);
+const map = L.map('map', {preferCanvas:true, zoomControl:true}).setView([36.35,127.9], 7);   // 초기 시야 = 대한민국 전체
 // 기본 지도 = 국토부 VWorld(상업 이용 가능). ESRI는 상업 라이선스 필요 → 기본/컨트롤에서 제외(3D 바닥 stitch 폴백에서만 내부 사용).
 const esri = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
   {maxZoom:21, maxNativeZoom:19, crossOrigin:'anonymous', attribution:'Esri World Imagery'});
