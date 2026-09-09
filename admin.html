@@ -152,10 +152,25 @@ function render(){
       <td class="muted">${u.name||'-'}${u.company?(' · '+u.company):''}</td>
       <td><span class="pill ${paid?'paid':'free'}">${paid?'유료':'무료'}</span></td>
       <td class="muted">${fmt(u.created_at)}</td>
-      <td style="text-align:right"><button class="btn sm ${paid?'':'primary'}" data-id="${u.id}" data-to="${paid?'free':'paid'}">${paid?'무료로 전환':'유료로 전환'}</button></td>
+      <td style="text-align:right;white-space:nowrap"><button class="btn sm" data-reset="${u.id}" style="margin-right:6px">비밀번호 초기화</button><button class="btn sm ${paid?'':'primary'}" data-id="${u.id}" data-to="${paid?'free':'paid'}">${paid?'무료로 전환':'유료로 전환'}</button></td>
     </tr>`;
   }).join('');
   $('rows').querySelectorAll('button[data-id]').forEach(b=>b.onclick=()=>setPlan(b.dataset.id,b.dataset.to,b));
+  $('rows').querySelectorAll('button[data-reset]').forEach(b=>b.onclick=()=>resetPw(b.dataset.reset,b));
+}
+async function resetPw(id,btn){
+  if(!confirm('이 회원의 비밀번호를 123qwe 로 초기화할까요?')) return;
+  btn.disabled=true; const old=btn.textContent; btn.textContent='초기화 중…';
+  try{
+    const { data:{ session } } = await sb.auth.getSession();
+    const token = session && session.access_token;
+    if(!token) throw new Error('로그인 세션 없음');
+    const r = await fetch('/api/admin', {method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body:JSON.stringify({targetId:id})});
+    const j = await r.json().catch(()=>({}));
+    if(!r.ok || !j.ok) throw new Error(j.error||('HTTP '+r.status));
+    alert('초기화 완료 ✅ — 새 비밀번호: 123qwe\n(해당 회원에게 안내해 주세요)');
+  }catch(e){ alert('초기화 실패: '+((e&&e.message)||e)); }
+  btn.disabled=false; btn.textContent=old;
 }
 async function setPlan(id,to,btn){
   btn.disabled=true; const old=btn.textContent; btn.textContent='저장 중…';

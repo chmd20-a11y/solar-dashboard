@@ -729,6 +729,37 @@
   </div>
 </div>
 
+<style id="set-css">
+  .set-back{position:fixed;inset:0;background:rgba(21,32,46,.5);display:none;align-items:center;justify-content:center;z-index:3000;padding:20px}
+  .set-back.open{display:flex}
+  .set-box{width:100%;max-width:400px;background:#fff;border:1px solid #e4e8ef;border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.3);overflow:hidden;font-family:inherit}
+  .set-h{display:flex;align-items:center;justify-content:space-between;padding:15px 18px;border-bottom:1px solid #e4e8ef;font-size:16px;font-weight:800;color:#15202e}
+  .set-h button{background:none;border:0;font-size:22px;color:#647184;cursor:pointer;line-height:1;padding:0 2px}
+  .set-body{padding:16px 18px 18px}
+  .set-sec{margin-bottom:16px}
+  .set-lbl{font-size:11px;font-weight:800;color:#647184;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px}
+  .set-email{font-size:14px;font-weight:600;color:#15202e}
+  .set-box input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #e4e8ef;background:#f5f7fa;font-size:14px;margin-bottom:8px;box-sizing:border-box;font-family:inherit;color:#15202e}
+  .set-msg{font-size:12.5px;font-weight:600;color:#d5443f;min-height:16px;margin:2px 0 8px}
+  .set-msg.ok{color:#12925a}
+  .set-save{width:100%;padding:11px;border:0;border-radius:10px;background:#0e7c66;color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit}
+  .set-save:hover{background:#0b6a58}
+  #acct .setbtn{background:transparent;border:0;cursor:pointer;font-size:14px;padding:0 3px;line-height:1}
+</style>
+<div id="set-modal" class="set-back">
+  <div class="set-box">
+    <div class="set-h"><span>⚙️ 설정</span><button id="set-x" title="닫기">×</button></div>
+    <div class="set-body">
+      <div class="set-sec"><div class="set-lbl">계정</div><div class="set-email" id="set-email">–</div></div>
+      <div class="set-sec"><div class="set-lbl">비밀번호 변경</div>
+        <input type="password" id="set-pw1" placeholder="새 비밀번호 (6자 이상)" autocomplete="new-password">
+        <input type="password" id="set-pw2" placeholder="새 비밀번호 확인" autocomplete="new-password">
+        <div class="set-msg" id="set-msg"></div>
+        <button class="set-save" id="set-save">비밀번호 변경</button>
+      </div>
+    </div>
+  </div>
+</div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.14.2/dist/leaflet-geoman.min.js"></script>
 <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
@@ -2049,7 +2080,8 @@ function loadSupabase(){
 }
 function renderAccount(){
   const el=$('acct'); if(!el) return;
-  if(_authUser){ el.className='on'; el.innerHTML=`<span class="em">${_authUser.email||'로그인됨'}</span>${_isAdmin?'<a class="adm" href="/admin.html">관리자</a>':''}<button class="lo" id="au-logout">로그아웃</button>`;
+  if(_authUser){ el.className='on'; el.innerHTML=`<span class="em">${_authUser.email||'로그인됨'}</span>${_isAdmin?'<a class="adm" href="/admin.html">관리자</a>':''}<button class="setbtn" id="acct-set" title="설정">⚙️</button><button class="lo" id="au-logout">로그아웃</button>`;
+    { const _gs=$('acct-set'); if(_gs) _gs.onclick=openSettings; }
     $('au-logout').onclick=async()=>{ try{ await _sb.auth.signOut(); }catch(e){} _authUser=null; _isAdmin=false; el.className=''; el.innerHTML=''; showAuthGate(); };
   } else { el.className=''; el.innerHTML=''; }
 }
@@ -2103,6 +2135,23 @@ async function initAuth(){
     _sb.auth.onAuthStateChange((_e,s)=>{ _authUser = s? s.user : null; if(_authUser){ hideAuthGate(); refreshPlan(); } renderAccount(); });
   }catch(e){ console.warn('[auth] 초기화 실패 — 앱 개방:', e); hideAuthGate(); }
 }
+/* ===== 설정 화면(⚙️) — 계정·비밀번호 변경 (Phase4 설정메뉴 시작점) ===== */
+function openSettings(){ const m=$('set-modal'); if(!m) return; const e=$('set-email'); if(e) e.textContent=(_authUser&&_authUser.email)||'–'; const msg=$('set-msg'); if(msg){ msg.textContent=''; msg.className='set-msg'; } if($('set-pw1'))$('set-pw1').value=''; if($('set-pw2'))$('set-pw2').value=''; m.classList.add('open'); }
+(function(){ const bk=$('set-modal'); if(!bk) return; const x=$('set-x'), sv=$('set-save');
+  const close=()=>bk.classList.remove('open');
+  if(x) x.onclick=close;
+  bk.addEventListener('click',e=>{ if(e.target===bk) close(); });
+  if(sv) sv.onclick=async()=>{ const p1=($('set-pw1').value||''),p2=($('set-pw2').value||''),m=$('set-msg'); const setM=(t,ok)=>{ m.textContent=t; m.className='set-msg'+(ok?' ok':''); };
+    if(p1.length<6){ setM('비밀번호는 6자 이상이어야 합니다.'); return; }
+    if(p1!==p2){ setM('비밀번호가 일치하지 않습니다.'); return; }
+    if(!_sb||!_authUser){ setM('로그인이 필요합니다.'); return; }
+    sv.disabled=true; setM('변경 중…');
+    try{ const {error}=await _sb.auth.updateUser({password:p1}); if(error) throw error; setM('비밀번호가 변경되었습니다.',true); $('set-pw1').value='';$('set-pw2').value=''; }
+    catch(e){ setM('오류: '+((e&&e.message)||e)); }
+    sv.disabled=false;
+  };
+})();
+
 initAuth();
 
 /* ===== 계통 여유용량 오버레이(메인 지도 통합) — 마커+팝업+검색+통계+신설계획 ===== */
