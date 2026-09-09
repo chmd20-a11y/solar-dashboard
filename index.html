@@ -409,7 +409,7 @@
 
     <button class="btn" id="btn-cost" style="margin-bottom:8px"><svg class="ic ic-sm" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="14" x2="8.01" y2="14"/><line x1="12" y1="14" x2="12.01" y2="14"/><line x1="16" y1="14" x2="16" y2="18"/><line x1="8" y1="18" x2="12" y2="18"/></svg>원가·마진 계산 <span style="font-weight:500;font-size:11px;color:var(--muted)">· 내부용</span></button>
     <button class="btn" id="btn-quote" style="margin-bottom:12px"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>고객 견적서 <span style="font-weight:500;font-size:11px;color:var(--muted)">· 고객 제시용</span></button>
-    <a class="btn" href="/grid.html" id="btn-grid" style="margin-bottom:12px;background:#e3f2ec;border-color:#0e7c66;color:#0b6a58;font-weight:700;text-decoration:none;justify-content:flex-start"><svg class="ic ic-sm" viewBox="0 0 24 24" style="stroke:#0b6a58"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg>계통 여유용량 분석 <span style="font-weight:500;font-size:11px;color:var(--muted)">· 변전소 접속여유</span></a>
+    <a class="btn" href="javascript:void(0)" id="btn-grid" style="margin-bottom:12px;background:#e3f2ec;border-color:#0e7c66;color:#0b6a58;font-weight:700;text-decoration:none;justify-content:flex-start"><svg class="ic ic-sm" viewBox="0 0 24 24" style="stroke:#0b6a58"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg><span class="gc-lbl">계통 여유용량 분석</span> <span class="gc-sub" style="font-weight:500;font-size:11px;color:var(--muted)">· 변전소 접속여유</span></a>
     <div id="acct"></div>
     <div class="lp-foot"><a href="/legal.html" target="_blank">이용약관 · 개인정보처리방침 · 면책조항</a></div>
   </div>
@@ -732,6 +732,25 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.14.2/dist/leaflet-geoman.min.js"></script>
 <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+<style id="grid-css">
+  .clus{border-radius:50%;background:rgba(255,255,255,.96);color:#15202e;border:3px solid #0e7c66;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;box-shadow:0 0 0 1.5px rgba(0,0,0,.15),0 2px 8px rgba(0,0,0,.25)}
+  .clus-tip{background:rgba(255,255,255,.98)!important;color:#15202e!important;border:1px solid #e4e8ef!important;border-radius:9px!important;font-size:12px!important;line-height:1.5!important;box-shadow:0 4px 14px rgba(0,0,0,.18)!important;padding:6px 9px!important}
+  .clus-tip::before{display:none!important}
+  .gc-pop .popup-t{font-weight:800;font-size:14px;margin-bottom:4px;color:#15202e}
+  .gc-pop .popup-line{display:flex;justify-content:space-between;gap:14px;font-size:12px;color:#15202e}
+  .gc-pop .muted{color:#8b95a6}
+  .gc-pop .pill{display:inline-block;background:#f0f2f5;border:1px solid #e4e8ef;border-radius:20px;padding:1px 8px;font-size:11px;color:#647184}
+  .gc-legend{position:absolute;right:12px;bottom:74px;z-index:600;background:rgba(255,255,255,.96);border:1px solid #e4e8ef;border-radius:12px;padding:10px 12px;font-size:11.5px;color:#647184;box-shadow:0 8px 24px rgba(21,32,46,.16);display:none;max-width:214px}
+  .gc-legend.on{display:block}
+  .gc-legend b{color:#15202e}
+  .gc-legend .sw{display:inline-flex;align-items:center;gap:5px;margin:2px 9px 2px 0;white-space:nowrap}
+  .gc-legend .dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+  #btn-grid.on{background:#0e7c66!important;border-color:#0e7c66!important;color:#fff!important}
+  #btn-grid.on svg{stroke:#fff!important}
+  #btn-grid.on span{color:rgba(255,255,255,.85)!important}
+</style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
@@ -2058,6 +2077,67 @@ async function initAuth(){
   }catch(e){ console.warn('[auth] 초기화 실패 — 앱 개방:', e); hideAuthGate(); }
 }
 initAuth();
+
+/* ===== 계통 여유용량 오버레이(메인 지도 통합) — 1단계: 마커+팝업+토글 ===== */
+(function(){
+  const btn=document.getElementById('btn-grid'); if(!btn) return;
+  let DATA=null, LAYER=null, on=false, loading=false;
+  const T='#15202e', LN='#e4e8ef', A2='#2f74d0';
+  function colorConn(mw){ return mw>=10?'#0f8a3c':mw>=5?'#3fae57':mw>=1?'#eab000':mw>0?'#f57c00':'#d5443f'; }
+  window.toggleSupply=function(code){ const el=document.getElementById('sup-'+code); if(el) el.style.display=el.style.display==='none'?'block':'none'; };
+  function makeClusterIcon(cluster){
+    const k=cluster.getAllChildMarkers(), n=k.length;
+    const avg=k.reduce((a,m)=>a+(m.connMw||0),0)/(n||1);
+    const size=n<10?36:n<40?44:52;
+    return L.divIcon({html:`<div class="clus" style="border-color:${colorConn(avg)};width:${size}px;height:${size}px">${n}</div>`,className:'clus-wrap',iconSize:[size,size]});
+  }
+  function contactHtml(s){
+    const o=s.office||null, name=(o&&o.name)?o.name:'한전 고객센터', phone=(o&&o.phone)?o.phone:'123', tel=phone.replace(/[^0-9]/g,'')||'123';
+    return `<div class="popup-line" style="margin-top:5px;border-top:1px solid ${LN};padding-top:5px"><span>📞 선로확인 문의</span><a href="tel:${tel}" style="color:${A2};font-weight:700">${name} · ${phone}</a></div>`;
+  }
+  function supplyHtml(s){
+    const sup=s.supply3||s.supply||{}, areas=Object.keys(sup); if(!areas.length) return '';
+    const total=areas.reduce((a,k)=>a+sup[k].length,0), scope=s.supply3_far?'최근접':'반경 3km';
+    const body=areas.map(k=>`<div style="margin-bottom:4px"><b style="color:${T}">${k}</b> <span class="muted">(${sup[k].length})</span><br><span class="muted">${sup[k].join(' · ')}</span></div>`).join('');
+    return `<div style="margin-top:7px;border-top:1px solid ${LN};padding-top:6px"><div class="popup-line"><span>🏘 공급 읍/면/동 <span class="muted">(${scope})</span></span><span><b>${total}개</b> <a href="javascript:void(0)" onclick="toggleSupply('${s.code}')" style="color:${A2}">목록 ▾</a></span></div><div id="sup-${s.code}" style="display:none;max-height:150px;overflow:auto;margin-top:5px;font-size:11px;line-height:1.5">${body}</div></div>`;
+  }
+  function popup(s){
+    const conn=s.connect_max_mw||0;
+    const lines=(s.lines||[]).slice(0,6).map(l=>`<div class="popup-line"><span>${l.dl_nm} <span class="muted">(#${l.mtr_no})</span></span><b style="color:${colorConn(l.conn||0)}">${(l.conn??0).toFixed(1)} MW</b></div>`).join('');
+    const nm=s.osm_name||(s.name+' 변전소');
+    const badge=s.coord_exact?'<span class="pill" style="color:#0f8a3c">정확좌표·실명(OSM)</span>':'<span class="pill">근사좌표</span>';
+    const warn=conn<=0?`<div style="color:#d5443f;font-size:12px;margin-top:3px">⚠ 현재 신규 연계 불가 (여유 0)</div>`:'';
+    return `<div class="popup-t">${nm} <span class="muted">${s.code}</span></div><div class="muted" style="font-size:11px;margin-bottom:6px">${s.region} · ${badge}</div><div class="popup-line" style="font-size:14px"><span>⚡ 최대 연계가능</span><b style="color:${colorConn(conn)}">${conn.toFixed(1)} MW</b></div><div class="popup-line muted" style="font-size:11.5px"><span>지역 여지(변전소 총여유)</span><span>${(s.subst_free_mw||0).toFixed(0)} MW</span></div>${warn}${contactHtml(s)}<div style="margin:6px 0 3px;font-size:11px;color:#8b95a6">배전선로별 연계가능량 (병목 반영, 상위)</div>${lines}${supplyHtml(s)}`;
+  }
+  function buildLayer(){
+    LAYER=L.markerClusterGroup({maxClusterRadius:55,showCoverageOnHover:false,spiderfyOnMaxZoom:false,disableClusteringAtZoom:12,chunkedLoading:true,iconCreateFunction:makeClusterIcon});
+    LAYER.on('clustermouseover',function(e){ const k=e.layer.getAllChildMarkers(); const conn=k.reduce((a,m)=>a+(m.connMw||0),0),free=k.reduce((a,m)=>a+(m.freeMw||0),0); e.layer.bindTooltip(`<b>변전소 ${k.length}개</b><br>연계가능 합 <b style="color:#0e7c66">${conn.toFixed(0)} MW</b><br>지역여지 합 ${free.toFixed(0)} MW`,{direction:'top',offset:[0,-6],className:'clus-tip',opacity:1}).openTooltip(); });
+    const subs=DATA.substations||[], ordered=[...subs].sort((a,b)=>(((a.connect_max_mw||0)>0)?0:1)-(((b.connect_max_mw||0)>0)?0:1)), ms=[];
+    ordered.forEach(s=>{ const conn=s.connect_max_mw||0,dead=conn<=0,d=22,fill=colorConn(conn); const halo='box-shadow:0 0 0 1.5px rgba(0,0,0,.5),0 1px 4px rgba(0,0,0,.55)'; const glyph=dead?`<span style="color:#fff;font-weight:900;font-size:13px;line-height:1">✕</span>`:''; const html=`<div style="width:${d}px;height:${d}px;border-radius:50%;background:${fill};border:2px solid #fff;${halo};display:flex;align-items:center;justify-content:center">${glyph}</div>`; const m=L.marker([s.lat,s.lng],{icon:L.divIcon({className:'',html,iconSize:[d,d],iconAnchor:[d/2,d/2]}),zIndexOffset:dead?1000:0}); m.bindPopup(popup(s),{className:'gc-pop',maxWidth:300}); m.connMw=conn; m.freeMw=s.subst_free_mw||0; ms.push(m); });
+    LAYER.addLayers(ms);
+  }
+  function legendEl(){
+    let el=document.getElementById('gc-legend');
+    if(!el){ el=document.createElement('div'); el.id='gc-legend'; el.className='gc-legend';
+      el.innerHTML=`<b>계통 여유용량</b> · 원 색 = 선로 최대 연계가능<div style="margin-top:6px"><span class="sw"><span class="dot" style="background:#0f8a3c"></span>10MW+</span><span class="sw"><span class="dot" style="background:#3fae57"></span>5–10</span><span class="sw"><span class="dot" style="background:#eab000"></span>1–5</span><span class="sw"><span class="dot" style="background:#f57c00"></span>0–1</span><span class="sw"><span class="dot" style="background:#d5443f"></span>0(불가)</span></div><div style="margin-top:5px;font-size:10.5px;color:#8b95a6">한전 분산전원 연계정보(22.9kV)·추정치</div>`;
+      (document.getElementById('center')||document.body).appendChild(el);
+    }
+    return el;
+  }
+  async function load(){
+    if(DATA||loading) return; loading=true; btn.style.opacity='.6';
+    try{ DATA=await fetch('/capacity.json?_'+Date.now()).then(r=>r.json()); buildLayer(); }
+    catch(e){ alert('계통 데이터를 불러오지 못했습니다.'); }
+    loading=false; btn.style.opacity='';
+  }
+  async function setOn(v){
+    on=v; btn.classList.toggle('on',v);
+    const lbl=btn.querySelector('.gc-lbl'), sub=btn.querySelector('.gc-sub');
+    if(v){ await load(); if(LAYER) map.addLayer(LAYER); legendEl().classList.add('on'); if(lbl)lbl.textContent='계통 여유용량 끄기'; if(sub)sub.textContent='· 변전소 켜짐'; }
+    else { if(LAYER) map.removeLayer(LAYER); legendEl().classList.remove('on'); if(lbl)lbl.textContent='계통 여유용량 분석'; if(sub)sub.textContent='· 변전소 접속여유'; }
+  }
+  btn.addEventListener('click',e=>{ e.preventDefault(); setOn(!on); });
+})();
 </script>
 </body>
 </html>
