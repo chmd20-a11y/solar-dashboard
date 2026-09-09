@@ -754,6 +754,7 @@
   #gc-panel{position:absolute;top:14px;right:14px;z-index:600;width:302px;max-height:calc(100% - 96px);overflow-y:auto;background:#fff;border:1px solid #e4e8ef;border-radius:16px;box-shadow:0 12px 36px rgba(21,32,46,.18);padding:14px;display:none;font-size:13px;color:#15202e}
   #gc-panel.on{display:block}
   .leaflet-top.leaflet-right{transition:transform .2s ease}
+  body.gc-shift .leaflet-top.leaflet-right{transform:translateX(-338px)!important}
   #gc-panel .gcp-head{display:flex;align-items:center;justify-content:space-between;font-weight:800;font-size:14px;margin-bottom:11px}
   #gc-panel .gcp-x{background:none;border:0;font-size:21px;line-height:1;color:#8b95a6;cursor:pointer;padding:0 2px}
   #gc-panel .gcp-tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
@@ -2108,7 +2109,7 @@ initAuth();
   let DATA=null, PLANS=null, LAYER=null, PLAN_LAYER=null, MARKERS={}, SRCH=null, on=false, loading=false, mode='addr';
   const T='#15202e', LN='#e4e8ef', A2='#2f74d0';
   // 우측상단 패널(계통 패널 or 배치결과창)이 뜨면 레이어(지도변경) 컨트롤을 왼쪽으로 밀어 겹침 방지
-  function updateRightShift(){ try{ const tr=document.querySelector('.leaflet-top.leaflet-right'); if(!tr) return; const wrap=document.getElementById('wrap'); const rightOpen=wrap&&wrap.classList.contains('results-open'), gcOpen=document.body.classList.contains('gc-panel-on'); tr.style.transform=((window.innerWidth>=861)&&(rightOpen||gcOpen))?'translateX(-338px)':''; }catch(e){} }
+  function updateRightShift(){ try{ const tr=document.querySelector('.leaflet-top.leaflet-right'); if(!tr) return; const wrap=document.getElementById('wrap'); const rightOpen=wrap&&wrap.classList.contains('results-open'), gcOpen=document.body.classList.contains('gc-panel-on'); document.body.classList.toggle('gc-shift',(window.innerWidth>=861)&&(rightOpen||gcOpen)); }catch(e){} }
   function colorConn(mw){ return mw>=10?'#0f8a3c':mw>=5?'#3fae57':mw>=1?'#eab000':mw>0?'#f57c00':'#d5443f'; }
   window.toggleSupply=function(code){ const el=document.getElementById('sup-'+code); if(el) el.style.display=el.style.display==='none'?'block':'none'; };
   function hav(a,b,c,d){ const R=6371,r=Math.PI/180,dLa=(c-a)*r,dLo=(d-b)*r,s=Math.sin(dLa/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin(dLo/2)**2; return 2*R*Math.asin(Math.sqrt(s)); }
