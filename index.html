@@ -751,7 +751,7 @@
   #btn-grid.on svg{stroke:#fff!important}
   #btn-grid.on span{color:rgba(255,255,255,.85)!important}
   .plan-clus{border-radius:9px;background:#f0a53a;color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;box-shadow:0 0 0 1.5px rgba(0,0,0,.15),0 2px 8px rgba(0,0,0,.25)}
-  #gc-panel{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);z-index:600;width:330px;max-width:calc(100% - 28px);max-height:calc(100% - 120px);overflow-y:auto;background:#fff;border:1px solid #e4e8ef;border-radius:16px;box-shadow:0 16px 40px rgba(21,32,46,.22);padding:14px;display:none;font-size:13px;color:#15202e}
+  #gc-panel{margin:10px 0 2px;width:auto;background:#f4f8f7;border:1px solid #e4e8ef;border-radius:12px;padding:12px;display:none;font-size:13px;color:#15202e}
   #gc-panel.on{display:block}
   .leaflet-top.leaflet-right{transition:transform .2s ease}
   body.gc-shift .leaflet-top.leaflet-right{transform:translateX(-338px)!important}
@@ -774,7 +774,6 @@
   #gc-panel .gcp-plan{margin-top:12px;border-top:1px solid #e4e8ef;padding-top:11px}
   #gc-panel .gcp-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px;font-weight:600}
   #gc-panel .gcp-note{font-size:10.5px;color:#8b95a6;margin-top:5px;line-height:1.4}
-  @media (max-width:860px){ #gc-panel{right:8px;left:8px;top:auto;bottom:8px;width:auto;max-width:none;transform:none;max-height:46%} }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -2168,7 +2167,8 @@ initAuth();
     <div class="gcp-row"><input id="gcp_in" placeholder="예: 김포시 양촌읍 양곡리 316"><button id="gcp_go">찾기</button></div>
     <div class="gcp-res" id="gcp_res"><div class="gcp-note">고객 부지 지번을 넣으면 가장 가까운 변전소·연계가능량을 보여줍니다.</div></div>
     <div class="gcp-plan"><label class="gcp-toggle"><input type="checkbox" id="gcp_plan_tg"> 🏗 발전소 신설/증설 계획 표시</label><div class="gcp-note" id="gcp_plan_n"></div></div>`;
-    (document.getElementById('center')||document.body).appendChild(el);
+    if(btn&&btn.parentNode){ btn.insertAdjacentElement('afterend', el); }   // 좌측 메뉴 '계통 여유용량' 버튼 바로 아래에 인라인 삽입
+    else { (document.getElementById('center')||document.body).appendChild(el); }
     el.querySelector('.gcp-x').onclick=()=>setOn(false);
     el.querySelectorAll('.gcp-tab').forEach(t=>t.onclick=()=>{ mode=t.getAttribute('data-t'); el.querySelectorAll('.gcp-tab').forEach(x=>x.classList.toggle('on',x===t)); document.getElementById('gcp_in').placeholder=mode==='name'?'예: 여수 · 남양주 · 양곡':'예: 김포시 양촌읍 양곡리 316'; document.getElementById('gcp_res').innerHTML=''; });
     document.getElementById('gcp_go').onclick=doSearch;
