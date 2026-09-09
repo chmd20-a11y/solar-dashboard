@@ -832,7 +832,7 @@
       <!-- 모듈규격 -->
       <div class="st-pane" data-pane="module">
         <div class="set-sec"><div class="set-lbl">국산 프리셋</div>
-          <div class="st-grid2"><div class="st-row"><label>브랜드</label><input type="text" id="st-kr-brand" value="현대"></div><div class="st-row"><label>출력 (W)</label><input type="number" id="st-kr-w" value="645"></div><div class="st-row"><label>가로 (mm)</label><input type="number" id="st-kr-x" value="1134"></div><div class="st-row"><label>세로 (mm)</label><input type="number" id="st-kr-y" value="2382"></div></div>
+          <div class="st-grid2"><div class="st-row"><label>브랜드</label><input type="text" id="st-kr-brand" value="현대"></div><div class="st-row"><label>출력 (W)</label><input type="number" id="st-kr-w" value="645"></div><div class="st-row"><label>가로 (mm)</label><input type="number" id="st-kr-x" value="1134"></div><div class="st-row"><label>세로 (mm)</label><input type="number" id="st-kr-y" value="2465"></div></div>
         </div>
         <div class="set-sec"><div class="set-lbl">중국산 프리셋</div>
           <div class="st-grid2"><div class="st-row"><label>브랜드</label><input type="text" id="st-cn-brand" value="AIKO"></div><div class="st-row"><label>출력 (W)</label><input type="number" id="st-cn-w" value="655"></div><div class="st-row"><label>가로 (mm)</label><input type="number" id="st-cn-x" value="1134"></div><div class="st-row"><label>세로 (mm)</label><input type="number" id="st-cn-y" value="2382"></div></div>
@@ -1413,8 +1413,9 @@ document.querySelectorAll('#seg-opt button').forEach(b=>b.onclick=()=>{ document
 document.querySelectorAll('#seg-mod button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('#seg-mod button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
   const m=b.dataset.m;
-  if(m==='kr'){ $('m-w').value=1134; $('m-h').value=2465; $('m-p').value=645; }
-  else if(m==='cn'){ $('m-w').value=1134; $('m-h').value=2382; $('m-p').value=655; }
+  const _MS=(typeof SETTINGS!=='undefined')?SETTINGS:{};
+  if(m==='kr'){ $('m-w').value=(+_MS.krX)||1134; $('m-h').value=(+_MS.krY)||2465; $('m-p').value=(+_MS.krW)||645; }
+  else if(m==='cn'){ $('m-w').value=(+_MS.cnX)||1134; $('m-h').value=(+_MS.cnY)||2382; $('m-p').value=(+_MS.cnW)||655; }
 });
 ['m-w','m-h','m-p'].forEach(id=>$(id).addEventListener('input',()=>{ document.querySelectorAll('#seg-mod button').forEach(x=>x.classList.toggle('on', x.dataset.m==='custom')); }));
 
@@ -2254,7 +2255,7 @@ async function initAuth(){
 }
 /* ===== 설정 화면(⚙️) — 7탭 (일반/타당성/경계/모듈/배치/원가/견적) · localStorage 저장 ===== */
 const SET_KEY='solarfit_settings';
-const SET_DEFAULTS={ company:'',phone:'',defmap:'hybrid', gz:true,slope:15,setres:200, buffer:0,roadmask:true, krBrand:'현대',krW:645,krX:1134,krY:2382, cnBrand:'AIKO',cnW:655,cnX:1134,cnY:2382, tilt:15,incid:25,gap:10, modcost:310,kwunit:950000,margin:5, apply:178,hours:3.6,rate:2.5,defer:5,repay:10 };
+const SET_DEFAULTS={ company:'',phone:'',defmap:'hybrid', gz:true,slope:15,setres:200, buffer:0,roadmask:true, krBrand:'현대',krW:645,krX:1134,krY:2465, cnBrand:'AIKO',cnW:655,cnX:1134,cnY:2382, tilt:15,incid:25,gap:10, modcost:310,kwunit:950000,margin:5, apply:178,hours:3.6,rate:2.5,defer:5,repay:10 };
 function loadSettings(){ try{ return Object.assign({},SET_DEFAULTS,JSON.parse(localStorage.getItem(SET_KEY)||'{}')); }catch(e){ return Object.assign({},SET_DEFAULTS); } }
 let SETTINGS=loadSettings();
 const SET_MAP=[['st-company','company','t'],['st-phone','phone','t'],['st-defmap','defmap','t'],
