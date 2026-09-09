@@ -115,49 +115,199 @@
     #reopen-results{top:12px}
   }
 </style>
+<style id="redesign">
+  /* ============ SolarSite 디자인 시스템 (라이트/프로) — 기존 다크 스타일 오버라이드 ============ */
+  :root{
+    --bg:#eef1f6; --card:#ffffff; --surface-2:#f4f6fa;
+    --ink:#15202e; --muted:#647184; --faint:#8b95a6;
+    --line:#e4e8ef; --line-2:#eef1f6;
+    --accent:#0e7c66; --accent-h:#0b6a58; --accent-ink:#ffffff; --accent-soft:#e1f2ee; --accent-line:#c2e2da;
+    --accent2:#2563eb; --accent2-soft:#e7edfd;
+    --good:#12925a; --good-soft:#e6f5ec; --good-line:#c2e6d0;
+    --warn:#c07d00; --warn-soft:#fbf1db; --warn-line:#f0dcab;
+    --bad:#d5443f; --bad-soft:#fbe9e8; --bad-line:#f3c9c7;
+    --shadow-sm:0 1px 2px rgba(21,32,46,.06),0 1px 1px rgba(21,32,46,.04);
+    --shadow:0 6px 22px rgba(21,32,46,.10);
+    --radius:13px;
+  }
+  html,body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  button{font-family:inherit}
+  .ic{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+  .ic-sm{width:15px;height:15px}
+
+  #wrap{grid-template-columns:344px 1fr}
+  #wrap.results-open{grid-template-columns:344px 1fr 326px}
+  #left{background:var(--bg);border-right:1px solid var(--line);padding:16px 14px 26px}
+  #right{background:var(--bg);border-left:1px solid var(--line);padding:16px 14px 26px}
+  #center{background:#d7dde4}
+  .col::-webkit-scrollbar{width:11px}
+  .col::-webkit-scrollbar-thumb{background:#ccd4de;border-radius:9px;border:3px solid var(--bg)}
+  .col::-webkit-scrollbar-thumb:hover{background:#b7c1cd}
+
+  /* brand */
+  .brand{display:flex;align-items:center;gap:10px;margin:0 2px 2px}
+  .brand .logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(140deg,#12a184,#0e7c66);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 8px rgba(14,124,102,.28);flex:0 0 auto}
+  .brand .logo svg{width:19px;height:19px;stroke:#fff;fill:none;stroke-width:2}
+  .brand .bt{min-width:0}
+  .brand h1{font-size:16.5px;font-weight:800;letter-spacing:-.02em;margin:0;line-height:1.1;color:var(--ink)}
+  .brand .sub{font-size:10.5px;font-weight:500;color:var(--muted);letter-spacing:.01em;margin-top:2px}
+  #close-left,#close-results{color:var(--muted)}
+  #close-left:hover,#close-results:hover{color:var(--ink)}
+  h1{color:var(--ink)}
+  .tag{color:var(--muted);margin:12px 2px 14px;font-size:11.5px}
+
+  /* sections */
+  .sec{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:13px 14px;margin-bottom:10px;box-shadow:var(--shadow-sm)}
+  .sec h2{font-size:13px;color:var(--ink);margin:0;letter-spacing:0;font-weight:700;display:flex;align-items:center;gap:9px;cursor:pointer;user-select:none}
+  .sec h2 .n{width:26px;height:26px;border-radius:8px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0}
+  .sec h2 .n svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+  .sec h2::after{content:'';width:8px;height:8px;border-right:2px solid var(--faint);border-bottom:2px solid var(--faint);transform:rotate(-45deg);margin-left:auto;transition:transform .18s;margin-right:3px}
+  .sec:not(.collapsed) h2{margin-bottom:13px}
+  .sec:not(.collapsed) h2::after{transform:rotate(45deg)}
+
+  /* fields */
+  .fld label{color:var(--muted);font-weight:600;font-size:11px;margin-bottom:6px}
+  input[type=text],input[type=number],select{background:var(--field,#f5f7fa);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:9px 11px;font-size:13.5px;transition:border-color .15s,box-shadow .15s}
+  :root{--field:#f5f7fa}
+  input[type=text],input[type=number],select{background:var(--field)}
+  input::placeholder{color:#aab4c2}
+  input[type=text]:focus,input[type=number]:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .rng input[type=range]{accent-color:var(--accent);height:5px}
+  .rng b{color:var(--accent);font-weight:700;font-variant-numeric:tabular-nums;font-size:12.5px}
+
+  /* buttons */
+  .btn{background:var(--card);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:10px 12px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:.15s}
+  .btn:hover{border-color:var(--accent-line);color:var(--accent);background:var(--accent-soft)}
+  .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 2px 8px rgba(14,124,102,.25);padding:12px}
+  .btn.primary:hover{background:var(--accent-h);color:#fff;border-color:var(--accent-h)}
+  .btn.primary .ic{stroke-width:2}
+  .btnrow .btn{padding:9px;font-size:12px}
+
+  /* segmented control */
+  .seg{gap:0;background:var(--surface-2);padding:4px;border-radius:11px;border:1px solid var(--line)}
+  .seg button{background:transparent;border:0;color:var(--muted);font-weight:600;border-radius:8px;padding:8px 4px;font-size:12px;transition:.14s}
+  .seg button:hover:not(.on){color:var(--ink)}
+  .seg button.on{background:var(--card);color:var(--accent);box-shadow:var(--shadow-sm);font-weight:700;border:0}
+  .seg button small{opacity:.7}
+
+  /* stat cards */
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;margin-bottom:9px;box-shadow:var(--shadow-sm)}
+  .stat .k{color:var(--muted);font-weight:600;font-size:11px}
+  .stat .v{color:var(--ink);font-weight:800;font-size:27px;margin-top:3px;font-variant-numeric:tabular-nums;letter-spacing:-.025em}
+  .stat .v small{color:var(--muted);font-weight:600;font-size:12px}
+  .stat.hero{background:linear-gradient(140deg,#0e7c66,#0b6a58);border-color:transparent;box-shadow:0 6px 18px rgba(14,124,102,.28)}
+  .stat.hero .k{color:rgba(255,255,255,.82)}
+  .stat.hero .v{color:#fff}
+  .stat.hero .v small{color:rgba(255,255,255,.8)}
+  .stat.blue .v{color:var(--accent2)}
+  .stat.green .v{color:var(--good)}
+  .grid2{gap:9px}
+
+  /* status pill (map) */
+  #status{background:rgba(255,255,255,.97);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:11px;color:var(--ink);padding:9px 14px;font-size:12.5px;box-shadow:var(--shadow);max-width:min(72%,540px);line-height:1.5;left:14px;bottom:14px}
+  #status b{color:var(--accent);font-weight:700}
+  .badge{background:var(--accent2-soft);color:var(--accent2);border:1px solid #cbd9fb}
+  .disc{color:var(--faint);border-top:1px dashed var(--line);font-size:10.5px;line-height:1.6;padding-top:11px;margin-top:12px}
+  .leaflet-container{background:#d7dde4;font-family:inherit}
+
+  /* view toggle + sun bar */
+  #viewtoggle{background:rgba(255,255,255,.97);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:4px;top:14px}
+  #viewtoggle button{color:var(--muted);font-weight:700;font-size:13px;padding:7px 15px;border-radius:9px;display:inline-flex;align-items:center;gap:7px}
+  #viewtoggle button.on{background:var(--accent);color:#fff}
+  #sunbar{background:rgba(255,255,255,.97);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);color:var(--ink);padding:9px 14px}
+  #sunbar input{accent-color:var(--accent)}
+  #sunbar b{color:var(--accent)}
+  #three{background:#cdd6df}
+
+  /* feasibility */
+  .feas-empty{color:var(--faint)}
+  .feas-sum{border-radius:11px;padding:11px 13px;font-size:13px}
+  .feas-sum.ok{background:var(--good-soft);color:#0c7a45;border:1px solid var(--good-line)}
+  .feas-sum.warn{background:var(--warn-soft);color:#95610a;border:1px solid var(--warn-line)}
+  .feas-sum.bad{background:var(--bad-soft);color:#b5322d;border:1px solid var(--bad-line)}
+  .feas-region-h{background:var(--surface-2);color:var(--ink);border:1px solid var(--line);border-radius:9px}
+  .feas-row{border-top:1px solid var(--line-2)}
+  .feas-row .ft .t{color:var(--ink)}
+  .feas-row .ft .d{color:var(--muted)}
+  .feas-row a{color:var(--accent2)}
+  .dot.ok{background:var(--good)}.dot.warn{background:var(--warn)}.dot.bad{background:var(--bad)}.dot.na{background:#b4bdca}
+  .jibun-list{border:1px solid var(--line);background:var(--surface-2);color:var(--ink)}
+  .jibun-list div{border-bottom:1px solid var(--line-2)}
+  .jibun-list::-webkit-scrollbar-thumb{background:#cbd3dd}
+  .sel-hd{color:var(--muted)}
+  .sel-item{background:var(--accent-soft);border:1px solid var(--accent-line);color:var(--ink)}
+  .sel-x{color:var(--bad)}
+  #own-legend{background:rgba(255,255,255,.98);border:1px solid var(--line);color:var(--ink);box-shadow:var(--shadow);border-radius:12px}
+  #own-legend > b{color:var(--ink)}
+  #own-leg-low{color:var(--warn)}
+  #own-leg-colors .own-note{color:var(--faint)}
+
+  /* FABs */
+  #menu-fab{background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:11px}
+  #menu-fab:hover{color:var(--accent)}
+  #reopen-results{background:var(--accent);color:#fff;box-shadow:var(--shadow);border-radius:10px;font-weight:700;display:none;align-items:center;gap:7px}
+  #close-results{color:var(--muted)}
+
+  /* leaflet controls tune */
+  .leaflet-bar a,.leaflet-control-layers{border-radius:10px!important;border:1px solid var(--line)!important;box-shadow:var(--shadow)!important;color:var(--ink)!important}
+  .leaflet-bar a{background:var(--card)!important}
+  .leaflet-bar a:hover{background:var(--surface-2)!important;color:var(--accent)!important}
+  .leaflet-control-layers-toggle{background-color:var(--card)!important}
+  .leaflet-control-attribution{background:rgba(255,255,255,.8)!important;color:#8b95a6!important;font-size:10px!important}
+
+  @media (max-width:860px){
+    #wrap{grid-template-columns:1fr !important}
+    #left,#right{background:var(--card);box-shadow:0 10px 40px rgba(21,32,46,.22)}
+    #left{width:88%;max-width:360px}
+  }
+</style>
 </head>
 <body>
 <div id="wrap">
 
   <!-- ================= LEFT: INPUTS ================= -->
   <div id="left" class="col">
-    <h1 style="display:flex;align-items:center">☀️ 태양광 부지 배치 <button id="close-left" title="메뉴 닫기">✕</button></h1>
-    <div class="tag">지번 · 부지경계 · 모듈규격 기반 자동 배치</div>
+    <div class="brand">
+      <div class="logo"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></div>
+      <div class="bt"><h1>SolarSite</h1><div class="sub">태양광 부지 분석 · 자동 배치</div></div>
+      <button id="close-left" title="메뉴 닫기">✕</button>
+    </div>
 
     <div class="sec">
-      <h2><span class="n">1</span> 부지 찾기</h2>
+      <h2><span class="n"><svg viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></span> 부지 찾기</h2>
       <div class="fld">
-        <label>지번 / 도로명 주소 (여러 개 추가 가능)</label>
+        <label>지번 · 도로명 주소 <span style="color:var(--faint)">· 여러 개 추가 가능</span></label>
         <div class="row">
           <input type="text" id="addr" placeholder="예: 경기도 파주시 문발동 67">
-          <button class="btn" id="btn-search" style="width:auto;padding:8px 14px;white-space:nowrap;flex:0 0 auto">＋ 추가</button>
+          <button class="btn" id="btn-search" style="width:auto;padding:0 13px;white-space:nowrap;flex:0 0 auto" title="추가"><svg class="ic ic-sm" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>추가</button>
         </div>
       </div>
       <div id="sel-list"></div>
       <div id="sep-radius" style="display:flex;gap:5px;margin-top:8px;align-items:center;flex-wrap:wrap">
-        <span style="font-size:11px;color:#9fb0c3">⭕ 이격거리 원</span>
+        <span style="font-size:11px;color:var(--muted)">이격거리 원</span>
       </div>
     </div>
 
     <div class="sec collapsed" id="sec-feas">
-      <h2><span class="n">2</span> 타당성 검토</h2>
-      <div id="feas-body"><div class="feas-empty">지번 검색 시 이 부지의 설치 타당성이 표시됩니다.</div></div>
+      <h2><span class="n"><svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="m9 14 2 2 4-4"/></svg></span> 타당성 검토</h2>
+      <div id="feas-body"><div class="feas-empty">지번 검색 또는 경계 그리기로 부지를 지정하면 타당성이 표시됩니다.</div></div>
     </div>
 
     <div class="sec collapsed">
-      <h2><span class="n">3</span> 부지 경계</h2>
+      <h2><span class="n"><svg viewBox="0 0 24 24"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="1.5"/></svg></span> 부지 경계 그리기</h2>
       <div class="btnrow">
-        <button class="btn" id="btn-draw">✏️ 경계 그리기</button>
-        <button class="btn" id="btn-clear">지우기</button>
+        <button class="btn" id="btn-draw"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>경계 그리기</button>
+        <button class="btn" id="btn-clear"><svg class="ic ic-sm" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>지우기</button>
       </div>
     </div>
 
     <div class="sec collapsed">
-      <h2><span class="n">4</span> 모듈 규격</h2>
+      <h2><span class="n"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span> 모듈 규격</h2>
       <div class="fld"><label>모듈 선택</label>
         <div class="seg" id="seg-mod">
-          <button data-m="kr" class="on">국산<br><small style="font-weight:500;opacity:.85">현대 645W</small></button>
-          <button data-m="cn">중국산<br><small style="font-weight:500;opacity:.85">AIKO 655W</small></button>
+          <button data-m="kr" class="on">국산<br><small>현대 645W</small></button>
+          <button data-m="cn">중국산<br><small>AIKO 655W</small></button>
           <button data-m="custom">직접입력</button>
         </div>
       </div>
@@ -177,7 +327,7 @@
     </div>
 
     <div class="sec collapsed">
-      <h2><span class="n">5</span> 배치 옵션</h2>
+      <h2><span class="n"><svg viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></span> 배치 옵션</h2>
       <div class="fld"><label>설치 유형</label>
         <div class="seg" id="seg-type">
           <button data-t="ground" class="on">노지</button>
@@ -185,35 +335,35 @@
           <button data-t="carport">주차장</button>
         </div>
       </div>
-      <div class="fld" style="font-size:11px;color:var(--muted);background:#161e2b;border:1px solid var(--line);border-radius:8px;padding:8px 10px">🔒 <b style="color:#cdd8e4">고정값</b> · 모듈각도 15° · 입사각(음영각) 25° · 2단 적재 시 모듈 간격 10mm</div>
+      <div class="fld" style="font-size:11px;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:9px 11px;display:flex;align-items:center;gap:7px"><svg class="ic ic-sm" viewBox="0 0 24 24" style="stroke:var(--muted)"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span><b style="color:var(--ink)">고정값</b> · 모듈각도 15° · 입사각 25° · 2단 적재 간격 10mm</span></div>
       <div class="fld"><label>완충 경계(안쪽 이격)</label><div class="rng"><input type="range" id="o-set" min="0" max="100" value="20"><b id="v-set">2.0 m</b></div></div>
-      <div class="fld"><label>패널 최대 배치</label>
-        <div class="seg" id="seg-opt"><button data-o="1" class="on">🎯 자동(정남)</button><button data-o="0">수동 방위</button></div>
+      <div class="fld"><label>패널 배치 방위</label>
+        <div class="seg" id="seg-opt"><button data-o="1" class="on">자동 (정남)</button><button data-o="0">수동 방위</button></div>
       </div>
       <div class="fld" id="az-manual" style="display:none"><label>배열 방위 (정남 기준 회전)</label><div class="rng"><input type="range" id="o-az" min="-90" max="90" value="0"><b id="v-az">정남</b></div></div>
       <div class="fld"><label>열 간격 (그림자 방지)</label>
         <div class="seg" id="seg-pitch"><button data-p="auto" class="on">자동</button><button data-p="manual">수동</button></div>
       </div>
       <div class="fld" id="pitch-manual" style="display:none"><label>수동 열 간격</label><div class="rng"><input type="range" id="o-pitch" min="10" max="120" value="50"><b id="v-pitch">5.0 m</b></div></div>
-      <button class="btn primary" id="btn-run">⚡ 배치 계산</button>
+      <button class="btn primary" id="btn-run"><svg class="ic" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>배치 계산</button>
     </div>
 
-    <button class="btn" id="btn-cost" style="border-color:var(--accent);color:var(--accent);font-weight:700;margin-bottom:8px">💰 원가·마진 계산 <span style="font-weight:500;font-size:11px;color:var(--muted)">· 영업자 전용</span></button>
-    <button class="btn" id="btn-quote" style="border-color:var(--accent2);color:var(--accent2);font-weight:700;margin-bottom:12px">📄 고객 견적서 <span style="font-weight:500;font-size:11px;color:var(--muted)">· 고객 제시용</span></button>
+    <button class="btn" id="btn-cost" style="margin-bottom:8px"><svg class="ic ic-sm" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="14" x2="8.01" y2="14"/><line x1="12" y1="14" x2="12.01" y2="14"/><line x1="16" y1="14" x2="16" y2="18"/><line x1="8" y1="18" x2="12" y2="18"/></svg>원가·마진 계산 <span style="font-weight:500;font-size:11px;color:var(--muted)">· 내부용</span></button>
+    <button class="btn" id="btn-quote" style="margin-bottom:12px"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>고객 견적서 <span style="font-weight:500;font-size:11px;color:var(--muted)">· 고객 제시용</span></button>
   </div>
 
   <!-- ================= CENTER: MAP ================= -->
   <div id="center" class="col">
     <div id="map"></div>
     <div id="three"></div>
-    <button id="menu-fab" title="메뉴 열기">☰</button>
+    <button id="menu-fab" title="메뉴 열기"><svg class="ic" viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
     <div id="viewtoggle" class="panel">
-      <button id="v2d" class="on">🗺️ 2D 지도</button>
-      <button id="v3d">🧊 3D 뷰</button>
+      <button id="v2d" class="on"><svg class="ic ic-sm" viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>2D 지도</button>
+      <button id="v3d"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>3D 뷰</button>
     </div>
-    <div id="sunbar" class="panel" style="display:none">☀️ 태양 <input type="range" id="o-sun" min="6" max="18" step="0.25" value="13"><b id="v-sun">13:00</b> · 드래그 회전</div>
+    <div id="sunbar" class="panel" style="display:none"><svg class="ic ic-sm" viewBox="0 0 24 24" style="stroke:var(--warn)"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span style="white-space:nowrap">태양</span> <input type="range" id="o-sun" min="6" max="18" step="0.25" value="13"><b id="v-sun">13:00</b></div>
     <div id="status">위 <b>지번 검색</b> 또는 <b>경계 그리기</b>로 부지를 지정하세요.</div>
-    <button id="reopen-results" title="배치 결과 보기">📊 배치 결과</button>
+    <button id="reopen-results" title="배치 결과 보기"><svg class="ic ic-sm" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>배치 결과</button>
     <div id="own-legend">
       <b>🏠 필지 소유정보</b>
       <div id="own-leg-low" style="display:none">🔍 <b>더 확대</b>하면 필지별 소유구분이 색으로 표시됩니다</div>
@@ -230,23 +380,26 @@
 
   <!-- ================= RIGHT: RESULTS ================= -->
   <div id="right" class="col">
-    <h1 style="font-size:14px;display:flex;align-items:center">📊 배치 결과 <button id="close-results" title="결과 숨기기">✕</button></h1>
-    <div class="tag">개략 배치(제안·견적용)</div>
+    <div class="brand" style="margin-bottom:12px">
+      <div class="logo" style="background:linear-gradient(140deg,#3b82f6,#2563eb);box-shadow:0 3px 8px rgba(37,99,235,.28)"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+      <div class="bt"><h1 style="font-size:15px">배치 결과</h1><div class="sub">개략 배치 · 제안/견적용</div></div>
+      <button id="close-results" title="결과 숨기기">✕</button>
+    </div>
+    <div class="stat hero"><div class="k">설치 용량</div><div class="v"><span id="r-kw">0</span><small> kWp</small></div></div>
     <div class="stat"><div class="k">총 모듈 수</div><div class="v"><span id="r-count">0</span><small> 장</small></div></div>
-    <div class="stat blue"><div class="k">설치 용량</div><div class="v"><span id="r-kw">0</span><small> kWp</small></div></div>
     <div class="grid2">
-      <div class="stat"><div class="k">부지 면적</div><div class="v" style="font-size:18px"><span id="r-land">0</span><small> ㎡</small></div></div>
-      <div class="stat"><div class="k">면적 이용률</div><div class="v" style="font-size:18px"><span id="r-ratio">0</span><small> %</small></div></div>
+      <div class="stat"><div class="k">부지 면적</div><div class="v" style="font-size:19px"><span id="r-land">0</span><small> ㎡</small></div></div>
+      <div class="stat"><div class="k">면적 이용률</div><div class="v" style="font-size:19px"><span id="r-ratio">0</span><small> %</small></div></div>
     </div>
     <div class="stat green"><div class="k">연간 예상 발전량</div><div class="v"><span id="r-gen">0</span><small> MWh</small></div></div>
-    <div class="stat"><div class="k">구조물(테이블) 수</div><div class="v" style="font-size:18px"><span id="r-tables">0</span><small> 개</small></div></div>
+    <div class="stat"><div class="k">구조물(테이블) 수</div><div class="v" style="font-size:19px"><span id="r-tables">0</span><small> 개</small></div></div>
 
-    <div class="btnrow" style="margin-top:6px">
-      <button class="btn" id="btn-png">🖼️ 2D 이미지 저장</button>
+    <div class="btnrow" style="margin-top:8px">
+      <button class="btn" id="btn-png"><svg class="ic ic-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>2D 저장</button>
       <button class="btn" id="btn-toggle">패널 숨기기</button>
     </div>
-    <div class="btnrow" style="margin-top:6px">
-      <button class="btn" id="btn-png3d">🧊 3D 화면 저장</button>
+    <div class="btnrow" style="margin-top:7px">
+      <button class="btn" id="btn-png3d"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>3D 화면 저장</button>
     </div>
 
     <div class="disc">
@@ -262,21 +415,21 @@
   #cost-overlay{position:fixed;inset:0;z-index:3000;display:none;align-items:flex-start;justify-content:center;background:rgba(4,8,13,.74);backdrop-filter:blur(3px);overflow:auto;padding:26px 14px}
   #cost-overlay.open{display:flex}
   #cost-card{width:100%;max-width:600px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 18px 22px;box-shadow:0 18px 60px rgba(0,0,0,.6);margin:auto}
-  #cost-card h2{font-size:16px;margin:0 0 2px;display:flex;align-items:center;gap:8px}
-  #cost-card .csub{font-size:11px;color:#ffb45a;margin-bottom:14px}
+  #cost-card h2{font-size:16px;margin:0 0 2px;display:flex;align-items:center;gap:8px;color:var(--ink)}
+  #cost-card .csub{font-size:11px;color:var(--warn);margin-bottom:14px;font-weight:600}
   .cost-close{margin-left:auto;background:transparent;border:0;color:var(--muted);font-size:20px;cursor:pointer;line-height:1}
-  .cost-in{background:#0f1620;border:1px solid var(--line);border-radius:12px;padding:12px 12px 4px;margin-bottom:14px}
+  .cost-in{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:12px 12px 4px;margin-bottom:14px}
   .cost-table{width:100%;border-collapse:collapse;font-size:13px}
-  .cost-table td{padding:7px 4px;border-bottom:1px solid rgba(255,255,255,.06)}
-  .cost-table td.lab{color:#cdd8e4}
-  .cost-table td.val{text-align:right;font-variant-numeric:tabular-nums;color:#eef2f7;font-weight:600;white-space:nowrap}
-  .cost-table tr.em td{background:rgba(78,161,255,.10);font-weight:800}
-  .cost-table tr.em td.lab{color:#cfe0ff}
-  .cost-table tr.em2 td{background:rgba(55,214,122,.12);font-weight:800}
-  .cost-table tr.em2 td.lab{color:#bff2d3}
-  .cost-table tr.rate td{border-top:2px dashed #ff6b6b;border-bottom:2px dashed #ff6b6b;background:rgba(255,107,107,.09);font-weight:900;font-size:15px;color:#ffd7d7}
+  .cost-table td{padding:7px 4px;border-bottom:1px solid var(--line-2)}
+  .cost-table td.lab{color:var(--ink)}
+  .cost-table td.val{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink);font-weight:600;white-space:nowrap}
+  .cost-table tr.em td{background:var(--accent2-soft);font-weight:800}
+  .cost-table tr.em td.lab{color:var(--accent2)}
+  .cost-table tr.em2 td{background:var(--good-soft);font-weight:800}
+  .cost-table tr.em2 td.lab{color:var(--good)}
+  .cost-table tr.rate td{border-top:2px dashed var(--bad);border-bottom:2px dashed var(--bad);background:var(--bad-soft);font-weight:900;font-size:15px;color:var(--bad)}
   .cost-table tr.sub td.lab{color:var(--muted);font-size:12px;padding-left:12px}
-  .cost-note{font-size:10.5px;color:#7f8ea0;line-height:1.5;margin-top:10px;border-top:1px dashed var(--line);padding-top:8px}
+  .cost-note{font-size:10.5px;color:var(--faint);line-height:1.5;margin-top:10px;border-top:1px dashed var(--line);padding-top:8px}
 </style>
 <div id="cost-overlay">
   <div id="cost-card">
@@ -347,42 +500,42 @@
 <style>
   #quote-overlay{position:fixed;inset:0;z-index:3000;display:none;align-items:flex-start;justify-content:center;background:rgba(4,8,13,.78);backdrop-filter:blur(3px);overflow:auto;padding:22px 12px}
   #quote-overlay.open{display:flex}
-  #quote-card{width:100%;max-width:960px;background:#0e1521;border:1px solid var(--line);border-radius:16px;padding:16px 18px 20px;box-shadow:0 18px 60px rgba(0,0,0,.6);margin:auto}
-  #quote-card h2{font-size:15px;margin:0 0 2px;display:flex;align-items:center;gap:8px}
-  .q-title{text-align:center;font-size:20px;font-weight:800;color:#eef2f7;margin:4px 0 10px;letter-spacing:.5px}
+  #quote-card{width:100%;max-width:960px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px 20px;box-shadow:0 24px 70px rgba(0,0,0,.4);margin:auto}
+  #quote-card h2{font-size:15px;margin:0 0 2px;display:flex;align-items:center;gap:8px;color:var(--ink)}
+  .q-title{text-align:center;font-size:21px;font-weight:800;color:var(--ink);margin:6px 0 12px;letter-spacing:-.01em}
   .quote-close{margin-left:auto;background:transparent;border:0;color:var(--muted);font-size:20px;cursor:pointer;line-height:1}
-  #q-set{background:#161e2b;border:1px dashed var(--accent);border-radius:10px;margin-bottom:14px;overflow:hidden}
-  #q-set .q-set-hd{padding:8px 12px;font-size:12px;color:var(--accent);cursor:pointer;user-select:none;font-weight:700;display:flex;align-items:center;gap:6px}
+  #q-set{background:var(--surface-2);border:1px dashed var(--accent-line);border-radius:10px;margin-bottom:14px;overflow:hidden}
+  #q-set .q-set-hd{padding:9px 12px;font-size:12px;color:var(--accent);cursor:pointer;user-select:none;font-weight:700;display:flex;align-items:center;gap:6px}
   #q-set .q-set-hd::after{content:'▾';margin-left:auto;transition:transform .15s}
   #q-set.closed .q-set-hd::after{transform:rotate(-90deg)}
-  #q-set .q-set-body{padding:0 12px 10px}
+  #q-set .q-set-body{padding:2px 12px 10px}
   #q-set.closed .q-set-body{display:none}
   .q-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
   @media(max-width:760px){ .q-grid{grid-template-columns:1fr} }
-  .q-sec-h{font-size:13px;font-weight:800;text-align:center;padding:6px;border-radius:7px;margin:2px 0 8px}
-  .q-sec-h.green{background:rgba(55,214,122,.14);color:#9ff0c0}
-  .q-sec-h.blue{background:rgba(78,161,255,.16);color:#bcd8ff}
+  .q-sec-h{font-size:13px;font-weight:800;text-align:center;padding:7px;border-radius:8px;margin:2px 0 9px}
+  .q-sec-h.green{background:var(--good-soft);color:var(--good);border:1px solid var(--good-line)}
+  .q-sec-h.blue{background:var(--accent2-soft);color:var(--accent2);border:1px solid #cbd9fb}
   .qtbl{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:12px}
-  .qtbl th,.qtbl td{border:1px solid rgba(255,255,255,.1);padding:5px 7px}
-  .qtbl th{background:rgba(255,255,255,.05);color:#cdd8e4;font-weight:700;font-size:11.5px}
+  .qtbl th,.qtbl td{border:1px solid var(--line);padding:6px 8px;color:var(--ink)}
+  .qtbl th{background:var(--surface-2);color:var(--muted);font-weight:700;font-size:11.5px}
   .qtbl td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
   .qtbl td.c{text-align:center;color:var(--muted);white-space:nowrap}
-  .qtbl tr.sum td{background:rgba(55,214,122,.1);font-weight:800;color:#dff5e8}
-  .q-fin{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:10px}
-  .q-fin .row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px}
+  .qtbl tr.sum td{background:var(--good-soft);font-weight:800;color:var(--ink)}
+  .q-fin{border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin-bottom:10px;background:var(--card)}
+  .q-fin .row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--line-2);font-size:13px}
   .q-fin .row:last-child{border-bottom:0}
-  .q-fin .row .k{color:#cdd8e4;font-weight:700}
+  .q-fin .row .k{color:var(--ink);font-weight:700}
   .q-fin .row .v{color:var(--accent2);font-weight:800;font-variant-numeric:tabular-nums}
-  .q-fin .row .v.big{font-size:17px}
+  .q-fin .row .v.big{font-size:18px}
   .q-fin .row small{color:var(--muted);font-weight:500;font-size:11px}
-  .q-formula{background:#0b1220;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px;color:#cfe0ff;text-align:center;margin-bottom:10px;font-variant-numeric:tabular-nums}
-  .q-payback{display:flex;justify-content:space-between;background:linear-gradient(90deg,#12315e,#1a2740);border-radius:8px;padding:8px 12px;margin-bottom:10px;align-items:center}
-  .q-payback .k{color:#cfe0ff;font-weight:800} .q-payback .v{color:var(--accent);font-weight:900;font-size:18px}
-  .q-note{font-size:10px;color:#ff9a9a;font-weight:700;margin-bottom:8px}
-  .q-foot{font-size:10px;color:#8a98a8;line-height:1.55;border-top:1px dashed var(--line);padding-top:8px;margin-top:6px}
+  .q-formula{background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-size:12px;color:var(--ink);text-align:center;margin-bottom:10px;font-variant-numeric:tabular-nums}
+  .q-payback{display:flex;justify-content:space-between;background:linear-gradient(100deg,#2563eb,#1d4ed8);border-radius:10px;padding:10px 14px;margin-bottom:10px;align-items:center;box-shadow:0 4px 14px rgba(37,99,235,.3)}
+  .q-payback .k{color:rgba(255,255,255,.9);font-weight:800} .q-payback .v{color:#fff;font-weight:900;font-size:19px}
+  .q-note{font-size:10px;color:var(--bad);font-weight:700;margin-bottom:8px}
+  .q-foot{font-size:10px;color:var(--faint);line-height:1.55;border-top:1px dashed var(--line);padding-top:8px;margin-top:6px}
   .q-set-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
   @media(max-width:620px){ .q-set-grid{grid-template-columns:1fr 1fr} }
-  #q-photo-wrap{position:relative;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#0b1220;min-height:150px;display:flex;align-items:center;justify-content:center}
+  #q-photo-wrap{position:relative;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface-2);min-height:150px;display:flex;align-items:center;justify-content:center}
   #q-photo{width:100%;display:block}
   #q-photo-empty{color:var(--muted);font-size:12px;text-align:center;padding:26px 14px;line-height:1.7}
   #q-photo-note{position:absolute;left:8px;bottom:8px;background:rgba(120,230,90,.92);color:#0a2000;font-size:11px;font-weight:800;padding:5px 9px;border-radius:6px;line-height:1.4;max-width:72%}
@@ -522,16 +675,17 @@
 <script>
 // ---------- map ----------
 const map = L.map('map', {preferCanvas:true, zoomControl:true}).setView([37.72019,126.70650], 17);
+// 기본 지도 = 국토부 VWorld(상업 이용 가능). ESRI는 상업 라이선스 필요 → 기본/컨트롤에서 제외(3D 바닥 stitch 폴백에서만 내부 사용).
 const esri = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-  {maxZoom:21, maxNativeZoom:19, crossOrigin:'anonymous', attribution:'Esri World Imagery'}).addTo(map);
+  {maxZoom:21, maxNativeZoom:19, crossOrigin:'anonymous', attribution:'Esri World Imagery'});
 const labels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-  {maxZoom:21, maxNativeZoom:19, crossOrigin:'anonymous', opacity:.7}).addTo(map);
+  {maxZoom:21, maxNativeZoom:19, crossOrigin:'anonymous', opacity:.7});
 // VWorld(국토부, 한국 고해상도) — 서울 프록시 경유(키 서버보관)
 const PXY = defaultProxy();
 const vworldAerial = L.tileLayer(PXY + '/req/wmts/1.0.0/__KEY__/Satellite/{z}/{y}/{x}.jpeg', {maxZoom:21, maxNativeZoom:19, crossOrigin:'anonymous', attribution:'국토부 VWorld 항공영상'});
 const vworldSat2  = L.tileLayer(PXY + '/req/wmts/1.0.0/__KEY__/Satellite/{z}/{y}/{x}.jpeg', {maxZoom:21, maxNativeZoom:19, crossOrigin:'anonymous'});
 const vworldHyb   = L.tileLayer(PXY + '/req/wmts/1.0.0/__KEY__/Hybrid/{z}/{y}/{x}.png', {maxZoom:21, maxNativeZoom:19, crossOrigin:'anonymous'});
-const vworldAerialHybrid = L.layerGroup([vworldSat2, vworldHyb]);   // 위성+지명 한 장
+const vworldAerialHybrid = L.layerGroup([vworldSat2, vworldHyb]).addTo(map);   // 기본 = 위성+지명(VWorld)
 // 지적 경계(주변 필지) — WMS는 3857 미렌더라, 데이터API로 뷰 안 필지를 직접 그림
 const parcelLayer = L.layerGroup();
 let _parcelOn = false;
@@ -562,8 +716,8 @@ map.on('overlayadd', e=>{ if(e.layer===ownWms){ if(map.getZoom()<16) map.setZoom
 map.on('overlayremove', e=>{ if(e.layer===ownWms){ showOwnLegend(false); } });
 map.on('zoomend', ()=>{ if(map.hasLayer(ownWms)) showOwnLegend(true); });
 L.control.layers(
-  { '🛰️ ESRI 위성': esri, '🇰🇷 VWorld 항공': vworldAerial, '🇰🇷 VWorld 항공+지명': vworldAerialHybrid },
-  { '지명·경계(ESRI)': labels, '🟨 지적 경계(필지)': parcelLayer, '🏠 필지 소유정보': ownWms },
+  { '위성 + 지명': vworldAerialHybrid, '위성만': vworldAerial },
+  { '지적 경계(필지)': parcelLayer, '필지 소유정보': ownWms },
   {position:'topright', collapsed:true}
 ).addTo(map);
 
