@@ -727,8 +727,8 @@
         <div class="q-sec-h green" id="q-fin-h">정책자금 (5년거치 10년상환 · 이율 2.5%)</div>
         <table class="qtbl">
           <tbody>
-            <tr><td>정책자금 대출 (80%)</td><td class="n" id="q-loan">0</td></tr>
-            <tr><td>자부담금 (20%)</td><td class="n" id="q-own">0</td></tr>
+            <tr><td id="q-loan-lbl">정책자금 대출 (80%)</td><td class="n" id="q-loan">0</td></tr>
+            <tr><td id="q-own-lbl">자부담금 (20%)</td><td class="n" id="q-own">0</td></tr>
           </tbody>
         </table>
 
@@ -862,7 +862,8 @@
           <div class="st-row"><label>일 발전시간 (h)</label><input type="number" id="st-hours" value="3.6" step="0.1"></div>
         </div>
         <div class="set-sec"><div class="set-lbl">정책자금 조건</div>
-          <div class="st-grid2"><div class="st-row"><label>이율 (%)</label><input type="number" id="st-rate" value="2.5" step="0.1"></div><div class="st-row"><label>거치 (년)</label><input type="number" id="st-defer" value="5"></div><div class="st-row"><label>상환 (년)</label><input type="number" id="st-repay" value="10"></div></div>
+          <div class="st-grid2"><div class="st-row"><label>이율 (%)</label><input type="number" id="st-rate" value="2.5" step="0.1"></div><div class="st-row"><label>거치 (년)</label><input type="number" id="st-defer" value="5"></div><div class="st-row"><label>상환 (년)</label><input type="number" id="st-repay" value="10"></div><div class="st-row"><label>대출 비율 (%)</label><input type="number" id="st-loanpct" value="80" step="1"></div></div>
+          <div class="st-note">대출 비율 = 정책자금 대출 %, 나머지가 자부담금입니다.</div>
         </div>
       </div>
       <div class="set-savebar"><span class="set-msg" id="st-savemsg"></span><button class="set-save" id="st-saveall" style="width:auto;padding:11px 22px">설정 저장</button></div>
@@ -1796,8 +1797,8 @@ function gridConnect(kw){
 // 20년 현금흐름(5년거치 10년상환, 이자 2.5%, 성능저하 0.4%/년)
 function cashflow(kw, invest, apply, hours, maint){
   const _S=(typeof SETTINGS!=='undefined')?SETTINGS:{};   // 금융조건(⚙️ 고객견적서)
-  const rate=((+_S.rate)||2.5)/100, defer=(+_S.defer)||5, repay=(+_S.repay)||10;
-  const loan=invest*0.8, degrade=0.004, gen1=kw*hours*365;
+  const rate=((+_S.rate)||2.5)/100, defer=(+_S.defer)||5, repay=(+_S.repay)||10, loanpct=(_S.loanpct!=null?(+_S.loanpct):80);
+  const loan=invest*(loanpct/100), degrade=0.004, gen1=kw*hours*365;
   let balance=loan, cum=0, payback=null; const J=[];
   for(let y=1;y<=20;y++){
     const revenue=gen1*(1-degrade*(y-1))*apply;
@@ -1808,7 +1809,7 @@ function cashflow(kw, invest, apply, hours, maint){
     if(payback===null && cum>=invest) payback=y;
   }
   const avg=(a,b)=>{ if(a>b||a>20) return 0; b=Math.min(b,20); let s=0;for(let i=a;i<=b;i++)s+=J[i-1];return s/(b-a+1);};
-  return { gross1:gen1*apply, avg5grace:avg(1,defer), avg10repay:avg(defer+1,defer+repay), avg5remain:avg(defer+repay+1,20), avg20:avg(1,20), payback:payback||'20+', _defer:defer, _repay:repay, _rate:rate*100 };
+  return { gross1:gen1*apply, avg5grace:avg(1,defer), avg10repay:avg(defer+1,defer+repay), avg5remain:avg(defer+repay+1,20), avg20:avg(1,20), payback:payback||'20+', _defer:defer, _repay:repay, _rate:rate*100, _loanpct:loanpct };
 }
 const R6=n=>Math.round(n/1000000)*1000000;   // 백만 반올림
 function quoteCalc(){
@@ -1880,7 +1881,7 @@ function quoteCalc(){
   if($('q-lbl1')) $('q-lbl1').textContent=`${cf._defer}년 순수익 (거치기간)`;
   if($('q-lbl2')) $('q-lbl2').textContent=`${cf._repay}년 순수익 (상환기간)`;
   if($('q-lbl3')) $('q-lbl3').textContent=`${Math.max(0,20-cf._defer-cf._repay)}년 순수익 (잔여기간)`;
-  $('q-loan').textContent=won(total*0.8); $('q-own').textContent=won(total*0.2);
+  { const lp=(cf._loanpct!=null?cf._loanpct:80); $('q-loan').textContent=won(total*lp/100); $('q-own').textContent=won(total*(100-lp)/100); if($('q-loan-lbl'))$('q-loan-lbl').textContent=`정책자금 대출 (${lp}%)`; if($('q-own-lbl'))$('q-own-lbl').textContent=`자부담금 (${100-lp}%)`; }
   applyQuotePhoto();
 }
 // 3D 뷰 캡처 → 견적서 현장 배치도로 삽입
@@ -2266,7 +2267,7 @@ async function initAuth(){
 }
 /* ===== 설정 화면(⚙️) — 7탭 (일반/타당성/경계/모듈/배치/원가/견적) · localStorage 저장 ===== */
 const SET_KEY='solarfit_settings';
-const SET_DEFAULTS={ company:'',phone:'',defmap:'hybrid', gz:true,slope:15,setres:200, buffer:2,roadmask:true, krBrand:'현대',krW:645,krX:1134,krY:2465, cnBrand:'AIKO',cnW:655,cnX:1134,cnY:2382, tilt:15,incid:25,gap:10, modcost:310,kwunit:950000,margin:5, apply:178,hours:3.6,rate:2.5,defer:5,repay:10 };
+const SET_DEFAULTS={ company:'',phone:'',defmap:'hybrid', gz:true,slope:15,setres:200, buffer:2,roadmask:true, krBrand:'현대',krW:645,krX:1134,krY:2465, cnBrand:'AIKO',cnW:655,cnX:1134,cnY:2382, tilt:15,incid:25,gap:10, modcost:310,kwunit:950000,margin:5, apply:178,hours:3.6,rate:2.5,defer:5,repay:10,loanpct:80 };
 function loadSettings(){ try{ return Object.assign({},SET_DEFAULTS,JSON.parse(localStorage.getItem(SET_KEY)||'{}')); }catch(e){ return Object.assign({},SET_DEFAULTS); } }
 let SETTINGS=loadSettings();
 const SET_MAP=[['st-company','company','t'],['st-phone','phone','t'],['st-defmap','defmap','t'],
@@ -2276,7 +2277,7 @@ const SET_MAP=[['st-company','company','t'],['st-phone','phone','t'],['st-defmap
   ['st-cn-brand','cnBrand','t'],['st-cn-w','cnW','n'],['st-cn-x','cnX','n'],['st-cn-y','cnY','n'],
   ['st-tilt','tilt','n'],['st-incid','incid','n'],['st-gap','gap','n'],
   ['st-modcost','modcost','n'],['st-kwunit','kwunit','n'],['st-margin','margin','n'],
-  ['st-apply','apply','n'],['st-hours','hours','n'],['st-rate','rate','n'],['st-defer','defer','n'],['st-repay','repay','n']];
+  ['st-apply','apply','n'],['st-hours','hours','n'],['st-rate','rate','n'],['st-defer','defer','n'],['st-repay','repay','n'],['st-loanpct','loanpct','n']];
 function populateSettings(){ SET_MAP.forEach(([id,key,t])=>{ const el=$(id); if(!el) return; if(t==='c') el.checked=!!SETTINGS[key]; else el.value=SETTINGS[key]; }); }
 function collectSettings(){ SET_MAP.forEach(([id,key,t])=>{ const el=$(id); if(!el) return; if(t==='c') SETTINGS[key]=el.checked; else if(t==='n') SETTINGS[key]=parseFloat(el.value)||0; else SETTINGS[key]=(el.value||'').trim(); }); }
 function applySettings(){ try{ if(typeof S!=='undefined'&&S){ S.tilt=(+SETTINGS.tilt)||15; S.incidence=(+SETTINGS.incid)||25; S.setback=(SETTINGS.buffer!=null?(+SETTINGS.buffer):2); } window.__stackGap=(+SETTINGS.gap)||10; const fv=$('fixedvals'); if(fv) fv.textContent=`모듈각도 ${SETTINGS.tilt}° · 입사각 ${SETTINGS.incid}° · 2단 적재 간격 ${SETTINGS.gap}mm`; }catch(e){} }
