@@ -750,6 +750,29 @@
   #btn-grid.on{background:#0e7c66!important;border-color:#0e7c66!important;color:#fff!important}
   #btn-grid.on svg{stroke:#fff!important}
   #btn-grid.on span{color:rgba(255,255,255,.85)!important}
+  .plan-clus{border-radius:9px;background:#f0a53a;color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;box-shadow:0 0 0 1.5px rgba(0,0,0,.15),0 2px 8px rgba(0,0,0,.25)}
+  #gc-panel{position:absolute;top:14px;right:14px;z-index:600;width:302px;max-height:calc(100% - 96px);overflow-y:auto;background:#fff;border:1px solid #e4e8ef;border-radius:16px;box-shadow:0 12px 36px rgba(21,32,46,.18);padding:14px;display:none;font-size:13px;color:#15202e}
+  #gc-panel.on{display:block}
+  #gc-panel .gcp-head{display:flex;align-items:center;justify-content:space-between;font-weight:800;font-size:14px;margin-bottom:11px}
+  #gc-panel .gcp-x{background:none;border:0;font-size:21px;line-height:1;color:#8b95a6;cursor:pointer;padding:0 2px}
+  #gc-panel .gcp-tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+  #gc-panel .gcp-tile{background:#f5f7fa;border:1px solid #e4e8ef;border-radius:10px;padding:9px 10px}
+  #gc-panel .gcp-tile .v{font-size:19px;font-weight:800;letter-spacing:-.5px}
+  #gc-panel .gcp-tile .l{font-size:10.5px;color:#647184;margin-top:2px;line-height:1.3}
+  #gc-panel .gcp-tabs{display:flex;background:#f5f7fa;border:1px solid #e4e8ef;border-radius:9px;overflow:hidden;margin-bottom:8px}
+  #gc-panel .gcp-tab{flex:1;background:transparent;border:0;padding:8px;font-size:12.5px;font-weight:700;color:#647184;cursor:pointer;font-family:inherit}
+  #gc-panel .gcp-tab.on{background:#0e7c66;color:#fff}
+  #gc-panel .gcp-row{display:flex;gap:6px}
+  #gc-panel .gcp-row input{flex:1;min-width:0;background:#f5f7fa;border:1px solid #e4e8ef;border-radius:8px;padding:9px 10px;font-size:13px;color:#15202e;font-family:inherit}
+  #gc-panel .gcp-row button{background:#0e7c66;color:#fff;border:0;border-radius:8px;padding:0 14px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap}
+  #gc-panel .gcp-res{margin-top:8px}
+  #gc-panel .gcp-res .hit{padding:8px 9px;border:1px solid #e4e8ef;border-radius:8px;margin-bottom:6px;cursor:pointer;font-size:12px}
+  #gc-panel .gcp-res .hit:hover{background:#f0f7f4;border-color:#0e7c66}
+  #gc-panel .gcp-res .hit b{font-size:13px}
+  #gc-panel .gcp-plan{margin-top:12px;border-top:1px solid #e4e8ef;padding-top:11px}
+  #gc-panel .gcp-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px;font-weight:600}
+  #gc-panel .gcp-note{font-size:10.5px;color:#8b95a6;margin-top:5px;line-height:1.4}
+  @media (max-width:860px){ #gc-panel{right:8px;left:8px;top:auto;bottom:8px;width:auto;max-height:46%} }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -2078,63 +2101,82 @@ async function initAuth(){
 }
 initAuth();
 
-/* ===== 계통 여유용량 오버레이(메인 지도 통합) — 1단계: 마커+팝업+토글 ===== */
+/* ===== 계통 여유용량 오버레이(메인 지도 통합) — 마커+팝업+검색+통계+신설계획 ===== */
 (function(){
   const btn=document.getElementById('btn-grid'); if(!btn) return;
-  let DATA=null, LAYER=null, on=false, loading=false;
+  let DATA=null, PLANS=null, LAYER=null, PLAN_LAYER=null, MARKERS={}, SRCH=null, on=false, loading=false, mode='addr';
   const T='#15202e', LN='#e4e8ef', A2='#2f74d0';
   function colorConn(mw){ return mw>=10?'#0f8a3c':mw>=5?'#3fae57':mw>=1?'#eab000':mw>0?'#f57c00':'#d5443f'; }
   window.toggleSupply=function(code){ const el=document.getElementById('sup-'+code); if(el) el.style.display=el.style.display==='none'?'block':'none'; };
-  function makeClusterIcon(cluster){
-    const k=cluster.getAllChildMarkers(), n=k.length;
-    const avg=k.reduce((a,m)=>a+(m.connMw||0),0)/(n||1);
-    const size=n<10?36:n<40?44:52;
-    return L.divIcon({html:`<div class="clus" style="border-color:${colorConn(avg)};width:${size}px;height:${size}px">${n}</div>`,className:'clus-wrap',iconSize:[size,size]});
-  }
-  function contactHtml(s){
-    const o=s.office||null, name=(o&&o.name)?o.name:'한전 고객센터', phone=(o&&o.phone)?o.phone:'123', tel=phone.replace(/[^0-9]/g,'')||'123';
-    return `<div class="popup-line" style="margin-top:5px;border-top:1px solid ${LN};padding-top:5px"><span>📞 선로확인 문의</span><a href="tel:${tel}" style="color:${A2};font-weight:700">${name} · ${phone}</a></div>`;
-  }
-  function supplyHtml(s){
-    const sup=s.supply3||s.supply||{}, areas=Object.keys(sup); if(!areas.length) return '';
-    const total=areas.reduce((a,k)=>a+sup[k].length,0), scope=s.supply3_far?'최근접':'반경 3km';
-    const body=areas.map(k=>`<div style="margin-bottom:4px"><b style="color:${T}">${k}</b> <span class="muted">(${sup[k].length})</span><br><span class="muted">${sup[k].join(' · ')}</span></div>`).join('');
-    return `<div style="margin-top:7px;border-top:1px solid ${LN};padding-top:6px"><div class="popup-line"><span>🏘 공급 읍/면/동 <span class="muted">(${scope})</span></span><span><b>${total}개</b> <a href="javascript:void(0)" onclick="toggleSupply('${s.code}')" style="color:${A2}">목록 ▾</a></span></div><div id="sup-${s.code}" style="display:none;max-height:150px;overflow:auto;margin-top:5px;font-size:11px;line-height:1.5">${body}</div></div>`;
-  }
-  function popup(s){
-    const conn=s.connect_max_mw||0;
-    const lines=(s.lines||[]).slice(0,6).map(l=>`<div class="popup-line"><span>${l.dl_nm} <span class="muted">(#${l.mtr_no})</span></span><b style="color:${colorConn(l.conn||0)}">${(l.conn??0).toFixed(1)} MW</b></div>`).join('');
-    const nm=s.osm_name||(s.name+' 변전소');
-    const badge=s.coord_exact?'<span class="pill" style="color:#0f8a3c">정확좌표·실명(OSM)</span>':'<span class="pill">근사좌표</span>';
-    const warn=conn<=0?`<div style="color:#d5443f;font-size:12px;margin-top:3px">⚠ 현재 신규 연계 불가 (여유 0)</div>`:'';
-    return `<div class="popup-t">${nm} <span class="muted">${s.code}</span></div><div class="muted" style="font-size:11px;margin-bottom:6px">${s.region} · ${badge}</div><div class="popup-line" style="font-size:14px"><span>⚡ 최대 연계가능</span><b style="color:${colorConn(conn)}">${conn.toFixed(1)} MW</b></div><div class="popup-line muted" style="font-size:11.5px"><span>지역 여지(변전소 총여유)</span><span>${(s.subst_free_mw||0).toFixed(0)} MW</span></div>${warn}${contactHtml(s)}<div style="margin:6px 0 3px;font-size:11px;color:#8b95a6">배전선로별 연계가능량 (병목 반영, 상위)</div>${lines}${supplyHtml(s)}`;
-  }
+  function hav(a,b,c,d){ const R=6371,r=Math.PI/180,dLa=(c-a)*r,dLo=(d-b)*r,s=Math.sin(dLa/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin(dLo/2)**2; return 2*R*Math.asin(Math.sqrt(s)); }
+  function makeClusterIcon(cl){ const k=cl.getAllChildMarkers(),n=k.length,avg=k.reduce((a,m)=>a+(m.connMw||0),0)/(n||1),size=n<10?36:n<40?44:52; return L.divIcon({html:`<div class="clus" style="border-color:${colorConn(avg)};width:${size}px;height:${size}px">${n}</div>`,className:'clus-wrap',iconSize:[size,size]}); }
+  function makePlanIcon(cl){ const n=cl.getChildCount(),size=n<10?32:n<40?40:46; return L.divIcon({html:`<div class="plan-clus" style="width:${size}px;height:${size}px">${n}</div>`,className:'',iconSize:[size,size]}); }
+  function contactHtml(s){ const o=s.office||null,name=(o&&o.name)?o.name:'한전 고객센터',phone=(o&&o.phone)?o.phone:'123',tel=phone.replace(/[^0-9]/g,'')||'123'; return `<div class="popup-line" style="margin-top:5px;border-top:1px solid ${LN};padding-top:5px"><span>📞 선로확인 문의</span><a href="tel:${tel}" style="color:${A2};font-weight:700">${name} · ${phone}</a></div>`; }
+  function supplyHtml(s){ const sup=s.supply3||s.supply||{},areas=Object.keys(sup); if(!areas.length) return ''; const total=areas.reduce((a,k)=>a+sup[k].length,0),scope=s.supply3_far?'최근접':'반경 3km'; const body=areas.map(k=>`<div style="margin-bottom:4px"><b style="color:${T}">${k}</b> <span class="muted">(${sup[k].length})</span><br><span class="muted">${sup[k].join(' · ')}</span></div>`).join(''); return `<div style="margin-top:7px;border-top:1px solid ${LN};padding-top:6px"><div class="popup-line"><span>🏘 공급 읍/면/동 <span class="muted">(${scope})</span></span><span><b>${total}개</b> <a href="javascript:void(0)" onclick="toggleSupply('${s.code}')" style="color:${A2}">목록 ▾</a></span></div><div id="sup-${s.code}" style="display:none;max-height:150px;overflow:auto;margin-top:5px;font-size:11px;line-height:1.5">${body}</div></div>`; }
+  function popup(s){ const conn=s.connect_max_mw||0,lines=(s.lines||[]).slice(0,6).map(l=>`<div class="popup-line"><span>${l.dl_nm} <span class="muted">(#${l.mtr_no})</span></span><b style="color:${colorConn(l.conn||0)}">${(l.conn??0).toFixed(1)} MW</b></div>`).join(''),nm=s.osm_name||(s.name+' 변전소'),badge=s.coord_exact?'<span class="pill" style="color:#0f8a3c">정확좌표·실명(OSM)</span>':'<span class="pill">근사좌표</span>',warn=conn<=0?`<div style="color:#d5443f;font-size:12px;margin-top:3px">⚠ 현재 신규 연계 불가 (여유 0)</div>`:''; return `<div class="popup-t">${nm} <span class="muted">${s.code}</span></div><div class="muted" style="font-size:11px;margin-bottom:6px">${s.region} · ${badge}</div><div class="popup-line" style="font-size:14px"><span>⚡ 최대 연계가능</span><b style="color:${colorConn(conn)}">${conn.toFixed(1)} MW</b></div><div class="popup-line muted" style="font-size:11.5px"><span>지역 여지(변전소 총여유)</span><span>${(s.subst_free_mw||0).toFixed(0)} MW</span></div>${warn}${contactHtml(s)}<div style="margin:6px 0 3px;font-size:11px;color:#8b95a6">배전선로별 연계가능량 (병목 반영, 상위)</div>${lines}${supplyHtml(s)}`; }
   function buildLayer(){
     LAYER=L.markerClusterGroup({maxClusterRadius:55,showCoverageOnHover:false,spiderfyOnMaxZoom:false,disableClusteringAtZoom:12,chunkedLoading:true,iconCreateFunction:makeClusterIcon});
-    LAYER.on('clustermouseover',function(e){ const k=e.layer.getAllChildMarkers(); const conn=k.reduce((a,m)=>a+(m.connMw||0),0),free=k.reduce((a,m)=>a+(m.freeMw||0),0); e.layer.bindTooltip(`<b>변전소 ${k.length}개</b><br>연계가능 합 <b style="color:#0e7c66">${conn.toFixed(0)} MW</b><br>지역여지 합 ${free.toFixed(0)} MW`,{direction:'top',offset:[0,-6],className:'clus-tip',opacity:1}).openTooltip(); });
-    const subs=DATA.substations||[], ordered=[...subs].sort((a,b)=>(((a.connect_max_mw||0)>0)?0:1)-(((b.connect_max_mw||0)>0)?0:1)), ms=[];
-    ordered.forEach(s=>{ const conn=s.connect_max_mw||0,dead=conn<=0,d=22,fill=colorConn(conn); const halo='box-shadow:0 0 0 1.5px rgba(0,0,0,.5),0 1px 4px rgba(0,0,0,.55)'; const glyph=dead?`<span style="color:#fff;font-weight:900;font-size:13px;line-height:1">✕</span>`:''; const html=`<div style="width:${d}px;height:${d}px;border-radius:50%;background:${fill};border:2px solid #fff;${halo};display:flex;align-items:center;justify-content:center">${glyph}</div>`; const m=L.marker([s.lat,s.lng],{icon:L.divIcon({className:'',html,iconSize:[d,d],iconAnchor:[d/2,d/2]}),zIndexOffset:dead?1000:0}); m.bindPopup(popup(s),{className:'gc-pop',maxWidth:300}); m.connMw=conn; m.freeMw=s.subst_free_mw||0; ms.push(m); });
+    LAYER.on('clustermouseover',function(e){ const k=e.layer.getAllChildMarkers(),conn=k.reduce((a,m)=>a+(m.connMw||0),0),free=k.reduce((a,m)=>a+(m.freeMw||0),0); e.layer.bindTooltip(`<b>변전소 ${k.length}개</b><br>연계가능 합 <b style="color:#0e7c66">${conn.toFixed(0)} MW</b><br>지역여지 합 ${free.toFixed(0)} MW`,{direction:'top',offset:[0,-6],className:'clus-tip',opacity:1}).openTooltip(); });
+    const subs=DATA.substations||[],ordered=[...subs].sort((a,b)=>(((a.connect_max_mw||0)>0)?0:1)-(((b.connect_max_mw||0)>0)?0:1)),ms=[];
+    ordered.forEach(s=>{ const conn=s.connect_max_mw||0,dead=conn<=0,d=22,fill=colorConn(conn),halo='box-shadow:0 0 0 1.5px rgba(0,0,0,.5),0 1px 4px rgba(0,0,0,.55)',glyph=dead?`<span style="color:#fff;font-weight:900;font-size:13px;line-height:1">✕</span>`:'',html=`<div style="width:${d}px;height:${d}px;border-radius:50%;background:${fill};border:2px solid #fff;${halo};display:flex;align-items:center;justify-content:center">${glyph}</div>`,m=L.marker([s.lat,s.lng],{icon:L.divIcon({className:'',html,iconSize:[d,d],iconAnchor:[d/2,d/2]}),zIndexOffset:dead?1000:0}); m.bindPopup(popup(s),{className:'gc-pop',maxWidth:300}); m.connMw=conn; m.freeMw=s.subst_free_mw||0; ms.push(m); MARKERS[s.code]=m; });
     LAYER.addLayers(ms);
   }
-  function legendEl(){
-    let el=document.getElementById('gc-legend');
-    if(!el){ el=document.createElement('div'); el.id='gc-legend'; el.className='gc-legend';
-      el.innerHTML=`<b>계통 여유용량</b> · 원 색 = 선로 최대 연계가능<div style="margin-top:6px"><span class="sw"><span class="dot" style="background:#0f8a3c"></span>10MW+</span><span class="sw"><span class="dot" style="background:#3fae57"></span>5–10</span><span class="sw"><span class="dot" style="background:#eab000"></span>1–5</span><span class="sw"><span class="dot" style="background:#f57c00"></span>0–1</span><span class="sw"><span class="dot" style="background:#d5443f"></span>0(불가)</span></div><div style="margin-top:5px;font-size:10.5px;color:#8b95a6">한전 분산전원 연계정보(22.9kV)·추정치</div>`;
-      (document.getElementById('center')||document.body).appendChild(el);
-    }
+  function stats(){
+    const subs=DATA.substations||[],usable=subs.filter(s=>(s.connect_max_mw||0)>0).length,byR={};
+    subs.forEach(s=>byR[s.region]=(byR[s.region]||0)+(s.connect_max_mw||0));
+    const topR=Object.entries(byR).sort((a,b)=>b[1]-a[1])[0],lines=subs.reduce((a,s)=>a+(s.lines||[]).filter(l=>(l.conn||0)>=5).length,0);
+    setT('gcp_sub',subs.length); setT('gcp_free',usable); setT('gcp_top',topR?topR[0]:'–'); setT('gcp_line',lines);
+  }
+  function setT(id,v){ const e=document.getElementById(id); if(e)e.textContent=v; }
+  function focusSub(code){ const m=MARKERS[code]; if(!m||!LAYER) return; LAYER.zoomToShowLayer(m,()=>m.openPopup()); }
+  window.gcFocus=focusSub;
+  function nearHits(lat,lng){ return (DATA.substations||[]).map(s=>({s,d:hav(lat,lng,s.lat,s.lng)})).sort((a,b)=>a.d-b.d).slice(0,4); }
+  function renderHits(list){ const box=document.getElementById('gcp_res'); if(!box) return; if(!list.length){ box.innerHTML='<div class="gcp-note">결과가 없습니다.</div>'; return; }
+    box.innerHTML=list.map(({s,d})=>{ const conn=s.connect_max_mw||0,nm=s.osm_name||(s.name+' 변전소'),dt=(d!=null)?` · ${d.toFixed(1)}km`:''; return `<div class="hit" onclick="gcFocus('${s.code}')"><b>${nm}</b> <span style="color:#8b95a6;font-size:11px">${s.region}${dt}</span><br>⚡ 연계가능 <b style="color:${colorConn(conn)}">${conn.toFixed(1)} MW</b> <span style="color:#8b95a6">· 지역여지 ${(s.subst_free_mw||0).toFixed(0)}MW</span></div>`; }).join(''); }
+  async function doSearch(){
+    const q=(document.getElementById('gcp_in').value||'').trim(); if(!q||!DATA) return;
+    const box=document.getElementById('gcp_res');
+    if(mode==='name'){ const nq=q.toLowerCase(); const hits=(DATA.substations||[]).filter(s=>((s.osm_name||'')+(s.name||'')+(s.region||'')).toLowerCase().includes(nq)).sort((a,b)=>(b.connect_max_mw||0)-(a.connect_max_mw||0)).slice(0,8).map(s=>({s,d:null})); renderHits(hits); return; }
+    box.innerHTML='<div class="gcp-note">주소 찾는 중…</div>';
+    let pt=null; try{ pt=await vwGeocode(q); }catch(e){ pt=null; }
+    if(!pt){ box.innerHTML='<div class="gcp-note">주소를 찾지 못했습니다. 지번/도로명을 확인하세요.</div>'; return; }
+    if(SRCH){ map.removeLayer(SRCH); } SRCH=L.circleMarker([pt.lat,pt.lng],{radius:7,color:'#fff',weight:2,fillColor:'#e6007a',fillOpacity:1}).addTo(map).bindTooltip('검색 위치',{permanent:false});
+    map.setView([pt.lat,pt.lng],11);
+    renderHits(nearHits(pt.lat,pt.lng));
+  }
+  async function loadPlans(){
+    if(PLAN_LAYER) return;
+    let p; try{ p=await fetch('/plans.json?_'+Date.now()).then(r=>r.json()); }catch(e){ p={plans:[]}; }
+    PLANS=p.plans||[];
+    PLAN_LAYER=L.markerClusterGroup({maxClusterRadius:50,showCoverageOnHover:false,spiderfyOnMaxZoom:false,disableClusteringAtZoom:12,iconCreateFunction:makePlanIcon});
+    const ms=[]; PLANS.filter(p=>p.lat&&p.lng).forEach(p=>{ const m=L.marker([p.lat,p.lng],{icon:L.divIcon({className:'',html:'<div style="font-size:20px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))">🏗</div>',iconSize:[22,22],iconAnchor:[11,11]})}); m.bindPopup(`<div class="popup-t">🏗 ${p.name} <span class="muted">${p.voltage||''}</span></div><div style="font-size:12px">단계: <b>${p.stage||'-'}</b><br><span class="muted">${p.saup||''}</span><br><span class="muted">${p.hq||''}</span></div>`,{className:'gc-pop',maxWidth:280}); ms.push(m); });
+    PLAN_LAYER.addLayers(ms);
+    const n=document.getElementById('gcp_plan_n'); if(n) n.textContent=`(위치확인 ${ms.length}건 / 전체 ${PLANS.length})`;
+  }
+  function panel(){
+    let el=document.getElementById('gc-panel'); if(el) return el;
+    el=document.createElement('div'); el.id='gc-panel';
+    el.innerHTML=`<div class="gcp-head"><span>⚡ 계통 여유용량</span><button class="gcp-x" title="닫기">×</button></div>
+    <div class="gcp-tiles"><div class="gcp-tile"><div class="v" id="gcp_sub">–</div><div class="l">변전소 수</div></div><div class="gcp-tile"><div class="v" id="gcp_free">–</div><div class="l">연계가능(선로&gt;0)</div></div><div class="gcp-tile"><div class="v" id="gcp_top">–</div><div class="l">연계여지 최다권역</div></div><div class="gcp-tile"><div class="v" id="gcp_line">–</div><div class="l">즉시연계 선로(≥5MW)</div></div></div>
+    <div class="gcp-tabs"><button class="gcp-tab on" data-t="addr">📍 지번</button><button class="gcp-tab" data-t="name">🔎 변전소명</button></div>
+    <div class="gcp-row"><input id="gcp_in" placeholder="예: 김포시 양촌읍 양곡리 316"><button id="gcp_go">찾기</button></div>
+    <div class="gcp-res" id="gcp_res"><div class="gcp-note">고객 부지 지번을 넣으면 가장 가까운 변전소·연계가능량을 보여줍니다.</div></div>
+    <div class="gcp-plan"><label class="gcp-toggle"><input type="checkbox" id="gcp_plan_tg"> 🏗 발전소 신설/증설 계획 표시</label><div class="gcp-note" id="gcp_plan_n"></div></div>`;
+    (document.getElementById('center')||document.body).appendChild(el);
+    el.querySelector('.gcp-x').onclick=()=>setOn(false);
+    el.querySelectorAll('.gcp-tab').forEach(t=>t.onclick=()=>{ mode=t.getAttribute('data-t'); el.querySelectorAll('.gcp-tab').forEach(x=>x.classList.toggle('on',x===t)); document.getElementById('gcp_in').placeholder=mode==='name'?'예: 여수 · 남양주 · 양곡':'예: 김포시 양촌읍 양곡리 316'; document.getElementById('gcp_res').innerHTML=''; });
+    document.getElementById('gcp_go').onclick=doSearch;
+    document.getElementById('gcp_in').addEventListener('keydown',e=>{ if(e.key==='Enter') doSearch(); });
+    document.getElementById('gcp_plan_tg').addEventListener('change',async e=>{ if(e.target.checked){ e.target.disabled=true; await loadPlans(); e.target.disabled=false; if(PLAN_LAYER) map.addLayer(PLAN_LAYER); } else if(PLAN_LAYER){ map.removeLayer(PLAN_LAYER); } });
     return el;
   }
-  async function load(){
-    if(DATA||loading) return; loading=true; btn.style.opacity='.6';
-    try{ DATA=await fetch('/capacity.json?_'+Date.now()).then(r=>r.json()); buildLayer(); }
-    catch(e){ alert('계통 데이터를 불러오지 못했습니다.'); }
-    loading=false; btn.style.opacity='';
-  }
+  function legendEl(){ let el=document.getElementById('gc-legend'); if(!el){ el=document.createElement('div'); el.id='gc-legend'; el.className='gc-legend'; el.innerHTML=`<b>계통 여유용량</b> · 원 색 = 선로 최대 연계가능<div style="margin-top:6px"><span class="sw"><span class="dot" style="background:#0f8a3c"></span>10MW+</span><span class="sw"><span class="dot" style="background:#3fae57"></span>5–10</span><span class="sw"><span class="dot" style="background:#eab000"></span>1–5</span><span class="sw"><span class="dot" style="background:#f57c00"></span>0–1</span><span class="sw"><span class="dot" style="background:#d5443f"></span>0(불가)</span></div><div style="margin-top:5px;font-size:10.5px;color:#8b95a6">한전 분산전원 연계정보(22.9kV)·추정치</div>`; (document.getElementById('center')||document.body).appendChild(el); } return el; }
+  async function load(){ if(DATA||loading) return; loading=true; btn.style.opacity='.6'; try{ DATA=await fetch('/capacity.json?_'+Date.now()).then(r=>r.json()); buildLayer(); stats(); }catch(e){ alert('계통 데이터를 불러오지 못했습니다.'); } loading=false; btn.style.opacity=''; }
   async function setOn(v){
     on=v; btn.classList.toggle('on',v);
-    const lbl=btn.querySelector('.gc-lbl'), sub=btn.querySelector('.gc-sub');
-    if(v){ await load(); if(LAYER) map.addLayer(LAYER); legendEl().classList.add('on'); if(lbl)lbl.textContent='계통 여유용량 끄기'; if(sub)sub.textContent='· 변전소 켜짐'; }
-    else { if(LAYER) map.removeLayer(LAYER); legendEl().classList.remove('on'); if(lbl)lbl.textContent='계통 여유용량 분석'; if(sub)sub.textContent='· 변전소 접속여유'; }
+    const lbl=btn.querySelector('.gc-lbl'),sub=btn.querySelector('.gc-sub');
+    if(v){ await load(); if(LAYER) map.addLayer(LAYER); legendEl().classList.add('on'); panel().classList.add('on'); stats(); if(lbl)lbl.textContent='계통 여유용량 끄기'; if(sub)sub.textContent='· 변전소 켜짐'; }
+    else { if(LAYER) map.removeLayer(LAYER); if(PLAN_LAYER) map.removeLayer(PLAN_LAYER); if(SRCH){map.removeLayer(SRCH);SRCH=null;} legendEl().classList.remove('on'); const pn=document.getElementById('gc-panel'); if(pn){pn.classList.remove('on'); const tg=document.getElementById('gcp_plan_tg'); if(tg)tg.checked=false;} if(lbl)lbl.textContent='계통 여유용량 분석'; if(sub)sub.textContent='· 변전소 접속여유'; }
   }
   btn.addEventListener('click',e=>{ e.preventDefault(); setOn(!on); });
 })();
