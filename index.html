@@ -1984,9 +1984,11 @@ document.getElementById('v2d').onclick=()=>{
 /* ================= 로그인/회원 (Supabase) — 무료 베타 게이트. 기본 OFF ================= */
 /* 활성화: 아래 AUTH.enabled=true 로 바꾸고 Supabase 프로젝트 URL/anon key 입력.
    (anon key는 공개용이라 클라이언트 노출 정상) — 키 없거나 실패 시 앱은 그대로 열림(막지 않음). */
-const AUTH = { enabled:false, url:'', anon:'' };
+const AUTH = { enabled:true, url:'https://rejgvqeliqdjpavjvtjt.supabase.co', anon:'sb_publishable_SAJNSZSfhPgl3M9XiG7hYg_R0tSWUOb' };
 let _sb=null, _authUser=null;
-function getPlan(){ return (_authUser && _authUser.user_metadata && _authUser.user_metadata.plan) || 'free'; }   // 유료 전환 대비 등급 훅(현재 전원 free)
+let _plan='free';
+function getPlan(){ return _plan; }   // 유료 전환 대비 등급(profiles.plan 반영)
+async function refreshPlan(){ _plan='free'; try{ if(_sb&&_authUser){ const {data}=await _sb.from('profiles').select('plan').eq('id',_authUser.id).single(); if(data&&data.plan) _plan=data.plan; } }catch(e){} }
 function auMsg(t,ok){ const el=$('au-msg'); if(el){ el.textContent=t||''; el.className='au-msg'+(ok?' ok':''); } }
 function loadSupabase(){
   return new Promise((res,rej)=>{
@@ -2046,9 +2048,9 @@ async function initAuth(){
     await loadSupabase();
     _sb = window.supabase.createClient(AUTH.url, AUTH.anon);
     const { data:{ session } } = await _sb.auth.getSession();
-    if(session){ _authUser=session.user; renderAccount(); }
+    if(session){ _authUser=session.user; await refreshPlan(); renderAccount(); }
     else showAuthGate();
-    _sb.auth.onAuthStateChange((_e,s)=>{ _authUser = s? s.user : null; if(_authUser){ hideAuthGate(); } renderAccount(); });
+    _sb.auth.onAuthStateChange((_e,s)=>{ _authUser = s? s.user : null; if(_authUser){ hideAuthGate(); refreshPlan(); } renderAccount(); });
   }catch(e){ console.warn('[auth] 초기화 실패 — 앱 개방:', e); hideAuthGate(); }
 }
 initAuth();

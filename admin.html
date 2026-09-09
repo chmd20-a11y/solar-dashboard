@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>솔라핏 · 회원 관리 (Admin)</title>
+<style>
+  :root{--bg:#eef1f6;--card:#fff;--ink:#15202e;--muted:#647184;--faint:#8b95a6;--line:#e4e8ef;--line2:#eef1f6;
+    --accent:#0e7c66;--accent-h:#0b6a58;--accent-soft:#e1f2ee;--good:#12925a;--good-soft:#e6f5ec;--warn:#c07d00;--warn-soft:#fbf1db;--bad:#d5443f;
+    --shadow-sm:0 1px 2px rgba(21,32,46,.06);--shadow:0 6px 22px rgba(21,32,46,.1)}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1000px;margin:0 auto;padding:28px 20px 60px}
+  .top{display:flex;align-items:center;gap:11px;margin-bottom:22px}
+  .logo{width:38px;height:38px;flex:0 0 auto}
+  h1{font-size:19px;font-weight:800;margin:0;letter-spacing:-.02em}
+  h1 small{font-size:12px;font-weight:600;color:var(--muted);margin-left:6px}
+  .sp{margin-left:auto}
+  .btn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:9px;padding:8px 13px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+  .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .btn.primary:hover{background:var(--accent-h);color:#fff}
+  .btn.sm{padding:5px 11px;font-size:12px}
+  input{width:100%;padding:9px 11px;border-radius:9px;background:#f5f7fa;border:1px solid var(--line);color:var(--ink);font-size:13.5px;font-family:inherit}
+  input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  /* login */
+  #gate{max-width:380px;margin:60px auto;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px 24px;box-shadow:var(--shadow)}
+  #gate h2{font-size:17px;margin:0 0 4px}
+  #gate .fld{margin-bottom:12px}
+  #gate label{font-size:11px;color:var(--muted);font-weight:600;display:block;margin-bottom:5px}
+  .msg{font-size:12px;color:var(--bad);font-weight:600;min-height:15px;margin-bottom:8px}
+  .msg.ok{color:var(--good)}
+  /* stats */
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:14px 16px;box-shadow:var(--shadow-sm)}
+  .stat .k{font-size:11px;color:var(--muted);font-weight:600}
+  .stat .v{font-size:26px;font-weight:800;margin-top:3px;font-variant-numeric:tabular-nums}
+  .stat.paid .v{color:var(--accent)}
+  .bar{display:flex;gap:10px;margin-bottom:12px;align-items:center}
+  .bar input{max-width:280px}
+  /* table */
+  .tbl-wrap{background:var(--card);border:1px solid var(--line);border-radius:13px;overflow:hidden;box-shadow:var(--shadow-sm)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line2)}
+  th{background:#f7f9fb;color:var(--muted);font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+  tr:last-child td{border-bottom:0}
+  td.email{font-weight:600}
+  .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:700}
+  .pill.free{background:var(--line2);color:var(--muted)}
+  .pill.paid{background:var(--good-soft);color:var(--good)}
+  .pill.admin{background:var(--warn-soft);color:var(--warn);margin-left:6px}
+  .muted{color:var(--faint);font-size:12px}
+  .empty{text-align:center;color:var(--faint);padding:40px;font-size:13px}
+  .note{font-size:11.5px;color:var(--faint);margin-top:14px;line-height:1.6}
+  .note code{background:var(--line2);padding:1px 6px;border-radius:5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <!-- 로그인 -->
+  <div id="gate" style="display:none">
+    <h2>솔라핏 관리자</h2>
+    <div class="muted" style="margin-bottom:16px">관리자 계정으로 로그인하세요.</div>
+    <div class="fld"><label>이메일</label><input type="email" id="g-email" autocomplete="email"></div>
+    <div class="fld"><label>비밀번호</label><input type="password" id="g-pw" autocomplete="current-password"></div>
+    <div class="msg" id="g-msg"></div>
+    <button class="btn primary" id="g-submit" style="width:100%">로그인</button>
+  </div>
+
+  <!-- 관리 화면 -->
+  <div id="app" style="display:none">
+    <div class="top">
+      <svg class="logo" viewBox="0 0 24 24"><path d="M12 1.7C7.6 1.7 4.1 5.2 4.1 9.5c0 5.6 7.9 12.8 7.9 12.8s7.9-7.2 7.9-12.8C19.9 5.2 16.4 1.7 12 1.7z" fill="#0e7c66"/><circle cx="12" cy="9.2" r="2.5" fill="#f7b32b"/><g stroke="#f7b32b" stroke-width="1.5" stroke-linecap="round"><path d="M12 4.2v1.3"/><path d="M12 12.9v1.3"/><path d="M6.6 9.2h1.3"/><path d="M16.1 9.2h1.3"/><path d="M8.2 5.4l.9.9"/><path d="M14.9 12.1l.9.9"/><path d="M15.8 5.4l-.9.9"/><path d="M8 12.1l-.9.9"/></g></svg>
+      <h1>회원 관리 <small>솔라핏 Admin</small></h1>
+      <div class="sp"></div>
+      <span class="muted" id="me"></span>
+      <button class="btn sm" id="logout">로그아웃</button>
+    </div>
+
+    <div id="denied" style="display:none" class="empty">이 계정은 관리자 권한이 없습니다.<br><span class="muted">관리자로 지정하려면 Supabase에서 해당 계정의 <code>is_admin</code>을 true로 설정하세요.</span></div>
+
+    <div id="panel" style="display:none">
+      <div class="stats">
+        <div class="stat"><div class="k">전체 회원</div><div class="v" id="s-total">0</div></div>
+        <div class="stat paid"><div class="k">유료 회원</div><div class="v" id="s-paid">0</div></div>
+        <div class="stat"><div class="k">무료 회원</div><div class="v" id="s-free">0</div></div>
+      </div>
+      <div class="bar">
+        <input type="text" id="q" placeholder="이메일 검색…">
+        <button class="btn sm" id="reload">새로고침</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>이메일</th><th>요금제</th><th>가입일</th><th style="text-align:right">관리</th></tr></thead>
+          <tbody id="rows"><tr><td colspan="4" class="empty">불러오는 중…</td></tr></tbody>
+        </table>
+      </div>
+      <div class="note">요금제 버튼으로 <b>무료 ↔ 유료</b>를 전환합니다. 변경은 즉시 저장되며, 해당 회원이 다음 접속 시 반영됩니다.<br>
+        ※ 회원 목록·수정은 Supabase 보안정책(RLS)에 따라 <b>관리자만</b> 가능합니다.</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+const SUPA_URL='https://rejgvqeliqdjpavjvtjt.supabase.co';
+const SUPA_KEY='sb_publishable_SAJNSZSfhPgl3M9XiG7hYg_R0tSWUOb';
+const $=id=>document.getElementById(id);
+let sb=null, me=null, _all=[];
+function fmt(d){ if(!d) return '-'; try{ const t=new Date(d); return t.getFullYear()+'.'+String(t.getMonth()+1).padStart(2,'0')+'.'+String(t.getDate()).padStart(2,'0'); }catch(e){ return '-'; } }
+function gmsg(t,ok){ const el=$('g-msg'); el.textContent=t||''; el.className='msg'+(ok?' ok':''); }
+
+async function boot(){
+  if(!(window.supabase&&window.supabase.createClient)){ gmsg('인증 라이브러리 로드 실패'); showGate(); return; }
+  sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+  const { data:{ session } } = await sb.auth.getSession();
+  if(session){ me=session.user; onAuthed(); } else showGate();
+  sb.auth.onAuthStateChange((_e,s)=>{ if(s){ me=s.user; onAuthed(); } });
+}
+function showGate(){ $('gate').style.display='block'; $('app').style.display='none'; }
+async function onAuthed(){
+  $('gate').style.display='none'; $('app').style.display='block';
+  $('me').textContent = me.email||'';
+  // 내 프로필로 관리자 여부 확인
+  let isAdmin=false;
+  try{ const {data}=await sb.from('profiles').select('is_admin').eq('id',me.id).single(); isAdmin = !!(data&&data.is_admin); }catch(e){}
+  if(!isAdmin){ $('denied').style.display='block'; $('panel').style.display='none'; return; }
+  $('denied').style.display='none'; $('panel').style.display='block';
+  loadUsers();
+}
+async function loadUsers(){
+  $('rows').innerHTML='<tr><td colspan="5" class="empty">불러오는 중…</td></tr>';
+  try{
+    const { data, error } = await sb.from('profiles').select('*').order('created_at',{ascending:false});
+    if(error) throw error;
+    _all = data||[];
+    render();
+  }catch(e){ $('rows').innerHTML='<tr><td colspan="4" class="empty">불러오기 실패: '+((e&&e.message)||e)+'</td></tr>'; }
+}
+function render(){
+  const q=($('q').value||'').toLowerCase();
+  const list=_all.filter(u=>!q || (u.email||'').toLowerCase().includes(q));
+  $('s-total').textContent=_all.length;
+  $('s-paid').textContent=_all.filter(u=>u.plan==='paid').length;
+  $('s-free').textContent=_all.filter(u=>u.plan!=='paid').length;
+  if(!list.length){ $('rows').innerHTML='<tr><td colspan="4" class="empty">회원이 없습니다.</td></tr>'; return; }
+  $('rows').innerHTML=list.map(u=>{
+    const paid=u.plan==='paid';
+    return `<tr>
+      <td class="email">${u.email||'-'}${u.is_admin?'<span class="pill admin">관리자</span>':''}</td>
+      <td><span class="pill ${paid?'paid':'free'}">${paid?'유료':'무료'}</span></td>
+      <td class="muted">${fmt(u.created_at)}</td>
+      <td style="text-align:right"><button class="btn sm ${paid?'':'primary'}" data-id="${u.id}" data-to="${paid?'free':'paid'}">${paid?'무료로 전환':'유료로 전환'}</button></td>
+    </tr>`;
+  }).join('');
+  $('rows').querySelectorAll('button[data-id]').forEach(b=>b.onclick=()=>setPlan(b.dataset.id,b.dataset.to,b));
+}
+async function setPlan(id,to,btn){
+  btn.disabled=true; const old=btn.textContent; btn.textContent='저장 중…';
+  try{
+    const { error } = await sb.from('profiles').update({plan:to}).eq('id',id);
+    if(error) throw error;
+    const u=_all.find(x=>x.id===id); if(u) u.plan=to; render();
+  }catch(e){ alert('변경 실패: '+((e&&e.message)||e)); btn.disabled=false; btn.textContent=old; }
+}
+$('g-submit').onclick=async()=>{
+  const email=($('g-email').value||'').trim(), pw=$('g-pw').value||'';
+  if(!email||!pw){ gmsg('이메일과 비밀번호를 입력하세요.'); return; }
+  gmsg('로그인 중…'); $('g-submit').disabled=true;
+  try{ const {error}=await sb.auth.signInWithPassword({email,password:pw}); if(error) throw error; }
+  catch(e){ gmsg(/Invalid login/i.test((e&&e.message)||'')?'이메일 또는 비밀번호가 올바르지 않습니다.':('오류: '+((e&&e.message)||e))); }
+  $('g-submit').disabled=false;
+};
+['g-email','g-pw'].forEach(id=>$(id).addEventListener('keydown',e=>{ if(e.key==='Enter') $('g-submit').click(); }));
+$('logout').onclick=async()=>{ try{ await sb.auth.signOut(); }catch(e){} me=null; showGate(); };
+$('q').addEventListener('input',render);
+$('reload').onclick=loadUsers;
+boot();
+</script>
+</body>
+</html>
