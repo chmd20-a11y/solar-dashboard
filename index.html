@@ -1006,7 +1006,8 @@ async function checkGrid(lat,lng){
     const a=Math.sin(toR(s.lat-lat)/2)**2+Math.cos(toR(lat))*Math.cos(toR(s.lat))*Math.sin(toR(s.lng-lng)/2)**2;
     const d=2*R*Math.asin(Math.sqrt(a)); if(d<bd){bd=d;best=s;} }
   if(!best) return null;
-  const dls=(best.lines||[]).map(l=>({nm:l.dl_nm,free:Math.max(0,(l.dl_capa||0)-(l.g_dl||0))})).filter(x=>x.nm).sort((a,b)=>b.free-a.free).slice(0,4);
+  // 연계가능(여유)=conn(=g_dl) 값을 그대로 사용. (과거 dl_capa-g_dl는 '이미 연계된 양'을 남은용량으로 거꾸로 표기하던 버그 → 계통 팝업과 불일치)
+  const dls=(best.lines||[]).map(l=>({nm:l.dl_nm,free:Math.max(0,(l.conn!=null?l.conn:(l.g_dl||0)))})).filter(x=>x.nm).sort((a,b)=>b.free-a.free).slice(0,4);
   const of=best.office||{};
   return {name:best.name,region:best.region,dist:bd,free:best.subst_free_mw,pct:best.subst_free_pct,dls,officeName:of.name||'',tel:of.phone||'',officeAddr:of.addr||''};
 }
@@ -1201,7 +1202,7 @@ async function feasRegionHTML(region, idx, multi){
     h+=row(gL, '변전소: '+(grid.name||'-')+(grid.region?' ('+grid.region+')':''), `약 ${grid.dist.toFixed(1)}km · 여유 ${grid.free!=null?Math.round(grid.free):'?'}MW (${grid.pct!=null?Math.round(grid.pct):'?'}%)`);
     const bestDL = grid.dls.length? Math.max(...grid.dls.map(d=>d.free)) : 0;
     const dlL = !grid.dls.length ? 'na' : (bestDL>=3?'ok':(bestDL>=1?'warn':'bad'));
-    h+=row(dlL, '가능 DL · 남은용량', grid.dls.length? grid.dls.map(d=>`${d.nm} ${d.free.toFixed(1)}MW`).join(' · ')+(bestDL>=3?' · 여유 충분':(bestDL>=1?' · 여유 보통':' · 여유 부족')) : 'DL 여유 정보 없음');
+    h+=row(dlL, '가능 DL · 연계가능', grid.dls.length? grid.dls.map(d=>`${d.nm} ${d.free.toFixed(1)}MW`).join(' · ')+(bestDL>=3?' · 여유 충분':(bestDL>=1?' · 여유 보통':' · 여유 부족')) : 'DL 여유 정보 없음');
     h+=row('na', '관할 연락처', (grid.officeName||'한전')+(grid.tel?` · <a href="tel:${grid.tel}">${grid.tel}</a>`:''));
   } else {
     h+=row('na', '계통 연계 여유', '인근 변전소 조회 실패');
