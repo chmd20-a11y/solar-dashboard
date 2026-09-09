@@ -394,7 +394,7 @@
           <button data-t="carport">주차장</button>
         </div>
       </div>
-      <div class="fld" style="font-size:11px;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:9px 11px;display:flex;align-items:center;gap:7px"><svg class="ic ic-sm" viewBox="0 0 24 24" style="stroke:var(--muted)"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span><b style="color:var(--ink)">고정값</b> · 모듈각도 15° · 입사각 25° · 2단 적재 간격 10mm</span></div>
+      <div class="fld" style="font-size:11px;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:9px 11px;display:flex;align-items:center;gap:7px"><svg class="ic ic-sm" viewBox="0 0 24 24" style="stroke:var(--muted)"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span><b style="color:var(--ink)">기본값</b> · <span id="fixedvals">모듈각도 15° · 입사각 25° · 2단 적재 간격 10mm</span> <span style="color:var(--accent2,#2f74d0)">(⚙️ 설정에서 변경)</span></span></div>
       <div class="fld"><label>완충 경계(안쪽 이격)</label><div class="rng"><input type="range" id="o-set" min="0" max="100" value="20"><b id="v-set">2.0 m</b></div></div>
       <div class="fld"><label>패널 배치 방위</label>
         <div class="seg" id="seg-opt"><button data-o="1" class="on">자동 (정남)</button><button data-o="0">수동 방위</button></div>
@@ -764,18 +764,107 @@
   .set-save{width:100%;padding:11px;border:0;border-radius:10px;background:#0e7c66;color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit}
   .set-save:hover{background:#0b6a58}
   #acct .setbtn{background:transparent;border:0;cursor:pointer;font-size:14px;padding:0 3px;line-height:1}
+  .set-box-wide{max-width:560px}
+  .set-tabs{display:flex;flex-wrap:wrap;gap:2px;padding:8px 14px 0;border-bottom:1px solid #e4e8ef}
+  .st-tab{background:transparent;border:0;border-bottom:2px solid transparent;padding:8px 9px;font-size:12.5px;font-weight:700;color:#647184;cursor:pointer;font-family:inherit;white-space:nowrap}
+  .st-tab.on{color:#0e7c66;border-bottom-color:#0e7c66}
+  .set-body{max-height:min(68vh,540px);overflow-y:auto}
+  .st-pane{display:none}
+  .st-pane.on{display:block}
+  .st-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+  .st-row label{font-size:12.5px;color:#647184;flex:1 1 auto}
+  .st-row input,.st-row select{width:158px;flex:0 0 auto;padding:8px 10px;border:1px solid #e4e8ef;border-radius:9px;background:#f5f7fa;font-size:13.5px;font-family:inherit;color:#15202e;text-align:right;box-sizing:border-box}
+  .st-row select{text-align:left}
+  .st-grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px}
+  .st-grid2 .st-row{margin-bottom:0}
+  .st-grid2 .st-row input{width:96px}
+  .st-chk{display:flex;align-items:center;gap:8px;font-size:13px;color:#15202e;margin-bottom:8px;cursor:pointer}
+  .st-chk input{width:auto}
+  .st-note{font-size:11px;color:#8b95a6;margin-top:4px;line-height:1.5}
+  .set-savebar{display:flex;align-items:center;justify-content:flex-end;gap:12px;border-top:1px solid #e4e8ef;padding-top:12px;margin-top:8px}
 </style>
 <div id="set-modal" class="set-back">
-  <div class="set-box">
+  <div class="set-box set-box-wide">
     <div class="set-h"><span>⚙️ 설정</span><button id="set-x" title="닫기">×</button></div>
+    <div class="set-tabs" id="set-tabs">
+      <button class="st-tab on" data-tab="general">일반설정</button>
+      <button class="st-tab" data-tab="feas">타당성검토</button>
+      <button class="st-tab" data-tab="draw">부지경계</button>
+      <button class="st-tab" data-tab="module">모듈규격</button>
+      <button class="st-tab" data-tab="layout">배치옵션</button>
+      <button class="st-tab" data-tab="cost">원가·마진</button>
+      <button class="st-tab" data-tab="quote">고객견적서</button>
+    </div>
     <div class="set-body">
-      <div class="set-sec"><div class="set-lbl">계정</div><div class="set-email" id="set-email">–</div></div>
-      <div class="set-sec"><div class="set-lbl">비밀번호 변경</div>
-        <input type="password" id="set-pw1" placeholder="새 비밀번호 (6자 이상)" autocomplete="new-password">
-        <input type="password" id="set-pw2" placeholder="새 비밀번호 확인" autocomplete="new-password">
-        <div class="set-msg" id="set-msg"></div>
-        <button class="set-save" id="set-save">비밀번호 변경</button>
+      <!-- 일반설정 -->
+      <div class="st-pane on" data-pane="general">
+        <div class="set-sec"><div class="set-lbl">계정</div><div class="set-email" id="set-email">–</div></div>
+        <div class="set-sec"><div class="set-lbl">비밀번호 변경</div>
+          <input type="password" id="set-pw1" placeholder="새 비밀번호 (6자 이상)" autocomplete="new-password">
+          <input type="password" id="set-pw2" placeholder="새 비밀번호 확인" autocomplete="new-password">
+          <div class="set-msg" id="set-msg"></div>
+          <button class="set-save" id="set-save">비밀번호 변경</button>
+        </div>
+        <div class="set-sec"><div class="set-lbl">회사 정보 (견적서 머리말)</div>
+          <div class="st-row"><label>상호</label><input type="text" id="st-company" placeholder="예: OO에너지"></div>
+          <div class="st-row"><label>연락처</label><input type="text" id="st-phone" placeholder="예: 010-0000-0000"></div>
+        </div>
+        <div class="set-sec"><div class="set-lbl">지도 기본</div>
+          <div class="st-row"><label>기본 지도</label><select id="st-defmap"><option value="hybrid">위성 + 지명(VWorld)</option><option value="esri">위성(글로벌·경기북부)</option><option value="base">일반지도</option></select></div>
+        </div>
       </div>
+      <!-- 타당성검토 -->
+      <div class="st-pane" data-pane="feas">
+        <div class="set-sec"><div class="set-lbl">타당성 판정 기준</div>
+          <label class="st-chk"><input type="checkbox" id="st-gz"> 개발제한구역 자동 경고</label>
+          <div class="st-row"><label>경사도 경고 한계 (°)</label><input type="number" id="st-slope" value="15" step="0.5"></div>
+          <div class="st-row"><label>주거 이격 기본 (m)</label><input type="number" id="st-setres" value="200"></div>
+        </div>
+      </div>
+      <!-- 부지경계 -->
+      <div class="st-pane" data-pane="draw">
+        <div class="set-sec"><div class="set-lbl">경계·배치 반영</div>
+          <div class="st-row"><label>기본 완충 이격 (m)</label><input type="number" id="st-buffer" value="0" step="0.5"></div>
+          <label class="st-chk"><input type="checkbox" id="st-roadmask"> 도로 위 배치 제외(마스크)</label>
+        </div>
+      </div>
+      <!-- 모듈규격 -->
+      <div class="st-pane" data-pane="module">
+        <div class="set-sec"><div class="set-lbl">국산 프리셋</div>
+          <div class="st-grid2"><div class="st-row"><label>브랜드</label><input type="text" id="st-kr-brand" value="현대"></div><div class="st-row"><label>출력 (W)</label><input type="number" id="st-kr-w" value="645"></div><div class="st-row"><label>가로 (mm)</label><input type="number" id="st-kr-x" value="1134"></div><div class="st-row"><label>세로 (mm)</label><input type="number" id="st-kr-y" value="2382"></div></div>
+        </div>
+        <div class="set-sec"><div class="set-lbl">중국산 프리셋</div>
+          <div class="st-grid2"><div class="st-row"><label>브랜드</label><input type="text" id="st-cn-brand" value="AIKO"></div><div class="st-row"><label>출력 (W)</label><input type="number" id="st-cn-w" value="655"></div><div class="st-row"><label>가로 (mm)</label><input type="number" id="st-cn-x" value="1134"></div><div class="st-row"><label>세로 (mm)</label><input type="number" id="st-cn-y" value="2382"></div></div>
+        </div>
+      </div>
+      <!-- 배치옵션 -->
+      <div class="st-pane" data-pane="layout">
+        <div class="set-sec"><div class="set-lbl">배치 기본값 (화면엔 고정 표기, 여기서 조정)</div>
+          <div class="st-row"><label>모듈 각도 (°)</label><input type="number" id="st-tilt" value="15" step="1"></div>
+          <div class="st-row"><label>입사각(음영각도) (°)</label><input type="number" id="st-incid" value="25" step="1"></div>
+          <div class="st-row"><label>2단 적재 간격 (mm)</label><input type="number" id="st-gap" value="10" step="1"></div>
+          <div class="st-note">변경 후 저장하면 다음 '배치 계산'부터 반영됩니다.</div>
+        </div>
+      </div>
+      <!-- 원가·마진 -->
+      <div class="st-pane" data-pane="cost">
+        <div class="set-sec"><div class="set-lbl">원가·설치 단가</div>
+          <div class="st-row"><label>모듈 원가 (원/W)</label><input type="number" id="st-modcost" value="310"></div>
+          <div class="st-row"><label>kW당 설치단가 (원)</label><input type="number" id="st-kwunit" value="950000"></div>
+          <div class="st-row"><label>목표 마진 (%)</label><input type="number" id="st-margin" value="5" step="0.5"></div>
+        </div>
+      </div>
+      <!-- 고객견적서 -->
+      <div class="st-pane" data-pane="quote">
+        <div class="set-sec"><div class="set-lbl">발전·판매 기준</div>
+          <div class="st-row"><label>적용단가 (원/kWh)</label><input type="number" id="st-apply" value="178"></div>
+          <div class="st-row"><label>일 발전시간 (h)</label><input type="number" id="st-hours" value="3.6" step="0.1"></div>
+        </div>
+        <div class="set-sec"><div class="set-lbl">정책자금 조건</div>
+          <div class="st-grid2"><div class="st-row"><label>이율 (%)</label><input type="number" id="st-rate" value="2.5" step="0.1"></div><div class="st-row"><label>거치 (년)</label><input type="number" id="st-defer" value="5"></div><div class="st-row"><label>상환 (년)</label><input type="number" id="st-repay" value="10"></div></div>
+        </div>
+      </div>
+      <div class="set-savebar"><span class="set-msg" id="st-savemsg"></span><button class="set-save" id="st-saveall" style="width:auto;padding:11px 22px">설정 저장</button></div>
     </div>
   </div>
 </div>
@@ -1376,7 +1465,7 @@ function runLayout(){
   const portrait = $('m-o').value==='portrait';
   const wRow    = portrait ? mw : mh;
   const lSlope1 = portrait ? mh : mw;
-  const intra=0.01, gapU=0.02;   // intra=적재 모듈 사이 이격 10mm(고정), gapU=테이블 열 간격
+  const intra=((window.__stackGap!=null?window.__stackGap:10)/1000), gapU=0.02;   // intra=적재 모듈 사이 이격(설정값 mm, 기본10mm), gapU=테이블 열 간격
   const tilt=S.tilt*Math.PI/180;
   const alongSlope = S.stack*lSlope1 + (S.stack-1)*intra;
   const depth = alongSlope*Math.cos(tilt);
@@ -2155,12 +2244,29 @@ async function initAuth(){
     _sb.auth.onAuthStateChange((_e,s)=>{ _authUser = s? s.user : null; if(_authUser){ hideAuthGate(); refreshPlan(); } renderAccount(); });
   }catch(e){ console.warn('[auth] 초기화 실패 — 앱 개방:', e); hideAuthGate(); }
 }
-/* ===== 설정 화면(⚙️) — 계정·비밀번호 변경 (Phase4 설정메뉴 시작점) ===== */
-function openSettings(){ const m=$('set-modal'); if(!m) return; const e=$('set-email'); if(e) e.textContent=(_authUser&&_authUser.email)||'–'; const msg=$('set-msg'); if(msg){ msg.textContent=''; msg.className='set-msg'; } if($('set-pw1'))$('set-pw1').value=''; if($('set-pw2'))$('set-pw2').value=''; m.classList.add('open'); }
+/* ===== 설정 화면(⚙️) — 7탭 (일반/타당성/경계/모듈/배치/원가/견적) · localStorage 저장 ===== */
+const SET_KEY='solarfit_settings';
+const SET_DEFAULTS={ company:'',phone:'',defmap:'hybrid', gz:true,slope:15,setres:200, buffer:0,roadmask:true, krBrand:'현대',krW:645,krX:1134,krY:2382, cnBrand:'AIKO',cnW:655,cnX:1134,cnY:2382, tilt:15,incid:25,gap:10, modcost:310,kwunit:950000,margin:5, apply:178,hours:3.6,rate:2.5,defer:5,repay:10 };
+function loadSettings(){ try{ return Object.assign({},SET_DEFAULTS,JSON.parse(localStorage.getItem(SET_KEY)||'{}')); }catch(e){ return Object.assign({},SET_DEFAULTS); } }
+let SETTINGS=loadSettings();
+const SET_MAP=[['st-company','company','t'],['st-phone','phone','t'],['st-defmap','defmap','t'],
+  ['st-gz','gz','c'],['st-slope','slope','n'],['st-setres','setres','n'],
+  ['st-buffer','buffer','n'],['st-roadmask','roadmask','c'],
+  ['st-kr-brand','krBrand','t'],['st-kr-w','krW','n'],['st-kr-x','krX','n'],['st-kr-y','krY','n'],
+  ['st-cn-brand','cnBrand','t'],['st-cn-w','cnW','n'],['st-cn-x','cnX','n'],['st-cn-y','cnY','n'],
+  ['st-tilt','tilt','n'],['st-incid','incid','n'],['st-gap','gap','n'],
+  ['st-modcost','modcost','n'],['st-kwunit','kwunit','n'],['st-margin','margin','n'],
+  ['st-apply','apply','n'],['st-hours','hours','n'],['st-rate','rate','n'],['st-defer','defer','n'],['st-repay','repay','n']];
+function populateSettings(){ SET_MAP.forEach(([id,key,t])=>{ const el=$(id); if(!el) return; if(t==='c') el.checked=!!SETTINGS[key]; else el.value=SETTINGS[key]; }); }
+function collectSettings(){ SET_MAP.forEach(([id,key,t])=>{ const el=$(id); if(!el) return; if(t==='c') SETTINGS[key]=el.checked; else if(t==='n') SETTINGS[key]=parseFloat(el.value)||0; else SETTINGS[key]=(el.value||'').trim(); }); }
+function applySettings(){ try{ if(typeof S!=='undefined'&&S){ S.tilt=(+SETTINGS.tilt)||15; S.incidence=(+SETTINGS.incid)||25; } window.__stackGap=(+SETTINGS.gap)||10; const fv=$('fixedvals'); if(fv) fv.textContent=`모듈각도 ${SETTINGS.tilt}° · 입사각 ${SETTINGS.incid}° · 2단 적재 간격 ${SETTINGS.gap}mm`; }catch(e){} }
+function openSettings(){ const m=$('set-modal'); if(!m) return; const e=$('set-email'); if(e) e.textContent=(_authUser&&_authUser.email)||'–'; const msg=$('set-msg'); if(msg){ msg.textContent=''; msg.className='set-msg'; } if($('set-pw1'))$('set-pw1').value=''; if($('set-pw2'))$('set-pw2').value=''; populateSettings(); const sm=$('st-savemsg'); if(sm){ sm.textContent=''; sm.className='set-msg'; } m.classList.add('open'); }
 (function(){ const bk=$('set-modal'); if(!bk) return; const x=$('set-x'), sv=$('set-save');
   const close=()=>bk.classList.remove('open');
   if(x) x.onclick=close;
   bk.addEventListener('click',e=>{ if(e.target===bk) close(); });
+  document.querySelectorAll('#set-tabs .st-tab').forEach(t=>t.onclick=()=>{ const name=t.getAttribute('data-tab'); document.querySelectorAll('#set-tabs .st-tab').forEach(x=>x.classList.toggle('on',x===t)); document.querySelectorAll('#set-modal .st-pane').forEach(p=>p.classList.toggle('on',p.getAttribute('data-pane')===name)); });
+  const sa=$('st-saveall'); if(sa) sa.onclick=()=>{ collectSettings(); try{ localStorage.setItem(SET_KEY,JSON.stringify(SETTINGS)); }catch(e){} applySettings(); const m=$('st-savemsg'); if(m){ m.textContent='저장되었습니다 ✓'; m.className='set-msg ok'; setTimeout(()=>{ if(m.textContent.indexOf('저장')>=0){m.textContent='';m.className='set-msg';} },2200); } };
   if(sv) sv.onclick=async()=>{ const p1=($('set-pw1').value||''),p2=($('set-pw2').value||''),m=$('set-msg'); const setM=(t,ok)=>{ m.textContent=t; m.className='set-msg'+(ok?' ok':''); };
     if(p1.length<6){ setM('비밀번호는 6자 이상이어야 합니다.'); return; }
     if(p1!==p2){ setM('비밀번호가 일치하지 않습니다.'); return; }
@@ -2170,6 +2276,7 @@ function openSettings(){ const m=$('set-modal'); if(!m) return; const e=$('set-e
     catch(e){ setM('오류: '+((e&&e.message)||e)); }
     sv.disabled=false;
   };
+  applySettings();
 })();
 
 initAuth();
