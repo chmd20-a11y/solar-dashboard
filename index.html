@@ -2208,7 +2208,7 @@ function renderAccount(){
   const el=$('acct'); if(!el) return;
   if(_authUser){ el.className='on'; el.innerHTML=`<span class="em">${_authUser.email||'로그인됨'}</span>${_isAdmin?'<a class="adm" href="/admin.html">관리자</a>':''}<button class="setbtn" id="acct-set" title="설정">⚙️</button><button class="lo" id="au-logout">로그아웃</button>`;
     { const _gs=$('acct-set'); if(_gs) _gs.onclick=openSettings; }
-    $('au-logout').onclick=async()=>{ try{ await _sb.auth.signOut(); }catch(e){} _authUser=null; _isAdmin=false; try{ SETTINGS=Object.assign({},SET_DEFAULTS); applySettings(); }catch(e){} el.className=''; el.innerHTML=''; showAuthGate(); };
+    $('au-logout').onclick=async()=>{ try{ await _sb.auth.signOut(); }catch(e){} _authUser=null; _isAdmin=false; try{ SETTINGS=Object.assign({},SET_DEFAULTS); applySettings(); window.__defmapDone=false; }catch(e){} el.className=''; el.innerHTML=''; showAuthGate(); };
   } else { el.className=''; el.innerHTML=''; }
 }
 function showAuthGate(){ const g=$('auth-gate'); if(g){ g.classList.add('open'); document.body.classList.add('gated'); } }
@@ -2287,7 +2287,7 @@ async function loadSettingsCloud(){
     if(k){ const c=JSON.parse(localStorage.getItem(k)||'null'); if(c) SETTINGS=Object.assign({},SET_DEFAULTS,c); }
     if(_sb&&_authUser){ const {data}=await _sb.from('user_settings').select('settings').eq('id',_authUser.id).single(); if(data&&data.settings){ SETTINGS=Object.assign({},SET_DEFAULTS,data.settings); if(k) try{ localStorage.setItem(k,JSON.stringify(SETTINGS)); }catch(e){} } }
   }catch(e){}
-  applySettings(); applyDefmap(); if(document.querySelector('#set-modal.open')) populateSettings();
+  applySettings(); if(!window.__defmapDone){ window.__defmapDone=true; applyDefmap(); } if(document.querySelector('#set-modal.open')) populateSettings();
 }
 async function saveSettingsCloud(){ try{ if(_sb&&_authUser){ await _sb.from('user_settings').upsert({id:_authUser.id, settings:SETTINGS}); } }catch(e){} }
 function openSettings(){ const m=$('set-modal'); if(!m) return; const e=$('set-email'); if(e) e.textContent=(_authUser&&_authUser.email)||'–'; const msg=$('set-msg'); if(msg){ msg.textContent=''; msg.className='set-msg'; } if($('set-pw1'))$('set-pw1').value=''; if($('set-pw2'))$('set-pw2').value=''; populateSettings(); const sm=$('st-savemsg'); if(sm){ sm.textContent=''; sm.className='set-msg'; } m.classList.add('open'); }
