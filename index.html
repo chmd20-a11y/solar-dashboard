@@ -719,12 +719,12 @@
         <div class="q-sec-h blue">20년 장기계약 판매기준</div>
         <table class="qtbl">
           <tbody>
-            <tr><td>5년 순수익 (거치기간)</td><td class="n" id="q-avg1">0</td><td class="c">/ 년 평균</td></tr>
-            <tr><td>10년 순수익 (상환기간)</td><td class="n" id="q-avg2">0</td><td class="c">/ 년 평균</td></tr>
-            <tr><td>5년 순수익 (잔여기간)</td><td class="n" id="q-avg3">0</td><td class="c">/ 년 평균</td></tr>
+            <tr><td id="q-lbl1">5년 순수익 (거치기간)</td><td class="n" id="q-avg1">0</td><td class="c">/ 년 평균</td></tr>
+            <tr><td id="q-lbl2">10년 순수익 (상환기간)</td><td class="n" id="q-avg2">0</td><td class="c">/ 년 평균</td></tr>
+            <tr><td id="q-lbl3">5년 순수익 (잔여기간)</td><td class="n" id="q-avg3">0</td><td class="c">/ 년 평균</td></tr>
           </tbody>
         </table>
-        <div class="q-sec-h green">정책자금 (5년거치 10년상환 · 이율 2.5%)</div>
+        <div class="q-sec-h green" id="q-fin-h">정책자금 (5년거치 10년상환 · 이율 2.5%)</div>
         <table class="qtbl">
           <tbody>
             <tr><td>정책자금 대출 (80%)</td><td class="n" id="q-loan">0</td></tr>
@@ -1795,18 +1795,20 @@ function gridConnect(kw){
 }
 // 20년 현금흐름(5년거치 10년상환, 이자 2.5%, 성능저하 0.4%/년)
 function cashflow(kw, invest, apply, hours, maint){
-  const loan=invest*0.8, rate=0.025, degrade=0.004, gen1=kw*hours*365;
+  const _S=(typeof SETTINGS!=='undefined')?SETTINGS:{};   // 금융조건(⚙️ 고객견적서)
+  const rate=((+_S.rate)||2.5)/100, defer=(+_S.defer)||5, repay=(+_S.repay)||10;
+  const loan=invest*0.8, degrade=0.004, gen1=kw*hours*365;
   let balance=loan, cum=0, payback=null; const J=[];
   for(let y=1;y<=20;y++){
     const revenue=gen1*(1-degrade*(y-1))*apply;
-    const principal=(y>=6&&y<=15)?loan/10:0;
+    const principal=(y>defer && y<=defer+repay && repay>0)? loan/repay : 0;
     const interest=balance*rate;
     const net=revenue-maint-principal-interest;
     balance-=principal; J.push(net); cum+=net;
     if(payback===null && cum>=invest) payback=y;
   }
-  const avg=(a,b)=>{let s=0;for(let i=a;i<=b;i++)s+=J[i-1];return s/(b-a+1);};
-  return { gross1:gen1*apply, avg5grace:avg(1,5), avg10repay:avg(6,15), avg5remain:avg(16,20), avg20:avg(1,20), payback:payback||'20+' };
+  const avg=(a,b)=>{ if(a>b||a>20) return 0; b=Math.min(b,20); let s=0;for(let i=a;i<=b;i++)s+=J[i-1];return s/(b-a+1);};
+  return { gross1:gen1*apply, avg5grace:avg(1,defer), avg10repay:avg(defer+1,defer+repay), avg5remain:avg(defer+repay+1,20), avg20:avg(1,20), payback:payback||'20+', _defer:defer, _repay:repay, _rate:rate*100 };
 }
 const R6=n=>Math.round(n/1000000)*1000000;   // 백만 반올림
 function quoteCalc(){
@@ -1874,6 +1876,10 @@ function quoteCalc(){
   $('q-genformula').textContent=`${kwStr}kW × ${hours}시간 × 365일 × ${apply}원`;
   $('q-payback').textContent=(cf.payback)+' 년';
   $('q-avg1').textContent=won(R6(cf.avg5grace)); $('q-avg2').textContent=won(R6(cf.avg10repay)); $('q-avg3').textContent=won(R6(cf.avg5remain));
+  if($('q-fin-h')) $('q-fin-h').textContent=`정책자금 (${cf._defer}년거치 ${cf._repay}년상환 · 이율 ${cf._rate}%)`;
+  if($('q-lbl1')) $('q-lbl1').textContent=`${cf._defer}년 순수익 (거치기간)`;
+  if($('q-lbl2')) $('q-lbl2').textContent=`${cf._repay}년 순수익 (상환기간)`;
+  if($('q-lbl3')) $('q-lbl3').textContent=`${Math.max(0,20-cf._defer-cf._repay)}년 순수익 (잔여기간)`;
   $('q-loan').textContent=won(total*0.8); $('q-own').textContent=won(total*0.2);
   applyQuotePhoto();
 }
