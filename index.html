@@ -338,7 +338,7 @@
       <div class="fld">
         <label>지번 · 도로명 주소 <span style="color:var(--faint)">· 여러 개 추가 가능</span></label>
         <div class="row">
-          <input type="text" id="addr" placeholder="예: 경기도 파주시 문발동 67">
+          <input type="text" id="addr" placeholder="예: 서울특별시 중구 세종대로 110">
           <button class="btn" id="btn-search" style="width:auto;padding:0 13px;white-space:nowrap;flex:0 0 auto" title="추가"><svg class="ic ic-sm" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>추가</button>
         </div>
       </div>
@@ -543,10 +543,10 @@
       <tr class="sub"><td class="lab">사용전검사 수수료</td><td class="val" id="cg-inspect">0</td></tr>
       <tr class="sub"><td class="lab">안전진단</td><td class="val" id="cg-safety">0</td></tr>
       <tr class="em"><td class="lab">시 공 비 (VAT별도)</td><td class="val" id="cg-cost">0</td></tr>
-      <tr class="em2"><td class="lab">실행이익 (VAT별도)</td><td class="val" id="cg-profit">0</td></tr>
+      <tr class="em2"><td class="lab">영업이익 (VAT별도)</td><td class="val" id="cg-profit">0</td></tr>
       <tr><td class="lab">kW당 시공단가</td><td class="val" id="cg-perkw-cost">0</td></tr>
-      <tr><td class="lab">kW당 실행이익</td><td class="val" id="cg-perkw-profit">0</td></tr>
-      <tr class="rate"><td class="lab">실행이익률</td><td class="val" id="cg-rate">0%</td></tr>
+      <tr><td class="lab">kW당 영업이익</td><td class="val" id="cg-perkw-profit">0</td></tr>
+      <tr class="rate"><td class="lab">영업이익률</td><td class="val" id="cg-rate">0%</td></tr>
     </table>
 
     <div style="margin-top:14px"><button class="btn" id="c-reload">🔄 대시보드 배치값 다시 불러오기</button></div>
@@ -747,6 +747,7 @@ const PXY = defaultProxy();
 const vworldAerial = L.tileLayer(PXY + '/req/wmts/1.0.0/__KEY__/Satellite/{z}/{y}/{x}.jpeg', {maxZoom:21, maxNativeZoom:19, crossOrigin:'anonymous', attribution:'국토부 VWorld 항공영상'});
 const vworldSat2  = L.tileLayer(PXY + '/req/wmts/1.0.0/__KEY__/Satellite/{z}/{y}/{x}.jpeg', {maxZoom:21, maxNativeZoom:19, crossOrigin:'anonymous'});
 const vworldHyb   = L.tileLayer(PXY + '/req/wmts/1.0.0/__KEY__/Hybrid/{z}/{y}/{x}.png', {maxZoom:21, maxNativeZoom:19, crossOrigin:'anonymous'});
+const vworldBase  = L.tileLayer(PXY + '/req/wmts/1.0.0/__KEY__/Base/{z}/{y}/{x}.png', {maxZoom:21, maxNativeZoom:19, crossOrigin:'anonymous', attribution:'국토부 VWorld 일반지도'});   // 일반지도(경기북부 등 위성 차단지역 대체)
 const vworldAerialHybrid = L.layerGroup([vworldSat2, vworldHyb]).addTo(map);   // 기본 = 위성+지명(VWorld)
 // 지적 경계(주변 필지) — WMS는 3857 미렌더라, 데이터API로 뷰 안 필지를 직접 그림
 const parcelLayer = L.layerGroup();
@@ -778,7 +779,7 @@ map.on('overlayadd', e=>{ if(e.layer===ownWms){ if(map.getZoom()<16) map.setZoom
 map.on('overlayremove', e=>{ if(e.layer===ownWms){ showOwnLegend(false); } });
 map.on('zoomend', ()=>{ if(map.hasLayer(ownWms)) showOwnLegend(true); });
 L.control.layers(
-  { '위성 + 지명': vworldAerialHybrid, '위성만': vworldAerial },
+  { '위성 + 지명': vworldAerialHybrid, '위성만': vworldAerial, '일반지도': vworldBase },
   { '지적 경계(필지)': parcelLayer, '필지 소유정보': ownWms },
   {position:'bottomright', collapsed:true}
 ).addTo(map);
