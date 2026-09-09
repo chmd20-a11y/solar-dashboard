@@ -54,7 +54,7 @@
   </div>
   <div class="fld"><label>회사명 <span class="opt">(선택)</span></label><input type="text" id="company" placeholder="회사명을 입력하세요"></div>
   <div class="grid2">
-    <div class="fld"><label>담당자명 <span class="opt">(선택)</span></label><input type="text" id="name" placeholder="예: 홍길동"></div>
+    <div class="fld"><label>이름(담당자명) <span style="color:var(--bad)">*</span></label><input type="text" id="name" placeholder="예: 홍길동"></div>
     <div class="fld"><label>연락처 <span class="opt">(선택)</span></label><input type="text" id="phone" placeholder="예: 010-1234-5678"></div>
   </div>
   <label class="consent"><input type="checkbox" id="consent"><span><a href="/legal.html" target="_blank">이용약관 · 개인정보처리방침</a>에 동의합니다. <span style="color:var(--bad)">*</span></span></label>
@@ -77,6 +77,7 @@ async function submit(){
   const email=($('email').value||'').trim(), pw=$('pw').value||'', pw2=$('pw2').value||'';
   const company=($('company').value||'').trim(), name=($('name').value||'').trim(), phone=($('phone').value||'').trim();
   if(!email){ msg('이메일을 입력하세요.'); return; }
+  if(!name){ msg('이름(담당자명)을 입력하세요.'); return; }
   if(pw.length<6){ msg('비밀번호는 6자 이상이어야 합니다.'); return; }
   if(pw!==pw2){ msg('비밀번호가 일치하지 않습니다.'); return; }
   if(!$('consent').checked){ msg('약관에 동의해주세요.'); return; }

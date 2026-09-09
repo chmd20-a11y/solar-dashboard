@@ -92,7 +92,7 @@
       </div>
       <div class="tbl-wrap">
         <table>
-          <thead><tr><th>이메일</th><th>회사</th><th>요금제</th><th>가입일</th><th style="text-align:right">관리</th></tr></thead>
+          <thead><tr><th>이메일</th><th>담당자 · 회사</th><th>요금제</th><th>가입일</th><th style="text-align:right">관리</th></tr></thead>
           <tbody id="rows"><tr><td colspan="5" class="empty">불러오는 중…</td></tr></tbody>
         </table>
       </div>
@@ -149,7 +149,7 @@ function render(){
     const paid=u.plan==='paid';
     return `<tr>
       <td class="email">${u.email||'-'}${u.is_admin?'<span class="pill admin">관리자</span>':''}</td>
-      <td class="muted">${u.company||'-'}${u.name?(' · '+u.name):''}</td>
+      <td class="muted">${u.name||'-'}${u.company?(' · '+u.company):''}</td>
       <td><span class="pill ${paid?'paid':'free'}">${paid?'유료':'무료'}</span></td>
       <td class="muted">${fmt(u.created_at)}</td>
       <td style="text-align:right"><button class="btn sm ${paid?'':'primary'}" data-id="${u.id}" data-to="${paid?'free':'paid'}">${paid?'무료로 전환':'유료로 전환'}</button></td>
