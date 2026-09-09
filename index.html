@@ -655,6 +655,7 @@
       </div>
     </div>
 
+    <div id="q-company" style="text-align:center;font-size:12.5px;color:var(--accent,#0e7c66);font-weight:700;margin-bottom:2px"></div>
     <div class="q-title" id="q-title-addr">부지 주소</div>
 
     <div class="q-grid">
@@ -968,6 +969,11 @@ L.control.layers(
   { '지적 경계(필지)': parcelLayer, '필지 소유정보': ownWms },
   {position:'topright', collapsed:true}
 ).addTo(map);
+// 설정(⚙️ 일반설정)의 기본 지도 적용
+try{ const _dm=(JSON.parse(localStorage.getItem('solarfit_settings')||'{}').defmap)||'hybrid';
+  if(_dm==='esri'){ map.removeLayer(vworldAerialHybrid); esriImagery.addTo(map); }
+  else if(_dm==='base'){ map.removeLayer(vworldAerialHybrid); vworldBase.addTo(map); }
+}catch(e){}
 
 const panelLayer = L.layerGroup().addTo(map);   // panels
 const bufferLayer = L.layerGroup().addTo(map);  // 완충 경계선
@@ -1906,17 +1912,19 @@ function quotePull(){
   const w=+$('m-p').value; if(w>0) $('q-w').value=w;
   const isNoji=(typeof S!=='undefined' && S.type==='ground');
   document.querySelectorAll('#q-form button').forEach(b=>b.classList.toggle('on', b.dataset.f===(isNoji?'노지':'건물')));
-  $('q-apply').value = isNoji ? 178 : 188;
-  // 원가 페이지에서 설정한 단가/원가단가 있으면 이어받기
-  if($('c-unit') && +$('c-unit').value) $('q-unit').value=$('c-unit').value;
-  if($('c-modwon') && +$('c-modwon').value) $('q-modwon').value=$('c-modwon').value;
+  const _S=(typeof SETTINGS!=='undefined')?SETTINGS:{};
+  const _ap=(+_S.apply)||178; $('q-apply').value = isNoji ? _ap : _ap+10;
+  if(+_S.hours) $('q-hours').value=_S.hours;
+  // 원가 페이지에서 설정한 단가/원가단가 있으면 이어받기, 없으면 설정(⚙️) 기본값
+  if($('c-unit') && +$('c-unit').value) $('q-unit').value=$('c-unit').value; else if(+_S.kwunit) $('q-unit').value=_S.kwunit;
+  if($('c-modwon') && +$('c-modwon').value) $('q-modwon').value=$('c-modwon').value; else if(+_S.modcost) $('q-modwon').value=_S.modcost;
   const first=(typeof selected!=='undefined' && selected.length)?(selected.find(s=>!s.road)||selected[0]):null;
   const addr=first?(first.addr||first.jibun||''):'';
   if(addr && !$('q-addr').value) $('q-addr').value=addr;
 }
 function quoteOpen(on){
   const ov=$('quote-overlay');
-  if(on){ quotePull(); quoteCalc(); if(typeof three!=='undefined' && three && !_quotePhoto) captureQuote3D(); applyQuotePhoto(); ov.classList.add('open'); }
+  if(on){ quotePull(); quoteCalc(); if(typeof three!=='undefined' && three && !_quotePhoto) captureQuote3D(); applyQuotePhoto(); { const qc=$('q-company'); if(qc) qc.textContent=(typeof SETTINGS!=='undefined'&&SETTINGS.company)?(SETTINGS.company+(SETTINGS.phone?(' · '+SETTINGS.phone):'')):''; } ov.classList.add('open'); }
   else ov.classList.remove('open');
 }
 $('btn-quote').onclick=()=>quoteOpen(!$('quote-overlay').classList.contains('open'));
@@ -2178,7 +2186,7 @@ const AUTH = { enabled:true, url:'https://rejgvqeliqdjpavjvtjt.supabase.co', ano
 let _sb=null, _authUser=null;
 let _plan='free', _isAdmin=false;
 function getPlan(){ return _plan; }   // 유료 전환 대비 등급(profiles.plan 반영)
-async function refreshPlan(){ _plan='free'; _isAdmin=false; try{ if(_sb&&_authUser){ const {data}=await _sb.from('profiles').select('plan,is_admin').eq('id',_authUser.id).single(); if(data){ if(data.plan) _plan=data.plan; _isAdmin=!!data.is_admin; } } }catch(e){} renderAccount(); }
+async function refreshPlan(){ _plan='free'; _isAdmin=false; try{ if(_sb&&_authUser){ const {data}=await _sb.from('profiles').select('plan,is_admin').eq('id',_authUser.id).single(); if(data){ if(data.plan) _plan=data.plan; _isAdmin=!!data.is_admin; } } }catch(e){} renderAccount(); if(typeof loadSettingsCloud==='function') loadSettingsCloud(); }
 function auMsg(t,ok){ const el=$('au-msg'); if(el){ el.textContent=t||''; el.className='au-msg'+(ok?' ok':''); } }
 function loadSupabase(){
   return new Promise((res,rej)=>{
@@ -2260,13 +2268,16 @@ const SET_MAP=[['st-company','company','t'],['st-phone','phone','t'],['st-defmap
 function populateSettings(){ SET_MAP.forEach(([id,key,t])=>{ const el=$(id); if(!el) return; if(t==='c') el.checked=!!SETTINGS[key]; else el.value=SETTINGS[key]; }); }
 function collectSettings(){ SET_MAP.forEach(([id,key,t])=>{ const el=$(id); if(!el) return; if(t==='c') SETTINGS[key]=el.checked; else if(t==='n') SETTINGS[key]=parseFloat(el.value)||0; else SETTINGS[key]=(el.value||'').trim(); }); }
 function applySettings(){ try{ if(typeof S!=='undefined'&&S){ S.tilt=(+SETTINGS.tilt)||15; S.incidence=(+SETTINGS.incid)||25; } window.__stackGap=(+SETTINGS.gap)||10; const fv=$('fixedvals'); if(fv) fv.textContent=`모듈각도 ${SETTINGS.tilt}° · 입사각 ${SETTINGS.incid}° · 2단 적재 간격 ${SETTINGS.gap}mm`; }catch(e){} }
+// Supabase 클라우드 동기화(로그인 계정별) — 테이블 없거나 미로그인 시 localStorage로 폴백
+async function loadSettingsCloud(){ try{ if(_sb&&_authUser){ const {data}=await _sb.from('user_settings').select('settings').eq('id',_authUser.id).single(); if(data&&data.settings){ SETTINGS=Object.assign({},SET_DEFAULTS,data.settings); try{ localStorage.setItem(SET_KEY,JSON.stringify(SETTINGS)); }catch(e){} applySettings(); if(document.querySelector('#set-modal.open')) populateSettings(); } } }catch(e){} }
+async function saveSettingsCloud(){ try{ if(_sb&&_authUser){ await _sb.from('user_settings').upsert({id:_authUser.id, settings:SETTINGS}); } }catch(e){} }
 function openSettings(){ const m=$('set-modal'); if(!m) return; const e=$('set-email'); if(e) e.textContent=(_authUser&&_authUser.email)||'–'; const msg=$('set-msg'); if(msg){ msg.textContent=''; msg.className='set-msg'; } if($('set-pw1'))$('set-pw1').value=''; if($('set-pw2'))$('set-pw2').value=''; populateSettings(); const sm=$('st-savemsg'); if(sm){ sm.textContent=''; sm.className='set-msg'; } m.classList.add('open'); }
 (function(){ const bk=$('set-modal'); if(!bk) return; const x=$('set-x'), sv=$('set-save');
   const close=()=>bk.classList.remove('open');
   if(x) x.onclick=close;
   bk.addEventListener('click',e=>{ if(e.target===bk) close(); });
   document.querySelectorAll('#set-tabs .st-tab').forEach(t=>t.onclick=()=>{ const name=t.getAttribute('data-tab'); document.querySelectorAll('#set-tabs .st-tab').forEach(x=>x.classList.toggle('on',x===t)); document.querySelectorAll('#set-modal .st-pane').forEach(p=>p.classList.toggle('on',p.getAttribute('data-pane')===name)); });
-  const sa=$('st-saveall'); if(sa) sa.onclick=()=>{ collectSettings(); try{ localStorage.setItem(SET_KEY,JSON.stringify(SETTINGS)); }catch(e){} applySettings(); const m=$('st-savemsg'); if(m){ m.textContent='저장되었습니다 ✓'; m.className='set-msg ok'; setTimeout(()=>{ if(m.textContent.indexOf('저장')>=0){m.textContent='';m.className='set-msg';} },2200); } };
+  const sa=$('st-saveall'); if(sa) sa.onclick=()=>{ collectSettings(); try{ localStorage.setItem(SET_KEY,JSON.stringify(SETTINGS)); }catch(e){} applySettings(); saveSettingsCloud(); const m=$('st-savemsg'); if(m){ m.textContent='저장되었습니다 ✓'; m.className='set-msg ok'; setTimeout(()=>{ if(m.textContent.indexOf('저장')>=0){m.textContent='';m.className='set-msg';} },2200); } };
   if(sv) sv.onclick=async()=>{ const p1=($('set-pw1').value||''),p2=($('set-pw2').value||''),m=$('set-msg'); const setM=(t,ok)=>{ m.textContent=t; m.className='set-msg'+(ok?' ok':''); };
     if(p1.length<6){ setM('비밀번호는 6자 이상이어야 합니다.'); return; }
     if(p1!==p2){ setM('비밀번호가 일치하지 않습니다.'); return; }
