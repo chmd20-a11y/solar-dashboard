@@ -398,7 +398,6 @@
 
     <div class="plan-head">
       <h2>🏗 발전소 신설/증설 계획 <span class="muted" id="plancnt"></span></h2>
-      <a id="reviewLink" href="https://chmd20-a11y.github.io/grid-capacity-dashboard/위치검수.html" target="_blank" rel="noopener" title="발전소 신설/증설 계획 위치 검수 목록">📍 위치 검수</a>
     </div>
     <!-- D. 지도에 표시 → iOS 스타일 토글 스위치 -->
     <label class="toggle-row">
@@ -408,11 +407,16 @@
       </span>
       <span>지도에 표시 <span class="muted">(위치확인 <span id="planloc">–</span>건)</span></span>
     </label>
-    <!-- Person A 추가: 계획 변전소 검색 필터 -->
-    <input id="planSearch" placeholder="계획 변전소 검색 (예: 김해 · 경기 · 영암 · 345kV)" style="width:100%;box-sizing:border-box;margin-bottom:8px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--tx);padding:8px 10px;font-size:13px">
     <div id="planStageFilter"></div>
-    <div id="planList" style="max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:10px"></div>
-    <div style="margin-top:5px;font-size:10.5px;color:#7d8ea3">※ 지도핀은 <b>기존 변전소 증설분</b>(위치 확실)만 표시. 신설 예정 변전소는 한전이 정확 위치·준공연도를 공개목록에 안 넣어(첨부문서만) 목록에만 표기(·위치미상). 전체 계획은 위 목록 참조.</div>
+    <!-- 계획 변전소 검색·목록 (접기) -->
+    <details class="legend-fold" style="margin-top:10px">
+      <summary>📋 계획 변전소 목록·검색 (전체 보기)</summary>
+      <div class="fold-body" style="padding:10px 12px 12px">
+        <input id="planSearch" placeholder="계획 변전소 검색 (예: 김해 · 경기 · 영암 · 345kV)" style="width:100%;box-sizing:border-box;margin-bottom:8px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--tx);padding:8px 10px;font-size:13px">
+        <div id="planList" style="max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:10px"></div>
+        <div style="margin-top:5px;font-size:10.5px;color:#7d8ea3">※ 지도핀은 <b>기존 변전소 증설분</b>(위치 확실)만 표시. 신설 예정 변전소는 한전이 정확 위치·준공연도를 공개목록에 안 넣어(첨부문서만) 목록에만 표기(·위치미상). 전체 계획은 위 목록 참조.</div>
+      </div>
+    </details>
 
     <!-- C2. 범례 (접기) -->
     <details class="legend-fold" style="margin-top:12px">
@@ -429,11 +433,6 @@
       </div>
     </details>
 
-    <!-- 📲 홈 화면에 추가 (앱처럼 쓰기) 매뉴얼 열기 — 사이드바 하단 -->
-    <button class="a2hs-btn" id="a2hsBtn" type="button" style="margin-top:14px">
-      <span class="ic">📲</span>
-      <span class="tx"><b>홈 화면에 추가 (앱처럼 쓰기)</b><small>iPhone · Android 설치 방법 보기</small></span>
-    </button>
   </aside>
   <div id="map"></div>
 
@@ -679,7 +678,6 @@ function init(d){
   document.getElementById('planToggle').onchange=renderPlans;
   document.getElementById('planSearch').addEventListener('input',e=>{ PLAN_Q=e.target.value.trim().toLowerCase(); renderPlans(); });
   setupHelp();
-  setupA2hs();
   const fp=new URLSearchParams(location.search).get('find'); if(fp){ document.getElementById('addrInput').value=fp; setTimeout(searchAddr,300); }
   render();
   renderPlans();
