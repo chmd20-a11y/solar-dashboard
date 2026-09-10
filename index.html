@@ -863,68 +863,17 @@
       </div>
       <!-- 원가·마진 -->
       <div class="st-pane" data-pane="cost">
-        <div class="st-note" style="margin-bottom:12px">아래 값은 <b>원가·마진 계산</b>과 <b>고객 견적서</b>에 함께 반영됩니다. 시세·정책이 바뀌면 이곳에서 수정하세요. 각 항목의 <span class="st-info" data-tip="이렇게 물음표에 마우스를 올리거나(PC) 탭하면(모바일) 설명이 보입니다.">ⓘ</span> 를 누르면 설명이 나옵니다.</div>
+        <div class="st-note" style="margin-bottom:12px">엑셀에서 <b>노란색으로 표시한 수동변경 항목</b>만 넣었습니다. 여기서 바꾸면 <b>원가·마진 계산</b>과 <b>고객 견적서</b>에 함께 반영됩니다. 각 항목의 <span class="st-info" data-tip="물음표에 마우스를 올리거나(PC) 탭하면(모바일) 설명이 보입니다.">ⓘ</span> 를 누르면 설명이 나옵니다.</div>
 
         <div class="set-sec"><div class="set-lbl">원가·설치 단가</div>
           <div class="st-row"><label>모듈 원가 (원/W) <span class="st-info" data-tip="모듈 1W당 매입 원가. 예) 310원 × 출력(W) × 매수 = 모듈 원가 합계. 모듈 시세에 따라 조정.">ⓘ</span></label><input type="number" id="st-modcost" value="310"></div>
-          <div class="st-row"><label>kW당 설치단가 (원) <span class="st-info" data-tip="고객에게 청구하는 kW당 시공금액(매출 단가). 시공금액 = 이 값 × 설치용량(kW). VAT 별도.">ⓘ</span></label><input type="number" id="st-kwunit" value="950000"></div>
+          <div class="st-row"><label>kW당 설치단가 (원) <span class="st-info" data-tip="고객에게 청구하는 kW당 시공금액(매출 단가). 시공금액 = 이 값 × 설치용량(kW). VAT 별도. (엑셀 노란색 B7)">ⓘ</span></label><input type="number" id="st-kwunit" value="950000"></div>
           <div class="st-row"><label>목표 마진 (%) <span class="st-info" data-tip="목표로 삼는 영업이익률. 참고 지표로 표시되며 실제 이익은 (시공금액−원가합계)로 계산됩니다.">ⓘ</span></label><input type="number" id="st-margin" value="5" step="0.5"></div>
-          <div class="st-row"><label>구조검토비 (원/현장) <span class="st-info" data-tip="현장(발전소) 1곳당 구조검토 용역비. 현장 수만큼 곱해집니다.">ⓘ</span></label><input type="number" id="st-c-review" value="500000"></div>
-          <div class="st-row"><label>사다리차 (원/건물) <span class="st-info" data-tip="건물(지붕) 설치 시 건물 1동당 사다리차(고소작업) 비용. 노지는 0원.">ⓘ</span></label><input type="number" id="st-c-ladder" value="600000"></div>
         </div>
 
-        <div class="set-sec"><div class="set-lbl">인버터 원가 (원/대) <span class="st-info" data-tip="용량별 인버터 대당 원가. 그로와트·화훼이 두 조합 중 총액이 더 싼 쪽이 자동 선택됩니다.">ⓘ</span></div>
-          <div class="st-grid2">
-            <div class="st-row"><label>그로와트 125kW <span class="st-info" data-tip="그로와트 125kW급 인버터 1대 원가.">ⓘ</span></label><input type="number" id="st-c-invg125" value="5600000"></div>
-            <div class="st-row"><label>그로와트 50kW <span class="st-info" data-tip="그로와트 50kW급 인버터 1대 원가.">ⓘ</span></label><input type="number" id="st-c-invg50" value="3800000"></div>
-            <div class="st-row"><label>그로와트 36kW <span class="st-info" data-tip="그로와트 36kW급 인버터 1대 원가.">ⓘ</span></label><input type="number" id="st-c-invg36" value="2500000"></div>
-            <div class="st-row"><label>화훼이 110kW <span class="st-info" data-tip="화훼이 110kW급 인버터 1대 원가.">ⓘ</span></label><input type="number" id="st-c-invh110" value="5100000"></div>
-            <div class="st-row"><label>화훼이 50kW <span class="st-info" data-tip="화훼이 50kW급 인버터 1대 원가.">ⓘ</span></label><input type="number" id="st-c-invh50" value="3200000"></div>
-            <div class="st-row"><label>고객가 마진 (원/대) <span class="st-info" data-tip="고객 견적서의 인버터 판매가 = 원가 + 이 값(대당). 기본 100만원.">ⓘ</span></label><input type="number" id="st-c-invmargin" value="1000000"></div>
-          </div>
-        </div>
-
-        <div class="set-sec"><div class="set-lbl">접속반·계량기함 (원) <span class="st-info" data-tip="설치용량 구간별 접속반+계량기함 원가. 해당 용량 구간의 값 하나가 적용됩니다.">ⓘ</span></div>
-          <div class="st-grid2">
-            <div class="st-row"><label>~100kW <span class="st-info" data-tip="설치용량 100kW 이하일 때.">ⓘ</span></label><input type="number" id="st-c-mtr100" value="1200000"></div>
-            <div class="st-row"><label>~200kW <span class="st-info" data-tip="100kW 초과 ~ 200kW 이하.">ⓘ</span></label><input type="number" id="st-c-mtr200" value="1550000"></div>
-            <div class="st-row"><label>~300kW <span class="st-info" data-tip="200kW 초과 ~ 300kW 이하.">ⓘ</span></label><input type="number" id="st-c-mtr300" value="3100000"></div>
-            <div class="st-row"><label>~500kW <span class="st-info" data-tip="300kW 초과 ~ 500kW 이하.">ⓘ</span></label><input type="number" id="st-c-mtr500" value="11500000"></div>
-            <div class="st-row"><label>~600kW <span class="st-info" data-tip="500kW 초과 ~ 600kW 이하.">ⓘ</span></label><input type="number" id="st-c-mtr600" value="63500000"></div>
-            <div class="st-row"><label>~700kW <span class="st-info" data-tip="600kW 초과 ~ 700kW 이하.">ⓘ</span></label><input type="number" id="st-c-mtr700" value="64000000"></div>
-            <div class="st-row"><label>~800kW <span class="st-info" data-tip="700kW 초과 ~ 800kW 이하.">ⓘ</span></label><input type="number" id="st-c-mtr800" value="64500000"></div>
-            <div class="st-row"><label>~900kW <span class="st-info" data-tip="800kW 초과 ~ 900kW 이하.">ⓘ</span></label><input type="number" id="st-c-mtr900" value="65000000"></div>
-            <div class="st-row"><label>900kW+ <span class="st-info" data-tip="900kW 초과.">ⓘ</span></label><input type="number" id="st-c-mtr1000" value="65500000"></div>
-          </div>
-        </div>
-
-        <div class="set-sec"><div class="set-lbl">구조물·전기 단가표 (만원/kW) <span class="st-info" data-tip="설치용량 구간과 설치형태(노지/건물)에 따른 kW당 단가. 구조물 제작+공사+전기공사비 = 각 단가 × 설치용량(kW) × 1만원.">ⓘ</span></div>
+        <div class="set-sec"><div class="set-lbl">구조물·전기 단가표 (만원/kW) <span class="st-info" data-tip="엑셀 노란색 표(D23:Q25). 설치용량 구간과 설치형태(노지/건물)에 따른 kW당 단가. 구조물 제작+공사+전기공사비 = 각 단가 × 설치용량(kW) × 1만원.">ⓘ</span></div>
           <div id="st-struct"></div>
           <div class="st-note">해당 프로젝트의 설치용량 구간·설치형태에 맞는 행 하나가 자동 적용됩니다. 값은 kW당 <b>만원</b> 단위입니다.</div>
-        </div>
-
-        <div class="set-sec"><div class="set-lbl">설계감리·기술지도·안전진단</div>
-          <div class="st-grid2">
-            <div class="st-row"><label>설계감리 100kW당 (원) <span class="st-info" data-tip="설계감리비 = 기본금 + (100kW당 이 금액). 용량을 100kW 단위로 올림해 곱합니다.">ⓘ</span></label><input type="number" id="st-c-designper" value="700000"></div>
-            <div class="st-row"><label>설계감리 기본 (원) <span class="st-info" data-tip="설계감리 기본금(고정). 위 100kW당 금액과 합산.">ⓘ</span></label><input type="number" id="st-c-designbase" value="100000"></div>
-            <div class="st-row"><label>기술지도 1억↑ (만원) <span class="st-info" data-tip="시공금액이 1억원 초과일 때 현장당 기술지도 수수료(만원). 2억 이하 구간에 적용.">ⓘ</span></label><input type="number" id="st-c-guide1" value="46"></div>
-            <div class="st-row"><label>기술지도 2억↑ (만원) <span class="st-info" data-tip="시공금액이 2억원 초과일 때 현장당 기술지도 수수료(만원).">ⓘ</span></label><input type="number" id="st-c-guide2" value="68"></div>
-            <div class="st-row"><label>안전진단 300kW↑ (원) <span class="st-info" data-tip="설치용량 300kW 이상 500kW 미만일 때 안전진단비.">ⓘ</span></label><input type="number" id="st-c-safe300" value="1300000"></div>
-            <div class="st-row"><label>안전진단 500kW↑ (원) <span class="st-info" data-tip="설치용량 500kW 이상일 때 안전진단비.">ⓘ</span></label><input type="number" id="st-c-safe500" value="2500000"></div>
-          </div>
-        </div>
-
-        <div class="set-sec"><div class="set-lbl">사용전검사 수수료 <span class="st-info" data-tip="한전 사용전검사 수수료 = 기본금 + (kW당 금액 × 설치용량). 용량 구간별로 공식이 다릅니다.">ⓘ</span></div>
-          <div class="st-grid2">
-            <div class="st-row"><label>~20kW 기본 (원) <span class="st-info" data-tip="20kW 이하 구간의 기본금.">ⓘ</span></label><input type="number" id="st-c-insp1b" value="81300"></div>
-            <div class="st-row"><label>~20kW kW당 (원) <span class="st-info" data-tip="20kW 이하 구간의 kW당 가산액.">ⓘ</span></label><input type="number" id="st-c-insp1r" value="292"></div>
-            <div class="st-row"><label>~300kW 기본 (원) <span class="st-info" data-tip="20kW 초과 ~ 300kW 이하 구간의 기본금.">ⓘ</span></label><input type="number" id="st-c-insp2b" value="138000"></div>
-            <div class="st-row"><label>~300kW kW당 (원) <span class="st-info" data-tip="20kW 초과 ~ 300kW 이하 구간의 kW당 가산액.">ⓘ</span></label><input type="number" id="st-c-insp2r" value="611"></div>
-            <div class="st-row"><label>~500kW 기본 (원) <span class="st-info" data-tip="300kW 초과 ~ 500kW 이하 구간의 기본금.">ⓘ</span></label><input type="number" id="st-c-insp3b" value="239600"></div>
-            <div class="st-row"><label>~500kW kW당 (원) <span class="st-info" data-tip="300kW 초과 ~ 500kW 이하 구간의 kW당 가산액.">ⓘ</span></label><input type="number" id="st-c-insp3r" value="426"></div>
-            <div class="st-row"><label>500kW+ 기본 (원) <span class="st-info" data-tip="500kW 초과 구간의 기본금.">ⓘ</span></label><input type="number" id="st-c-insp4b" value="351900"></div>
-            <div class="st-row"><label>500kW+ kW당 (원) <span class="st-info" data-tip="500kW 초과 구간의 kW당 가산액.">ⓘ</span></label><input type="number" id="st-c-insp4r" value="349"></div>
-          </div>
         </div>
       </div>
       <!-- 고객견적서 -->
@@ -2400,15 +2349,7 @@ const SET_MAP=[['st-company','company','t'],['st-phone','phone','t'],['st-defmap
   ['st-cn-brand','cnBrand','t'],['st-cn-w','cnW','n'],['st-cn-x','cnX','n'],['st-cn-y','cnY','n'],
   ['st-tilt','tilt','n'],['st-incid','incid','n'],['st-gap','gap','n'],
   ['st-modcost','modcost','n'],['st-kwunit','kwunit','n'],['st-margin','margin','n'],
-  ['st-apply','apply','n'],['st-hours','hours','n'],['st-rate','rate','n'],['st-defer','defer','n'],['st-repay','repay','n'],['st-loanpct','loanpct','n'],
-  // 원가 상수
-  ['st-c-review','cReview','n'],['st-c-ladder','cLadder','n'],
-  ['st-c-invg125','cInvG125','n'],['st-c-invg50','cInvG50','n'],['st-c-invg36','cInvG36','n'],['st-c-invh110','cInvH110','n'],['st-c-invh50','cInvH50','n'],['st-c-invmargin','cInvMargin','n'],
-  ['st-c-mtr100','cMtr100','n'],['st-c-mtr200','cMtr200','n'],['st-c-mtr300','cMtr300','n'],['st-c-mtr500','cMtr500','n'],['st-c-mtr600','cMtr600','n'],['st-c-mtr700','cMtr700','n'],['st-c-mtr800','cMtr800','n'],['st-c-mtr900','cMtr900','n'],['st-c-mtr1000','cMtr1000','n'],
-  ['st-c-designper','cDesignPer','n'],['st-c-designbase','cDesignBase','n'],
-  ['st-c-guide1','cGuide1','n'],['st-c-guide2','cGuide2','n'],
-  ['st-c-safe300','cSafe300','n'],['st-c-safe500','cSafe500','n'],
-  ['st-c-insp1b','cInsp1b','n'],['st-c-insp1r','cInsp1r','n'],['st-c-insp2b','cInsp2b','n'],['st-c-insp2r','cInsp2r','n'],['st-c-insp3b','cInsp3b','n'],['st-c-insp3r','cInsp3r','n'],['st-c-insp4b','cInsp4b','n'],['st-c-insp4r','cInsp4r','n']];
+  ['st-apply','apply','n'],['st-hours','hours','n'],['st-rate','rate','n'],['st-defer','defer','n'],['st-repay','repay','n'],['st-loanpct','loanpct','n']];
 // ===== 구조물·전기 단가표(매트릭스) — 노지/건물 × 용량구간 × 제작/공사/전기 =====
 const STRUCT_CAPS=[['30','~30kW'],['50','~50kW'],['100','~100kW'],['300','~300kW'],['500','~500kW'],['700','~700kW'],['1000','700kW+']];
 const STRUCT_COLS=['제작','공사','전기'];
