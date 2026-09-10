@@ -686,7 +686,6 @@
 
     <button class="btn" id="btn-cost" style="margin-bottom:8px"><svg class="ic ic-sm" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="14" x2="8.01" y2="14"/><line x1="12" y1="14" x2="12.01" y2="14"/><line x1="16" y1="14" x2="16" y2="18"/><line x1="8" y1="18" x2="12" y2="18"/></svg>원가·마진 계산 <span style="font-weight:500;font-size:11px;color:var(--muted)">· 내부용</span></button>
     <button class="btn" id="btn-quote" style="margin-bottom:12px"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>고객 견적서 <span style="font-weight:500;font-size:11px;color:var(--muted)">· 고객 제시용</span></button>
-    <a class="btn" href="javascript:void(0)" id="btn-grid" style="margin-bottom:12px;background:#e3f2ec;border-color:#0e7c66;color:#0b6a58;font-weight:700;text-decoration:none;justify-content:flex-start"><svg class="ic ic-sm" viewBox="0 0 24 24" style="stroke:#0b6a58"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg><span class="gc-lbl">계통 여유용량 분석</span> <span class="gc-sub" style="font-weight:500;font-size:11px;color:var(--muted)">· 변전소 접속여유</span></a>
     <button class="btn" id="btn-dev" style="margin-bottom:12px"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>개발 요청 <span style="font-weight:500;font-size:11px;color:var(--muted)">· 오류·개선 신고</span></button>
     <div id="acct"></div>
     <div class="lp-foot"><a href="/legal.html" target="_blank">이용약관 · 개인정보처리방침 · 면책조항</a></div>
@@ -709,6 +708,7 @@
       <button id="btn-draw" title="부지 경계 그리기 — 꼭짓점을 클릭해 부지를 그립니다"><svg class="ic" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span>경계</span></button>
       <button id="btn-clear" title="그린 구역 지우기"><svg class="ic" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><span>지우기</span></button>
       <button id="btn-run" title="배치 계산 — 선택/그린 부지에 패널을 자동 배치"><svg class="ic" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span>배치</span></button>
+      <button id="btn-grid" title="계통 여유용량 — 변전소 접속여유 표시 켜기/끄기"><svg class="ic" viewBox="0 0 24 24"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg><span class="gc-lbl">계통</span></button>
     </div>
     <div id="own-legend">
       <b>🏠 필지 소유정보</b>
@@ -3191,7 +3191,9 @@ lgInitVisuals();
     <div class="gcp-row"><input id="gcp_in" placeholder="예: 김포시 양촌읍 양곡리 316"><button id="gcp_go">찾기</button></div>
     <div class="gcp-res" id="gcp_res"><div class="gcp-note">고객 부지 지번을 넣으면 가장 가까운 변전소·연계가능량을 보여줍니다.</div></div>
     <div class="gcp-plan"><label class="gcp-toggle"><input type="checkbox" id="gcp_plan_tg"> 🏗 발전소 신설/증설 계획 표시</label><div class="gcp-note" id="gcp_plan_n"></div></div>`;
-    if(btn&&btn.parentNode){ btn.insertAdjacentElement('afterend', el); }   // 좌측 메뉴 '계통 여유용량' 버튼 바로 아래에 인라인 삽입
+    const _lp=document.getElementById('left'), _ac=document.getElementById('acct');   // 토글은 지도 툴바로 이동 → 검색패널은 좌측 패널(계정 위)에 삽입
+    if(_lp && _ac && _ac.parentNode===_lp){ _lp.insertBefore(el,_ac); }
+    else if(_lp){ _lp.appendChild(el); }
     else { (document.getElementById('center')||document.body).appendChild(el); }
     el.querySelector('.gcp-x').onclick=()=>setOn(false);
     el.querySelectorAll('.gcp-tab').forEach(t=>t.onclick=()=>{ mode=t.getAttribute('data-t'); el.querySelectorAll('.gcp-tab').forEach(x=>x.classList.toggle('on',x===t)); document.getElementById('gcp_in').placeholder=mode==='name'?'예: 여수 · 남양주 · 양곡':'예: 김포시 양촌읍 양곡리 316'; document.getElementById('gcp_res').innerHTML=''; });
@@ -3205,7 +3207,7 @@ lgInitVisuals();
   async function setOn(v){
     on=v; btn.classList.toggle('on',v); document.body.classList.toggle('gc-panel-on',v); updateRightShift();
     const lbl=btn.querySelector('.gc-lbl'),sub=btn.querySelector('.gc-sub');
-    if(lbl)lbl.textContent=v?'계통 여유용량 끄기':'계통 여유용량 분석';   // 라벨 즉시 반영(로드 대기 전)
+    if(lbl)lbl.textContent='계통';   // 아이콘 라벨은 고정 '계통' — 켜짐/꺼짐은 강조색(.on)으로 표시
     if(sub)sub.textContent=v?'· 변전소 켜짐':'· 변전소 접속여유';
     if(v){ await load(); if(!on) return;   // 로드 중 사용자가 껐으면 중단(반대로 작동 방지)
       if(LAYER) map.addLayer(LAYER); legendEl().classList.add('on'); panel().classList.add('on'); stats(); }
