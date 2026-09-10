@@ -494,6 +494,37 @@
   .cost-table tr.sub td.lab{color:var(--muted);font-size:12px;padding-left:12px}
   .cost-note{font-size:10.5px;color:var(--faint);line-height:1.5;margin-top:10px;border-top:1px dashed var(--line);padding-top:8px}
 </style>
+<style id="feas-overlay-css">
+  #feas-overlay{position:fixed;inset:0;z-index:3000;display:none;align-items:flex-start;justify-content:center;background:rgba(4,8,13,.72);backdrop-filter:blur(3px);overflow:auto;padding:26px 14px}
+  #feas-overlay.open{display:flex}
+  #feas-card{width:100%;max-width:640px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 18px 20px;box-shadow:0 18px 60px rgba(0,0,0,.35);margin:auto}
+  #feas-card h2{font-size:16px;margin:0 0 10px;display:flex;align-items:center;gap:8px;color:var(--ink)}
+  .feas-close{margin-left:auto;background:transparent;border:0;color:var(--muted);font-size:20px;cursor:pointer;line-height:1}
+  .fd-verdict{font-weight:800;font-size:13px;padding:9px 12px;border-radius:10px;margin-bottom:6px}
+  .fd-verdict.bad{background:var(--bad-soft);color:var(--bad);border:1px solid var(--bad-line)}
+  .fd-verdict.warn{background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn-line)}
+  .fd-verdict.ok{background:var(--good-soft);color:var(--good);border:1px solid var(--good-line)}
+  .fd-sec{font-size:12px;font-weight:700;color:var(--muted);margin:15px 0 6px}
+  .fd-table{width:100%;border-collapse:collapse;font-size:12.5px}
+  .fd-table th{text-align:left;color:var(--muted);font-weight:600;font-size:11px;padding:6px 6px;border-bottom:1px solid var(--line)}
+  .fd-table td{padding:8px 6px;border-bottom:1px solid var(--line-2);vertical-align:top;color:var(--ink)}
+  .fd-gb{display:inline-block;font-weight:800;font-size:11px;padding:2px 8px;border-radius:9px;white-space:nowrap}
+  .fd-gb.y{background:var(--bad-soft);color:var(--bad);border:1px solid var(--bad-line)}
+  .fd-gb.n{background:var(--good-soft);color:var(--good);border:1px solid var(--good-line)}
+  .fd-gb.u{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+  .fd-reg{color:var(--muted);font-size:11.5px;line-height:1.5}
+  .fd-prob{display:flex;gap:8px;padding:7px 0;border-bottom:1px solid var(--line-2);font-size:12.5px;color:var(--ink)}
+  .fd-note{font-size:10.5px;color:var(--faint);line-height:1.5;margin-top:13px;border-top:1px dashed var(--line);padding-top:8px}
+  .feas-clickable{cursor:pointer}
+  .feas-more{margin-left:auto;font-size:11px;font-weight:700;opacity:.85;white-space:nowrap}
+  .feas-sum.feas-clickable:hover,.feas-region-h.feas-clickable:hover{filter:brightness(.97)}
+</style>
+<div id="feas-overlay">
+  <div id="feas-card">
+    <h2><span>설치 제약 상세</span><button class="feas-close" id="feas-close" title="닫기">✕</button></h2>
+    <div id="feas-detail-body"></div>
+  </div>
+</div>
 <div id="cost-overlay">
   <div id="cost-card">
     <h2>💰 원가·마진 계산서 <button class="cost-close" id="cost-close" title="닫기">✕</button></h2>
@@ -1136,7 +1167,8 @@ function rebuildSelection(fit){
   const uniqAddrs=[...new Set(pool.map(s=>s.addr||s.jibun).filter(Boolean))];
   const jimok=rep?jimokOfJibun(rep.jibun):'';
   const jm={}; pool.forEach(s=>{ try{ jm[s.jm||jimokOfJibun(s.jibun)]=(jm[s.jm||jimokOfJibun(s.jibun)]||0)+turf.area(s.gj); }catch(e){} });
-  const parcel = rep ? { addr:rep.addr, jibun:rep.jibun, jimok, pnu:rep.pnu, jiga:rep.jiga, multi: uniqAddrs.length>1?uniqAddrs:null, jimokArea:Object.keys(jm).length?jm:null } : null;
+  const parcelList = pool.map(s=>({addr:s.addr||'', jibun:s.jibun||'', pnu:s.pnu||'', jimok:s.jm||jimokOfJibun(s.jibun), road:!!s.road}));   // 필지별 규제 팝업용
+  const parcel = rep ? { addr:rep.addr, jibun:rep.jibun, jimok, pnu:rep.pnu, jiga:rep.jiga, multi: uniqAddrs.length>1?uniqAddrs:null, jimokArea:Object.keys(jm).length?jm:null, parcels: parcelList } : null;
   if(selLayer){ REGIONS=[{layer:selLayer, parcel, roadGeom:null}]; }   // 지번검색 = 단일 구역
   syncPrimary();
   _rivKey='';
@@ -1325,10 +1357,13 @@ async function setRegionParcel(region){
     if(!rep){ let ra=-1; (buildFeats.length?buildFeats:(listFeats.length?listFeats:feats)).forEach(f=>{ try{ const a=turf.area(f); if(a>ra){ra=a; rep=f;} }catch(e){} }); }
     rep=rep||feats[0];
     const rp=rep.properties||{}, jibunRaw=rp.jibun||'', jimok=jimokOfJibun(jibunRaw);
-    const uniq=[...new Set((listFeats.length?listFeats:feats).map(f=>(f.properties||{}).addr||(f.properties||{}).jibun).filter(Boolean))];
-    const jm={}; (listFeats.length?listFeats:feats).forEach(f=>{ try{ jm[f._jm]=(jm[f._jm]||0)+turf.area(f); }catch(e){} });
+    const poolF=(listFeats.length?listFeats:feats);
+    const uniq=[...new Set(poolF.map(f=>(f.properties||{}).addr||(f.properties||{}).jibun).filter(Boolean))];
+    const jm={}; poolF.forEach(f=>{ try{ jm[f._jm]=(jm[f._jm]||0)+turf.area(f); }catch(e){} });
+    const _seenP=new Set(); const parcelList=[];   // 필지별 규제 팝업용: 주소·PNU 목록(중복 PNU 제거)
+    poolF.forEach(f=>{ const p=f.properties||{}; const pn=p.pnu||''; if(pn&&_seenP.has(pn)) return; if(pn)_seenP.add(pn); parcelList.push({addr:p.addr||'', jibun:p.jibun||'', pnu:pn, jimok:f._jm||jimokOfJibun(p.jibun), road:!!f._road}); });
     region.parcel={ addr:rp.addr||'', jibun:jibunRaw, jimok, pnu:rp.pnu||'', jiga:rp.jiga||'', multi: uniq.length>1?uniq:null, jimokArea: Object.keys(jm).length?jm:null,
-                    roadCount: roadFeats.length };
+                    roadCount: roadFeats.length, parcels: parcelList };
   } else {
     region.roadGeom=null; region.parcel=null;
   }
@@ -1419,12 +1454,17 @@ async function feasRegionHTML(region, idx, multi){
   const sumTxt=worst==='ok'?'설치 양호':(worst==='warn'?'조건부 가능 (인허가 검토)':'설치 제약 있음');
   const sumIcon=worst==='ok'?'🟢':(worst==='warn'?'🟡':'🔴');
   const jiga = parcel.jiga ? Number(parcel.jiga).toLocaleString()+' 원/㎡' : '—';
+  region._feas={worst,jimok:parcel.jimok,jL,jD,river,rL,rD,zone,zL,zD,slope,sL,restrict,jimokArea:parcel.jimokArea};   // 상세 팝업이 재조회 없이 재사용
+  const nParc=(parcel.parcels&&parcel.parcels.length)||0;
+  const clickable = worst!=='ok' || nParc>1;   // 제약 있거나 지번 여러개면 상세 팝업 열기
+  const moreTxt = worst!=='ok' ? '제약 상세 보기' : '지번별 상세';
+  const hint = clickable ? ` <span class="feas-more">${moreTxt} ▸</span>` : '';
   let h='';
   if(multi){
     const hue=REGION_COLORS[idx%REGION_COLORS.length];
-    h+=`<div class="feas-region-h" style="border-left:4px solid ${hue}"><b>구역 ${idx+1}</b> <span class="dot ${worst}"></span> ${sumTxt}${parcel.addr?` · <span style="color:#9fb0c3">${parcel.addr}</span>`:''}</div>`;
+    h+=`<div class="feas-region-h${clickable?' feas-clickable':''}"${clickable?` data-region-detail="${idx}"`:''} style="border-left:4px solid ${hue}"><b>구역 ${idx+1}</b> <span class="dot ${worst}"></span> ${sumTxt}${parcel.addr?` · <span style="color:#9fb0c3">${parcel.addr}</span>`:''}${hint}</div>`;
   } else {
-    h+=`<div class="feas-sum ${worst}">${sumIcon} ${sumTxt}</div>`;
+    h+=`<div class="feas-sum ${worst}${clickable?' feas-clickable':''}"${clickable?` data-region-detail="${idx}"`:''}>${sumIcon} ${sumTxt}${hint}</div>`;
   }
   h+=row(jL, '지목: '+(jimok||'미상')+(parcel.multi?' (대표필지)':''), jD);
   if(parcel.multi){ h+=`<div class="feas-row"><span class="dot na"></span><div class="ft"><div class="t">포함 지번 (${parcel.multi.length}개)</div><div class="jibun-list">${parcel.multi.map(a=>'<div>'+a+'</div>').join('')}</div></div></div>`; }
@@ -2083,6 +2123,68 @@ $('btn-quote').onclick=()=>quoteOpen(!$('quote-overlay').classList.contains('ope
 $('quote-close').onclick=()=>quoteOpen(false);
 $('quote-overlay').addEventListener('click', e=>{ if(e.target===$('quote-overlay')) quoteOpen(false); });
 document.addEventListener('keydown', e=>{ if(e.key==='Escape' && $('quote-overlay').classList.contains('open')) quoteOpen(false); });
+
+// ---------- 설치 제약 상세 팝업(필지별 개발제한구역 정밀조회) ----------
+const _luCache={};
+async function fetchParcelLandUse(pnu){   // 국토부 토지이용계획(getLandUseAttr) — 필지별 지역지구 목록
+  if(!pnu) return {names:[], greenbelt:null};
+  if(_luCache[pnu]) return _luCache[pnu];
+  try{
+    const {proxy}=vwCfg();
+    const url=`${proxy}/ned/data/getLandUseAttr?pnu=${encodeURIComponent(pnu)}&format=json&numOfRows=200&pageNo=1`;
+    const j=await fetch(url).then(r=>r.json());
+    let fields=(j&&j.landUses&&j.landUses.field)||[];
+    if(fields&&!Array.isArray(fields)) fields=[fields];
+    const names=[...new Set(fields.map(f=>f&&f.prposAreaDstrcCodeNm).filter(Boolean))];
+    const res={names, greenbelt: names.length? names.some(n=>/개발제한구역/.test(n)) : null};
+    _luCache[pnu]=res; return res;
+  }catch(e){ return {names:[], greenbelt:null}; }
+}
+function feasDetailOpen(v){ $('feas-overlay').classList.toggle('open', v); }
+async function openFeasDetail(idx){
+  const region=REGIONS[idx]; if(!region) return;
+  const parcel=region.parcel||{}, feas=region._feas||{};
+  feasDetailOpen(true);
+  const body=$('feas-detail-body');
+  const worst=feas.worst||'na';
+  const vtxt=worst==='ok'?'설치 양호':(worst==='warn'?'조건부 가능 (인허가 검토)':(worst==='bad'?'설치 제약 있음':'검토 필요'));
+  const vcls=worst==='ok'?'ok':(worst==='warn'?'warn':'bad');
+  const regionName=REGIONS.length>1?`구역 ${idx+1}`:'';
+  const probs=[];   // 구역 단위 기타 제약(개발제한구역은 아래 지번별에서 정밀 처리)
+  if(feas.jL==='bad') probs.push(['⛔','지목 '+(feas.jimok||'미상'),feas.jD]);
+  else if(feas.jL==='warn') probs.push(['⚠️','지목 '+(feas.jimok||'미상'),feas.jD]);
+  if(feas.rL==='bad'&&feas.river) probs.push(['⛔','하천 저촉/인접',feas.rD]);
+  if(feas.zL==='bad') probs.push(['⛔','용도지역 '+feas.zone,feas.zD]);
+  else if(feas.zL==='warn'&&feas.zone) probs.push(['⚠️','용도지역 '+feas.zone,feas.zD]);
+  if(feas.sL==='bad'&&feas.slope) probs.push(['⛔','경사도 약 '+feas.slope.slope.toFixed(1)+'°','급경사 (설치 어려움)']);
+  const probHtml=probs.length? `<div class="fd-sec">구역 단위 기타 확인사항</div>`+probs.map(p=>`<div class="fd-prob"><span>${p[0]}</span><div><b>${p[1]}</b><div class="fd-reg">${p[2]||''}</div></div></div>`).join('') : '';
+  const parcels=(parcel.parcels||[]).filter(p=>p.pnu);
+  body.innerHTML=
+    `<div class="fd-verdict ${vcls}">${regionName?regionName+' · ':''}${vtxt}${parcel.addr?` · ${parcel.addr}`:''}</div>`+
+    `<div class="fd-sec">지번별 규제 현황 <span id="fd-sum" style="font-weight:600;color:var(--muted)"></span></div>`+
+    `<div id="fd-parcels"><div class="fd-reg" style="padding:10px 0">지번별 개발제한구역 조회 중… (${parcels.length}건)</div></div>`+
+    probHtml+
+    `<div class="fd-note">근거: 국토교통부 토지이용계획(VWorld) · 필지별 실시간 조회. 정확한 확인은 <a href="https://www.eum.go.kr/web/am/amMain.jsp" target="_blank">토지이음</a>에서 지번 검색.</div>`;
+  if(!parcels.length){ $('fd-parcels').innerHTML='<div class="fd-reg" style="padding:10px 0">조회할 지번 정보가 없습니다.</div>'; return; }
+  const results=await Promise.all(parcels.map(p=>fetchParcelLandUse(p.pnu).then(r=>({p,r}))));
+  if(!$('feas-overlay').classList.contains('open')) return;   // 조회 중 닫힘 방지
+  const gbCount=results.filter(x=>x.r&&x.r.greenbelt===true).length;
+  const okCount=results.filter(x=>x.r&&x.r.greenbelt===false).length;
+  $('fd-sum').textContent=`· 총 ${parcels.length}개 · 개발제한구역 ${gbCount}개`+(okCount?` · 아님 ${okCount}개`:'');
+  const rows=results.map(({p,r})=>{
+    let gb,reg;
+    if(!r||r.greenbelt===null){ gb='<span class="fd-gb u">조회실패</span>'; reg=''; }
+    else if(r.greenbelt){ gb='<span class="fd-gb y">개발제한구역</span>'; reg=r.names.filter(n=>!/개발제한구역/.test(n)).join(' · '); }
+    else { gb='<span class="fd-gb n">아님</span>'; reg=r.names.join(' · '); }
+    const addr=p.addr||p.jibun||p.pnu;
+    return `<tr><td>${addr}${p.road?' <span style="color:var(--warn)">(도로)</span>':''}</td><td>${gb}</td><td class="fd-reg">${reg||'—'}</td></tr>`;
+  }).join('');
+  $('fd-parcels').innerHTML=`<table class="fd-table"><thead><tr><th>주소</th><th>개발제한구역</th><th>기타 규제</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+$('feas-close').onclick=()=>feasDetailOpen(false);
+$('feas-overlay').addEventListener('click', e=>{ if(e.target===$('feas-overlay')) feasDetailOpen(false); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape' && $('feas-overlay').classList.contains('open')) feasDetailOpen(false); });
+$('feas-body').addEventListener('click', e=>{ const t=e.target.closest('[data-region-detail]'); if(t) openFeasDetail(+t.dataset.regionDetail); });
 $('q-set-hd').onclick=()=>$('q-set').classList.toggle('closed');
 ['q-w','q-qty','q-unit','q-modwon','q-plants','q-apply','q-hours','q-addr'].forEach(id=> $(id).addEventListener('input', quoteCalc));
 $('q-modsel').addEventListener('change', e=>{ const p=e.target.value.split('|'); $('q-modwon').value=p[0]; quoteCalc(); });
@@ -2528,7 +2630,7 @@ function openSettings(){ const m=$('set-modal'); if(!m) return; const e=$('set-e
       const who=_isAdmin?`<span class="dev-who">${esc(r.email||'-')}</span>`:'';
       const safe=(r.shot&&SHOT_RE.test(r.shot))?r.shot:'';
       const thumb=safe?`<img class="dev-thumb" src="${safe}" alt="스크린샷" onclick="__dev.zoom(this.src)">`:'';
-      const note=(r.status==='done')?`<div class="dev-note"><b>✅ 반영 완료</b>${r.admin_note?' · '+esc(r.admin_note):''}</div>`:'';
+      const note=(r.status==='done')?`<div class="dev-note"><b>💬 처리 결과</b>${r.admin_note?'<br>'+esc(r.admin_note):' · 반영 완료되었습니다.'}</div>`:'';
       let admin='';
       if(_isAdmin){
         if(r.status==='open') admin=`<div class="dev-admin"><textarea id="dn-${r.id}" rows="2" placeholder="반영 안내 코멘트(선택) — 작성자에게 표시됩니다"></textarea><div class="dev-admin-row"><button class="dev-btn-del" onclick="__dev.del('${r.id}')">삭제</button><button class="dev-btn-done" onclick="__dev.markDone('${r.id}', document.getElementById('dn-${r.id}').value)">반영 처리</button></div></div>`;

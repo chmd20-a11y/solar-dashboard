@@ -53,6 +53,18 @@
   .empty{text-align:center;color:var(--faint);padding:40px;font-size:13px}
   .note{font-size:11.5px;color:var(--faint);margin-top:14px;line-height:1.6}
   .note code{background:var(--line2);padding:1px 6px;border-radius:5px}
+  /* 개발 요청 */
+  #dev-rows td{vertical-align:top}
+  .dev-content{white-space:pre-wrap;word-break:break-word;max-height:130px;overflow:auto;font-size:12.5px;line-height:1.5}
+  .dev-shot{max-width:64px;max-height:48px;border-radius:6px;border:1px solid var(--line);cursor:zoom-in;display:block}
+  .dev-badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;margin-bottom:6px}
+  .dev-badge.open{background:var(--warn-soft);color:var(--warn)}
+  .dev-badge.done{background:var(--good-soft);color:var(--good)}
+  .dev-proc textarea{width:100%;min-height:56px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:#f5f7fa;font-size:12.5px;font-family:inherit;resize:vertical;margin-bottom:6px;color:var(--ink)}
+  .dev-proc-row{display:flex;gap:6px;justify-content:flex-end}
+  .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:5000;padding:20px;cursor:zoom-out}
+  .lightbox.open{display:flex}
+  .lightbox img{max-width:96vw;max-height:92vh;border-radius:8px}
 </style>
 </head>
 <body>
@@ -99,9 +111,24 @@
       <div class="note">요금제 버튼으로 <b>무료 ↔ 유료</b>를 전환합니다. 변경은 즉시 저장되며, 해당 회원이 다음 접속 시 반영됩니다.<br>
         🔑 <b>비밀번호 초기화</b> 시 해당 회원 비밀번호는 <b style="color:#0e7c66">123qwe</b> 로 설정됩니다. (회원에게 안내 후 로그인하여 변경 권장)<br>
         ※ 회원 목록·수정은 Supabase 보안정책(RLS)에 따라 <b>관리자만</b> 가능합니다.</div>
+
+      <div style="margin-top:32px">
+        <div class="bar" style="justify-content:space-between">
+          <h2 style="font-size:16px;margin:0;font-weight:800">🛠 개발 요청 <small style="font-size:12px;color:var(--muted);font-weight:600" id="dev-count"></small></h2>
+          <button class="btn sm" id="dev-reload">새로고침</button>
+        </div>
+        <div class="tbl-wrap" style="overflow-x:auto">
+          <table style="min-width:920px">
+            <thead><tr><th style="width:125px">접수일자</th><th style="width:160px">아이디</th><th style="width:90px">이름</th><th>내용</th><th style="width:80px">첨부</th><th style="width:280px">처리사항</th></tr></thead>
+            <tbody id="dev-rows"><tr><td colspan="6" class="empty">불러오는 중…</td></tr></tbody>
+          </table>
+        </div>
+        <div class="note">처리사항(답변)을 입력하고 <b>반영 저장</b>을 누르면, 요청자가 대시보드의 <b>개발 요청</b> 게시판에서 처리 결과를 확인할 수 있습니다. 첨부 이미지를 클릭하면 크게 보입니다.</div>
+      </div>
     </div>
   </div>
 </div>
+<div id="lightbox" class="lightbox"><img id="lightbox-img" alt="첨부 이미지"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
@@ -128,7 +155,7 @@ async function onAuthed(){
   try{ const {data}=await sb.from('profiles').select('is_admin').eq('id',me.id).single(); isAdmin = !!(data&&data.is_admin); }catch(e){}
   if(!isAdmin){ $('denied').style.display='block'; $('panel').style.display='none'; return; }
   $('denied').style.display='none'; $('panel').style.display='block';
-  loadUsers();
+  await loadUsers(); loadDevReqs();
 }
 async function loadUsers(){
   $('rows').innerHTML='<tr><td colspan="5" class="empty">불러오는 중…</td></tr>';
@@ -202,6 +229,54 @@ $('g-submit').onclick=async()=>{
 $('logout').onclick=async()=>{ try{ await sb.auth.signOut(); }catch(e){} me=null; showGate(); };
 $('q').addEventListener('input',render);
 $('reload').onclick=loadUsers;
+
+/* ===== 개발 요청 관리 (접수·조회·처리사항 입력) ===== */
+let _devs=[];
+const SHOT_RE=/^data:image\/(png|jpeg|jpg|webp|gif);base64,[A-Za-z0-9+/=]+$/;
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtDT(d){ if(!d) return '-'; try{ const t=new Date(d),p=n=>String(n).padStart(2,'0'); return `${t.getFullYear()}.${p(t.getMonth()+1)}.${p(t.getDate())} ${p(t.getHours())}:${p(t.getMinutes())}`; }catch(e){ return '-'; } }
+function nameFor(uid){ const u=_all.find(x=>x.id===uid); const n=u&&u.name; return n?esc(n):'<span style="color:#d5443f">미입력</span>'; }
+window.__zoom=src=>{ $('lightbox-img').src=src; $('lightbox').classList.add('open'); };
+$('lightbox').onclick=()=>{ $('lightbox').classList.remove('open'); $('lightbox-img').src=''; };
+async function loadDevReqs(){
+  const tb=$('dev-rows'); tb.innerHTML='<tr><td colspan="6" class="empty">불러오는 중…</td></tr>';
+  try{ const {data,error}=await sb.from('dev_requests').select('*').order('created_at',{ascending:false}); if(error) throw error; _devs=data||[]; renderDevReqs(); }
+  catch(e){ tb.innerHTML='<tr><td colspan="6" class="empty">불러오기 실패: '+esc((e&&e.message)||e)+'</td></tr>'; }
+}
+function renderDevReqs(){
+  const open=_devs.filter(d=>d.status!=='done').length;
+  $('dev-count').textContent=_devs.length?`(${_devs.length}건 · 미처리 ${open})`:'';
+  if(!_devs.length){ $('dev-rows').innerHTML='<tr><td colspan="6" class="empty">등록된 개발 요청이 없습니다.</td></tr>'; return; }
+  $('dev-rows').innerHTML=_devs.map(d=>{
+    const safe=(d.shot&&SHOT_RE.test(d.shot))?d.shot:'';
+    const thumb=safe?`<img class="dev-shot" src="${safe}" onclick="__zoom(this.src)" alt="첨부">`:'<span class="muted">없음</span>';
+    const badge=d.status==='done'?'<span class="dev-badge done">✅ 반영됨</span>':'<span class="dev-badge open">검토중</span>';
+    const reopen=d.status==='done'?`<button class="btn sm" data-reopen="${d.id}">검토중</button>`:'';
+    return `<tr>
+      <td class="muted">${fmtDT(d.created_at)}</td>
+      <td class="email">${esc(d.email||'-')}</td>
+      <td>${nameFor(d.user_id)}</td>
+      <td><div class="dev-content">${esc(d.content)}</div></td>
+      <td>${thumb}</td>
+      <td class="dev-proc">${badge}<textarea id="dp-${d.id}" placeholder="처리사항(답변)을 입력하세요">${esc(d.admin_note||'')}</textarea><div class="dev-proc-row">${reopen}<button class="btn sm primary" data-savedev="${d.id}">반영 저장</button></div></td>
+    </tr>`;
+  }).join('');
+  $('dev-rows').querySelectorAll('button[data-savedev]').forEach(b=>b.onclick=()=>saveDev(b.dataset.savedev,b));
+  $('dev-rows').querySelectorAll('button[data-reopen]').forEach(b=>b.onclick=()=>reopenDev(b.dataset.reopen));
+}
+async function saveDev(id,btn){
+  const ta=$('dp-'+id), note=(ta?ta.value:'').trim();
+  btn.disabled=true; const old=btn.textContent; btn.textContent='저장 중…';
+  try{ const {error}=await sb.from('dev_requests').update({status:'done',admin_note:note||null,resolved_at:new Date().toISOString()}).eq('id',id); if(error) throw error;
+    const d=_devs.find(x=>x.id===id); if(d){ d.status='done'; d.admin_note=note||null; } renderDevReqs();
+  }catch(e){ alert('저장 실패: '+((e&&e.message)||e)); btn.disabled=false; btn.textContent=old; }
+}
+async function reopenDev(id){
+  try{ const {error}=await sb.from('dev_requests').update({status:'open',resolved_at:null}).eq('id',id); if(error) throw error; const d=_devs.find(x=>x.id===id); if(d) d.status='open'; renderDevReqs(); }
+  catch(e){ alert('실패: '+((e&&e.message)||e)); }
+}
+$('dev-reload').onclick=loadDevReqs;
+
 boot();
 </script>
 </body>
