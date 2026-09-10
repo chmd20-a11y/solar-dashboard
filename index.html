@@ -118,8 +118,8 @@
     .leaflet-top.leaflet-left{margin-top:58px}
     #reopen-results{top:calc(12px + env(safe-area-inset-top))}
     /* 메뉴 열릴 때 지도 위를 덮는 딤 백드롭 — 바깥 탭하면 닫기 */
-    #m-backdrop{display:block;position:fixed;inset:0;z-index:1150;background:rgba(8,12,18,.42);opacity:0;visibility:hidden;transition:opacity .25s ease,visibility .25s ease}
-    #m-backdrop.on{opacity:1;visibility:visible}
+    #m-backdrop{display:block;position:fixed;inset:0;z-index:1150;background:rgba(8,12,18,.42);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .25s ease,visibility .25s ease}
+    #m-backdrop.on{opacity:1;visibility:visible;pointer-events:auto}
   }
 </style>
 <style id="redesign">
@@ -303,12 +303,12 @@
     #left .sec:first-of-type{border-top:0;padding-top:2px}
     #left #btn-cost{margin-top:12px}
     #left .lp-foot{margin-top:10px}
-    #right{position:absolute;top:14px;right:14px;width:320px;max-height:calc(100vh - 28px);max-height:calc(100dvh - 28px);overflow-y:auto;overflow-x:hidden;background:var(--bg);border:1px solid var(--line);border-left:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:15px 14px 16px;z-index:600;display:none}
+    #right{position:absolute;top:14px;right:14px;width:320px;max-height:calc(100vh - 28px);max-height:calc(100dvh - 28px);overflow-y:auto;overflow-x:hidden;background:rgba(255,255,255,.50);-webkit-backdrop-filter:blur(22px) saturate(1.5);backdrop-filter:blur(22px) saturate(1.5);border:1px solid var(--line);border-left:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:15px 14px 16px;z-index:600;display:none}
     #wrap.results-open #right{display:block}
   }
   @media (max-width:860px){
     #wrap{grid-template-columns:1fr !important}
-    #right{background:var(--card);box-shadow:0 10px 40px rgba(21,32,46,.22)}
+    #right{background:rgba(255,255,255,.40);-webkit-backdrop-filter:blur(22px) saturate(1.5);backdrop-filter:blur(22px) saturate(1.5);box-shadow:0 10px 40px rgba(21,32,46,.22)}
     /* 좌측 메뉴: 프로스티드 반투명 — 지도가 살짝 비쳐 답답하지 않게 */
     #left{width:88%;max-width:360px;background:rgba(255,255,255,.40);-webkit-backdrop-filter:blur(22px) saturate(1.5);backdrop-filter:blur(22px) saturate(1.5);box-shadow:0 10px 40px rgba(21,32,46,.22)}
     /* 노치·홈바 안전영역 반영(패널 기본 여백에 safe-area 더함) */
