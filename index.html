@@ -1317,7 +1317,7 @@
   #btn-grid.on svg{stroke:#fff!important}
   #btn-grid.on span{color:rgba(255,255,255,.85)!important}
   .plan-clus{border-radius:9px;background:#f0a53a;color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;box-shadow:0 0 0 1.5px rgba(0,0,0,.15),0 2px 8px rgba(0,0,0,.25)}
-  #gc-panel{margin:10px 0 2px;width:auto;background:#f4f8f7;border:1px solid #e4e8ef;border-radius:12px;padding:12px;display:none;font-size:13px;color:#15202e}
+  #gc-panel{position:fixed;z-index:2600;left:50%;top:calc(env(safe-area-inset-top) + 76px);transform:translateX(-50%);width:min(92vw,380px);max-height:calc(100dvh - 150px);overflow-y:auto;background:#fff;border:1px solid #e4e8ef;border-radius:14px;padding:14px;display:none;font-size:13px;color:#15202e;box-shadow:0 22px 60px rgba(21,32,46,.28)}
   #gc-panel.on{display:block}
   .leaflet-top.leaflet-right{transition:transform .2s ease}
   body.gc-shift .leaflet-top.leaflet-right{transform:translateX(-338px)!important}
@@ -3191,10 +3191,7 @@ lgInitVisuals();
     <div class="gcp-row"><input id="gcp_in" placeholder="예: 김포시 양촌읍 양곡리 316"><button id="gcp_go">찾기</button></div>
     <div class="gcp-res" id="gcp_res"><div class="gcp-note">고객 부지 지번을 넣으면 가장 가까운 변전소·연계가능량을 보여줍니다.</div></div>
     <div class="gcp-plan"><label class="gcp-toggle"><input type="checkbox" id="gcp_plan_tg"> 🏗 발전소 신설/증설 계획 표시</label><div class="gcp-note" id="gcp_plan_n"></div></div>`;
-    const _lp=document.getElementById('left'), _ac=document.getElementById('acct');   // 토글은 지도 툴바로 이동 → 검색패널은 좌측 패널(계정 위)에 삽입
-    if(_lp && _ac && _ac.parentNode===_lp){ _lp.insertBefore(el,_ac); }
-    else if(_lp){ _lp.appendChild(el); }
-    else { (document.getElementById('center')||document.body).appendChild(el); }
+    document.body.appendChild(el);   // 별도 팝업(position:fixed) — 변형된 좌측 시트 밖(body)에 붙여 위치 고정
     el.querySelector('.gcp-x').onclick=()=>setOn(false);
     el.querySelectorAll('.gcp-tab').forEach(t=>t.onclick=()=>{ mode=t.getAttribute('data-t'); el.querySelectorAll('.gcp-tab').forEach(x=>x.classList.toggle('on',x===t)); document.getElementById('gcp_in').placeholder=mode==='name'?'예: 여수 · 남양주 · 양곡':'예: 김포시 양촌읍 양곡리 316'; document.getElementById('gcp_res').innerHTML=''; });
     document.getElementById('gcp_go').onclick=doSearch;
