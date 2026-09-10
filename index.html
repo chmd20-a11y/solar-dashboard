@@ -153,6 +153,8 @@
   #wrap.results-open{grid-template-columns:344px 1fr 326px}
   #left{background:var(--bg);border-right:1px solid var(--line);padding:16px 14px 26px}
   #right{background:var(--bg);border-left:1px solid var(--line);padding:16px 14px 26px}
+  /* 반투명 패널(플로팅/시트) 위 보조텍스트·아이콘 시인성 보완 — 패널 한정(모달·오버레이 무영향) */
+  #left,#right{--muted:#3d4a58;--faint:#566270;text-shadow:0 1px 1.5px rgba(255,255,255,.55),0 0 2px rgba(255,255,255,.45)}
   #center{background:#d7dde4}
   .col::-webkit-scrollbar{width:11px}
   .col::-webkit-scrollbar-thumb{background:#ccd4de;border-radius:9px;border:3px solid var(--bg)}
