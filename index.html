@@ -321,6 +321,8 @@
     #left,#right{padding:8px 14px calc(env(safe-area-inset-bottom) + 20px)}
     /* 가로 밀림 방지 */
     html,body{overflow-x:hidden}
+    /* iOS 사파리: 입력칸 글자<16px면 포커스 시 화면 자동확대 후 복구 안 됨 → 모든 입력칸 16px로 확대 자체를 방지 */
+    input,textarea,select{font-size:16px !important}
     /* 터치 영역 확대 */
     .sepchip{padding:7px 13px !important;font-size:12px !important}
     #close-results{padding:6px 4px;font-size:22px}

@@ -23,6 +23,7 @@
   .btn.sm{padding:5px 11px;font-size:12px}
   input{width:100%;padding:9px 11px;border-radius:9px;background:#f5f7fa;border:1px solid var(--line);color:var(--ink);font-size:13.5px;font-family:inherit}
   input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  @media(max-width:860px){ input,textarea,select{font-size:16px !important} }   /* iOS 입력칸 포커스 시 자동확대 방지 */
   /* login */
   #gate{max-width:380px;margin:60px auto;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px 24px;box-shadow:var(--shadow)}
   #gate h2{font-size:17px;margin:0 0 4px}
