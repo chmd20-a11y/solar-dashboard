@@ -544,6 +544,7 @@
       <div class="lg-tabs"><button type="button" id="au-tab-login" class="on">로그인</button><button type="button" id="au-tab-signup">회원가입</button></div>
       <div class="lg-field"><label for="au-email">이메일</label><input type="email" id="au-email" placeholder="name@example.com" autocomplete="email"></div>
       <div class="lg-field"><label for="au-pw">비밀번호</label><input type="password" id="au-pw" placeholder="6자 이상" autocomplete="current-password"></div>
+      <label id="au-remember-row" style="display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);margin:-2px 0 4px;cursor:pointer;user-select:none"><input type="checkbox" id="au-remember" style="width:auto;margin:0;flex:0 0 auto"><span>아이디 저장 <span style="color:var(--faint)">· 비밀번호는 저장되지 않습니다</span></span></label>
       <label id="au-consent-row" class="lg-consent" style="display:none"><input type="checkbox" id="au-consent"><span><a href="/legal.html" target="_blank">이용약관·개인정보처리방침</a>에 동의합니다.</span></label>
       <div id="au-msg" class="au-msg"></div>
       <button type="button" class="lg-submit" id="au-submit">로그인</button>
@@ -2898,6 +2899,7 @@ async function auSubmit(){
       if(error) throw error;
       _authUser=data.user; hideAuthGate(); renderAccount(); refreshPlan();
     }
+    try{ if($('au-remember')&&$('au-remember').checked) localStorage.setItem('sf_email', email); else localStorage.removeItem('sf_email'); }catch(_){}   // 아이디(이메일)만 저장 · 비밀번호는 저장 안 함
   }catch(e){
     const m=(e&&e.message)||'';
     auMsg(/Invalid login/i.test(m)?'이메일 또는 비밀번호가 올바르지 않습니다.':(/already registered/i.test(m)?'이미 가입된 이메일입니다.':(/at least 6/i.test(m)?'비밀번호는 6자 이상이어야 합니다.':('오류: '+m))));
@@ -2960,6 +2962,7 @@ async function initAuth(){
   if(ts) ts.onclick=()=>{ location.href='/signup.html'; };   // 회원가입은 별도 페이지로
   if(sb) sb.onclick=auSubmit;
   ['au-email','au-pw'].forEach(id=>{ const el=$(id); if(el) el.addEventListener('keydown',e=>{ if(e.key==='Enter') auSubmit(); }); });
+  try{ const _sv=localStorage.getItem('sf_email'); if(_sv){ const _e=$('au-email'); if(_e)_e.value=_sv; const _r=$('au-remember'); if(_r)_r.checked=true; const _p=$('au-pw'); if(_p) setTimeout(()=>{try{_p.focus();}catch(e){}},200); } }catch(e){}   // 저장된 아이디 자동 채움 → 비밀번호 칸으로 포커스
   if(!AUTH.enabled || !AUTH.url || !AUTH.anon) return;   // OFF → 앱 개방(게이트 안 띄움)
   try{
     await loadSupabase();
