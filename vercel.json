@@ -4,5 +4,10 @@
     { "source": "/luris/:path*", "destination": "/api/proxy?__lpath=:path*" },
     { "source": "/dem/:path*", "destination": "/api/proxy?__dpath=:path*" },
     { "source": "/ned/:path*", "destination": "/api/proxy?__npath=:path*" }
+  ],
+  "headers": [
+    { "source": "/", "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }] },
+    { "source": "/index.html", "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }] },
+    { "source": "/admin.html", "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }] }
   ]
 }

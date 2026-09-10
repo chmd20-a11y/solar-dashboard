@@ -10,7 +10,7 @@
   :root{--bg:#0b0f14;--card:#141b24;--line:rgba(255,255,255,.10);--muted:#93a3b5;--accent:#ffd54a;--accent2:#4ea1ff;--good:#37d67a}
   *{box-sizing:border-box}
   html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:#eef2f7}
-  #wrap{display:grid;grid-template-columns:320px 1fr;height:100vh}          /* 기본: 우측 결과 숨김 → 지도 넓게 */
+  #wrap{display:grid;grid-template-columns:320px 1fr;height:100vh;height:100dvh}          /* 기본: 우측 결과 숨김 → 지도 넓게. dvh=iOS 툴바 제외 실제높이 */
   #wrap.results-open{grid-template-columns:320px 1fr 300px}                  /* 배치되면 우측 표시 */
   #right{display:none}
   #wrap.results-open #right{display:block}
@@ -296,21 +296,21 @@
   .brand .logo-pin svg{width:38px;height:38px}
   /* ===== 하이브리드 플로팅 레이아웃 (데스크톱 ≥861px): 지도 전체 + 좌/우 플로팅 카드 ===== */
   @media (min-width:861px){
-    #wrap{display:block;position:relative;height:100vh}
+    #wrap{display:block;position:relative;height:100vh;height:100dvh}
     #center{position:absolute;inset:0}
-    #left{position:absolute;top:14px;left:14px;width:340px;max-height:calc(100vh - 28px);overflow-y:auto;overflow-x:hidden;background:var(--card);border:1px solid var(--line);border-right:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:15px 15px 16px;z-index:600}
+    #left{position:absolute;top:14px;left:14px;width:340px;max-height:calc(100vh - 28px);max-height:calc(100dvh - 28px);overflow-y:auto;overflow-x:hidden;background:rgba(255,255,255,.62);-webkit-backdrop-filter:blur(22px) saturate(1.5);backdrop-filter:blur(22px) saturate(1.5);border:1px solid var(--line);border-right:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:15px 15px 16px;z-index:600}
     #left .sec{background:transparent;border:0;box-shadow:none;border-top:1px solid var(--line-2);border-radius:0;padding:14px 3px;margin:0}
     #left .sec:first-of-type{border-top:0;padding-top:2px}
     #left #btn-cost{margin-top:12px}
     #left .lp-foot{margin-top:10px}
-    #right{position:absolute;top:14px;right:14px;width:320px;max-height:calc(100vh - 28px);overflow-y:auto;overflow-x:hidden;background:var(--bg);border:1px solid var(--line);border-left:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:15px 14px 16px;z-index:600;display:none}
+    #right{position:absolute;top:14px;right:14px;width:320px;max-height:calc(100vh - 28px);max-height:calc(100dvh - 28px);overflow-y:auto;overflow-x:hidden;background:var(--bg);border:1px solid var(--line);border-left:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:15px 14px 16px;z-index:600;display:none}
     #wrap.results-open #right{display:block}
   }
   @media (max-width:860px){
     #wrap{grid-template-columns:1fr !important}
     #right{background:var(--card);box-shadow:0 10px 40px rgba(21,32,46,.22)}
     /* 좌측 메뉴: 프로스티드 반투명 — 지도가 살짝 비쳐 답답하지 않게 */
-    #left{width:88%;max-width:360px;background:rgba(255,255,255,.80);-webkit-backdrop-filter:blur(22px) saturate(1.5);backdrop-filter:blur(22px) saturate(1.5);box-shadow:0 10px 40px rgba(21,32,46,.22)}
+    #left{width:88%;max-width:360px;background:rgba(255,255,255,.62);-webkit-backdrop-filter:blur(22px) saturate(1.5);backdrop-filter:blur(22px) saturate(1.5);box-shadow:0 10px 40px rgba(21,32,46,.22)}
     /* 노치·홈바 안전영역 반영(패널 기본 여백에 safe-area 더함) */
     #left{padding:calc(16px + env(safe-area-inset-top)) 14px calc(26px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left))}
     #right{padding:calc(16px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) calc(26px + env(safe-area-inset-bottom)) 14px}
