@@ -1467,7 +1467,27 @@ function openRoadview(lat, lng){
   window.open('https://map.kakao.com/link/roadview/'+lat+','+lng, '_blank', 'noopener,noreferrer');
 }
 
-// 한 구역의 타당성 rows HTML(지목·하천·경사·용도·규제·계통) — 구역별 각각 조회
+// 기후: 부지 좌표의 10년(2015~2024) 평균 일사량·강수량 — NASA POWER(무료·공개도메인·상업OK, 위성 개략)
+const _climateCache={};
+async function getClimate(lat, lng){
+  if(!isFinite(lat)||!isFinite(lng)) return null;
+  const key=lat.toFixed(2)+','+lng.toFixed(2);
+  if(_climateCache[key]!==undefined) return _climateCache[key];
+  try{
+    const url=`https://power.larc.nasa.gov/api/temporal/monthly/point?parameters=ALLSKY_SFC_SW_DWN,PRECTOTCORR&community=RE&longitude=${lng.toFixed(4)}&latitude=${lat.toFixed(4)}&start=2015&end=2024&format=JSON`;
+    const j=await fetch(url).then(r=>r.json());
+    const g=j.properties.parameter.ALLSKY_SFC_SW_DWN, pr=j.properties.parameter.PRECTOTCORR;
+    const gv=[], pv=[];
+    for(let y=2015;y<=2024;y++){ const k=y+'13'; if(g[k]>-900) gv.push(g[k]); if(pr[k]>-900) pv.push(pr[k]); }   // YYYY13 = 그 해 연평균(일 단위), -999=결측
+    if(!gv.length){ _climateCache[key]=null; return null; }
+    const ghiDaily=gv.reduce((a,b)=>a+b,0)/gv.length;
+    const prDaily=pv.length?pv.reduce((a,b)=>a+b,0)/pv.length:null;
+    const res={ ghiDaily, ghiYear:ghiDaily*365.25, prYear:(prDaily!=null?prDaily*365.25:null), years:gv.length };
+    _climateCache[key]=res; return res;
+  }catch(e){ _climateCache[key]=null; return null; }
+}
+
+// 한 구역의 타당성 rows HTML(지목·하천·경사·용도·규제·계통·기후) — 구역별 각각 조회
 async function feasRegionHTML(region, idx, multi){
   const layer=region&&region.layer, parcel=(region&&region.parcel)||{};
   function row(lvl,t,d){ return `<div class="feas-row"><span class="dot ${lvl}"></span><div class="ft"><div class="t">${t}</div><div class="d">${d}</div></div></div>`; }
@@ -1482,6 +1502,8 @@ async function feasRegionHTML(region, idx, multi){
     try{ slope=await getSlope(gcenter[0],gcenter[1]); }catch(e){}
     try{ if((typeof SETTINGS==='undefined')||SETTINGS.gz!==false) restrict=await getRestrictZone(gcenter[1],gcenter[0]); }catch(e){}   // 개발제한 경고 on/off(⚙️ 타당성)
   }
+  let climate=region._climate;
+  if(climate===undefined){ if(gcenter){ try{ climate=await getClimate(gcenter[1],gcenter[0]); }catch(e){ climate=null; } } else climate=null; region._climate=climate; }
   let zL='na', zD='';
   if(zone){
     if(/계획관리/.test(zone)){ zL='ok'; zD='태양광 양호'; }
@@ -1557,6 +1579,12 @@ async function feasRegionHTML(region, idx, multi){
     h+=row('na', '관할 연락처', (grid.officeName||'한전')+(grid.tel?` · <a href="tel:${grid.tel}">${grid.tel}</a>`:''));
   } else {
     h+=row('na', '계통 연계 여유', '인근 변전소 조회 실패');
+  }
+  if(climate){
+    const gL2 = climate.ghiDaily>=3.9?'ok':(climate.ghiDaily>=3.5?'na':'warn');
+    const gLab = climate.ghiDaily>=3.9?'일조 양호':(climate.ghiDaily>=3.5?'보통':'다소 낮음');
+    h+=row(gL2, '☀️ 연평균 일사량 '+climate.ghiDaily.toFixed(2)+' kWh/㎡·일 · '+gLab, '10년(2015~24) 평균 · 연 ~'+Math.round(climate.ghiYear).toLocaleString()+' kWh/㎡ · 태양광 발전량 기준 · NASA POWER 위성(개략)');
+    if(climate.prYear!=null) h+=row('na', '🌧 연평균 강수량 ~'+Math.round(climate.prYear).toLocaleString()+' mm/년', '10년(2015~24) 평균 · 월별 최다 7~8월(장마) · NASA POWER 위성(개략)');
   }
   if(!multi){ h+=row('na', '공시지가', jiga); }
   if(gcenter){ h+=`<div class="feas-roadview" data-roadview="${gcenter[1]},${gcenter[0]}" title="이 부지 주변을 로드뷰로 봅니다"><svg class="ic ic-sm" viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/></svg>로드뷰로 주변 보기<span class="rv-hint">새 창 ▸</span></div>`; }
