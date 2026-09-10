@@ -16,7 +16,7 @@
   h1{font-size:19px;font-weight:800;margin:0;letter-spacing:-.02em}
   h1 small{font-size:12px;font-weight:600;color:var(--muted);margin-left:6px}
   .sp{margin-left:auto}
-  .btn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:9px;padding:8px 13px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+  .btn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:9px;padding:8px 13px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
   .btn:hover{border-color:var(--accent);color:var(--accent)}
   .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
   .btn.primary:hover{background:var(--accent-h);color:#fff}
@@ -75,6 +75,37 @@
   .admtab .cnt{margin-left:6px;background:var(--warn-soft);color:var(--warn);font-size:11px;font-weight:800;padding:1px 8px;border-radius:999px;line-height:1.6}
   .adm-pane{display:none}
   .adm-pane.on{display:block}
+  /* ===== 모바일 최적화 ===== */
+  @media(max-width:640px){
+    .wrap{padding:16px 12px 46px}
+    .top{flex-wrap:wrap;gap:8px 9px}
+    .logo{width:32px;height:32px}
+    h1{font-size:16px}
+    h1 small{display:block;margin-top:2px}
+    #me{display:none}
+    .btn.sm{padding:7px 12px}
+    .stats{gap:8px}
+    .stat{padding:11px 12px}
+    .stat .v{font-size:22px}
+    .admtabs{margin-bottom:16px}
+    .admtab{padding:10px 12px;font-size:13.5px}
+    .bar{flex-wrap:wrap}
+    .bar input{max-width:none;flex:1 1 100%}
+    /* 회원 목록: 표 → 카드 */
+    #pane-members .tbl-wrap{background:transparent;border:0;box-shadow:none;overflow:visible}
+    #pane-members table,#pane-members tbody,#pane-members tr,#pane-members td{display:block;width:auto}
+    #pane-members thead{display:none}
+    #pane-members tbody tr{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-sm);padding:12px 14px;margin-bottom:10px}
+    #pane-members td{border:0;padding:5px 0;display:flex;justify-content:space-between;align-items:center;gap:12px;text-align:right !important;white-space:normal !important}
+    #pane-members td::before{content:attr(data-label);font-size:11.5px;font-weight:700;color:var(--muted);flex:0 0 auto;text-align:left}
+    #pane-members td.email{font-size:15px;font-weight:700;justify-content:flex-start;padding-bottom:9px;border-bottom:1px solid var(--line2);margin-bottom:5px}
+    #pane-members td.email::before{display:none}
+    #pane-members td[data-label="관리"]{flex-direction:column;align-items:stretch;gap:8px;margin-top:8px;padding-top:11px;border-top:1px solid var(--line2)}
+    #pane-members td[data-label="관리"]::before{text-align:left;margin-bottom:1px}
+    #pane-members td[data-label="관리"] .btn{width:100%;margin:0 !important;padding:11px}
+    /* 개발 요청 표: 가로 스크롤 유지(min-width 축소) */
+    #pane-dev table{min-width:760px}
+  }
 </style>
 </head>
 <body>
@@ -192,11 +223,11 @@ function render(){
   $('rows').innerHTML=list.map(u=>{
     const paid=u.plan==='paid';
     return `<tr>
-      <td class="email">${u.email||'-'}${u.is_admin?'<span class="pill admin">관리자</span>':''}</td>
-      <td class="muted editname" style="cursor:pointer" data-editname="${u.id}" title="클릭해서 이름 수정">${u.name?u.name:'<span style="color:#d5443f">이름 입력</span>'}${u.company?(' · '+u.company):''} <span style="opacity:.45">✏️</span></td>
-      <td><span class="pill ${paid?'paid':'free'}">${paid?'유료':'무료'}</span></td>
-      <td class="muted">${fmt(u.created_at)}</td>
-      <td style="text-align:right;white-space:nowrap"><button class="btn sm" data-reset="${u.id}" style="margin-right:6px">비밀번호 초기화</button><button class="btn sm ${paid?'':'primary'}" data-id="${u.id}" data-to="${paid?'free':'paid'}">${paid?'무료로 전환':'유료로 전환'}</button></td>
+      <td class="email" data-label="이메일">${u.email||'-'}${u.is_admin?'<span class="pill admin">관리자</span>':''}</td>
+      <td class="muted editname" data-label="담당자·회사" style="cursor:pointer" data-editname="${u.id}" title="클릭해서 이름 수정">${u.name?u.name:'<span style="color:#d5443f">이름 입력</span>'}${u.company?(' · '+u.company):''} <span style="opacity:.45">✏️</span></td>
+      <td data-label="요금제"><span class="pill ${paid?'paid':'free'}">${paid?'유료':'무료'}</span></td>
+      <td class="muted" data-label="가입일">${fmt(u.created_at)}</td>
+      <td data-label="관리" style="text-align:right;white-space:nowrap"><button class="btn sm" data-reset="${u.id}" style="margin-right:6px">비밀번호 초기화</button><button class="btn sm ${paid?'':'primary'}" data-id="${u.id}" data-to="${paid?'free':'paid'}">${paid?'무료로 전환':'유료로 전환'}</button></td>
     </tr>`;
   }).join('');
   $('rows').querySelectorAll('button[data-id]').forEach(b=>b.onclick=()=>setPlan(b.dataset.id,b.dataset.to,b));

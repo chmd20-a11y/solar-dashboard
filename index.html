@@ -66,6 +66,9 @@
   #btn-reset{margin-left:auto;flex:0 0 auto;display:inline-flex;align-items:center;gap:4px;padding:5px 9px;font-size:11.5px;font-weight:700;cursor:pointer;color:var(--muted);border:1px solid var(--line);border-radius:8px;background:var(--card)}
   #btn-reset:hover{color:var(--ink);filter:brightness(.98)}
   #btn-reset .ic-sm{flex:none;width:13px;height:13px;stroke:currentColor}
+  #btn-admin{flex:0 0 auto;display:inline-flex;align-items:center;gap:4px;padding:5px 9px;font-size:11.5px;font-weight:700;cursor:pointer;color:var(--accent);border:1px solid var(--accent-line,#c2e2da);border-radius:8px;background:var(--accent-soft,#e1f2ee);text-decoration:none}
+  #btn-admin:hover{filter:brightness(.97)}
+  #btn-admin .ic-sm{flex:none;width:13px;height:13px;stroke:currentColor;fill:none}
   #viewtoggle button{padding:7px 15px;border:0;border-radius:8px;background:transparent;color:#cdd8e4;font-size:13px;cursor:pointer;font-weight:700}
   #viewtoggle button.on{background:var(--accent);color:#1a1400}
   #sunbar{position:absolute;bottom:14px;right:14px;z-index:600;display:flex;align-items:center;gap:8px;padding:8px 12px;font-size:12px;color:#cdd8e4}
@@ -378,6 +381,7 @@
       <div class="logo-pin"><svg viewBox="0 0 48 48"><g><path d="M6 34 16 30 26 34 36 30 44 34 44 40 36 44 26 40 16 44 6 40Z" fill="#1a6b52"/><g stroke="#eef4ee" stroke-width="1.4" stroke-linecap="round" fill="none" opacity=".92"><path d="M16 30.6V43.4"/><path d="M26 34.2V39.8"/><path d="M36 30.6V43.4"/></g></g><path d="M24 5.5C16.8 5.5 11.2 11 11.2 17.9 11.2 25.6 24 36.4 24 36.4 24 36.4 36.8 25.6 36.8 17.9 36.8 11 31.2 5.5 24 5.5Z" fill="#1a6b52"/><circle cx="24" cy="17.4" r="5" fill="#f4ad2c"/><g stroke="#f4ad2c" stroke-width="1.9" stroke-linecap="round"><path d="M24 9.6V7"/><path d="M24 25.2v2.6"/><path d="M31.5 17.4h2.6"/><path d="M16.5 17.4H13.9"/><path d="M29.3 12.1l1.8-1.8"/><path d="M18.7 22.7l-1.8 1.8"/><path d="M29.3 22.7l1.8 1.8"/><path d="M18.7 12.1l-1.8-1.8"/></g></svg></div>
       <div class="bt"><h1>솔라핏 <span style="font-size:12px;font-weight:700;color:var(--muted)">SolarFit</span></h1><div class="sub">태양광 부지 분석 · 자동 배치</div></div>
       <button id="btn-reset" title="지도 배율은 유지하고, 선택·그림·배치 결과를 모두 초기화합니다"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M3 2v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L3 8"/></svg>초기화</button>
+      <a id="btn-admin" href="/admin.html" title="관리자 페이지" style="display:none"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>관리자</a>
       <button id="close-left" title="메뉴 닫기">✕</button>
     </div>
 
@@ -2612,9 +2616,10 @@ function loadSupabase(){
 }
 function renderAccount(){
   const el=$('acct'); if(!el) return;
-  if(_authUser){ el.className='on'; el.innerHTML=`<span class="em">${_authUser.email||'로그인됨'}</span>${_isAdmin?'<a class="adm" href="/admin.html">관리자</a>':''}<button class="setbtn" id="acct-set" title="설정">⚙️</button><button class="lo" id="au-logout">로그아웃</button>`;
+  const ba=$('btn-admin'); if(ba) ba.style.display=(_authUser&&_isAdmin)?'inline-flex':'none';   // 관리자 진입 버튼(헤더 초기화 옆)
+  if(_authUser){ el.className='on'; el.innerHTML=`<span class="em">${_authUser.email||'로그인됨'}</span><button class="setbtn" id="acct-set" title="설정">⚙️</button><button class="lo" id="au-logout">로그아웃</button>`;
     { const _gs=$('acct-set'); if(_gs) _gs.onclick=openSettings; }
-    $('au-logout').onclick=async()=>{ try{ await _sb.auth.signOut(); }catch(e){} _authUser=null; _isAdmin=false; try{ SETTINGS=Object.assign({},SET_DEFAULTS); applySettings(); window.__defmapDone=false; }catch(e){} el.className=''; el.innerHTML=''; showAuthGate(); };
+    $('au-logout').onclick=async()=>{ try{ await _sb.auth.signOut(); }catch(e){} _authUser=null; _isAdmin=false; const _ba=$('btn-admin'); if(_ba)_ba.style.display='none'; try{ SETTINGS=Object.assign({},SET_DEFAULTS); applySettings(); window.__defmapDone=false; }catch(e){} el.className=''; el.innerHTML=''; showAuthGate(); };
   } else { el.className=''; el.innerHTML=''; }
 }
 function showAuthGate(){ const g=$('auth-gate'); if(g){ g.classList.add('open'); document.body.classList.add('gated'); } }
