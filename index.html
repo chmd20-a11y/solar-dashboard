@@ -158,6 +158,11 @@
   #left,#right{--muted:#253340;--faint:#384654;font-weight:700;text-shadow:0 1px 2px rgba(255,255,255,.7),0 0 3px rgba(255,255,255,.55)}
   /* 명시적 600 본문요소(라벨·상세행 제목)도 700로 맞춰 굵기 역전 방지 */
   #left .fld label,#right .fld label,#left .feas-row .ft .t,#right .feas-row .ft .t{font-weight:700}
+  /* 데스크톱(≥861px): 시인성 최대화 — 더 굵게(800)·색 더 검게·그림자 제거 (모바일은 현행 700·그림자 유지) */
+  @media (min-width:861px){
+    #left,#right{--muted:#0c1319;--faint:#18212b;font-weight:800;text-shadow:none}
+    #left .fld label,#right .fld label,#left .feas-row .ft .t,#right .feas-row .ft .t,#left .sec h2,#right .sec h2{font-weight:800}
+  }
   #center{background:#d7dde4}
   .col::-webkit-scrollbar{width:11px}
   .col::-webkit-scrollbar-thumb{background:#ccd4de;border-radius:9px;border:3px solid var(--bg)}
