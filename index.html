@@ -266,6 +266,7 @@
   .feas-row a{color:var(--accent2)}
   .dot.ok{background:var(--good)}.dot.warn{background:var(--warn)}.dot.bad{background:var(--bad)}.dot.na{background:#b4bdca}
   .feas-hdot{width:11px;height:11px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 0 3px rgba(21,32,46,.06)}
+  .feas-htxt{font-size:12px;font-weight:700;white-space:nowrap}
   .jibun-list{border:1px solid var(--line);background:var(--surface-2);color:var(--ink)}
   .jibun-list div{border-bottom:1px solid var(--line-2)}
   .jibun-list::-webkit-scrollbar-thumb{background:#cbd3dd}
@@ -308,8 +309,8 @@
   .lp-foot a{font-size:10.5px;color:var(--faint);text-decoration:none}
   .lp-foot a:hover{color:var(--accent);text-decoration:underline}
   /* auth gate (기본 숨김) */
-  #auth-gate{position:fixed;inset:0;z-index:5000;display:none;align-items:center;justify-content:center;padding:20px;background:linear-gradient(150deg,#0e7c66,#0b5346)}
-  #auth-gate.open{display:flex}
+  #auth-gate{position:fixed;inset:0;z-index:5000;display:none;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;background:#f4f7f4}
+  #auth-gate.open{display:block}
   body.gated #wrap{filter:blur(4px);pointer-events:none;user-select:none}
   .auth-card{width:100%;max-width:388px;background:var(--card);border-radius:18px;padding:26px 24px 20px;box-shadow:0 30px 80px rgba(0,0,0,.4)}
   .auth-brand{display:flex;align-items:center;gap:11px;margin-bottom:20px}
@@ -405,10 +406,11 @@
       <div id="sep-radius" style="display:flex;gap:5px;margin-top:8px;align-items:center;flex-wrap:wrap">
         <span style="font-size:11px;color:var(--muted)">이격거리 원</span>
       </div>
+      <div id="roadview-btn" class="feas-roadview" data-roadview="" title="이 부지 주변을 로드뷰로 봅니다" style="display:none;margin-top:9px"><svg class="ic ic-sm" viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/></svg>로드뷰로 주변 보기<span class="rv-hint">새 창 ▸</span></div>
     </div>
 
     <div class="sec collapsed" id="sec-feas">
-      <h2><span class="n"><svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="m9 14 2 2 4-4"/></svg></span> 설치 가능성 진단<span class="dot feas-hdot" id="feas-dot" style="display:none" title=""></span></h2>
+      <h2><span class="n"><svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="m9 14 2 2 4-4"/></svg></span> 설치 가능성 진단<span class="dot feas-hdot" id="feas-dot" style="display:none" title=""></span><span class="feas-htxt" id="feas-txt" style="display:none"></span></h2>
       <div id="feas-body"><div class="feas-empty">지번 검색 또는 경계 그리기로 부지를 지정하면 설치 가능성이 표시됩니다.</div></div>
     </div>
 
@@ -1464,7 +1466,7 @@ function drawSepCircle(){
 function renderSepChips(){
   const box=document.getElementById('sep-radius'); if(!box) return;
   box.querySelectorAll('.sepchip').forEach(e=>e.remove());
-  [100,200,300,500,0].forEach(r=>{
+  [100,200,300,0].forEach(r=>{
     const b=document.createElement('span'); b.className='sepchip';
     b.textContent=r?r+'m':'끄기';
     const on=SEP_RADIUS===r;
@@ -1603,12 +1605,11 @@ async function feasRegionHTML(region, idx, multi){
     if(climate.prYear!=null) h+=row('na', '🌧 연평균 강수량 ~'+Math.round(climate.prYear).toLocaleString()+' mm/년', '10년(2015~24) 평균 · 월별 최다 7~8월(장마) · NASA POWER 위성(개략)');
   }
   if(!multi){ h+=row('na', '공시지가', jiga); }
-  if(gcenter){ h+=`<div class="feas-roadview" data-roadview="${gcenter[1]},${gcenter[0]}" title="이 부지 주변을 로드뷰로 봅니다"><svg class="ic ic-sm" viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/></svg>로드뷰로 주변 보기<span class="rv-hint">새 창 ▸</span></div>`; }
   return h;
 }
 async function renderFeasibility(){
   const body=$('feas-body'); if(!body) return;
-  if(!REGIONS.length){ body.innerHTML='<div class="feas-empty">지번 검색 또는 경계 그리기로 부지를 지정하면 설치 가능성이 표시됩니다.</div>'; const _fd0=$('feas-dot'); if(_fd0)_fd0.style.display='none'; return; }
+  if(!REGIONS.length){ body.innerHTML='<div class="feas-empty">지번 검색 또는 경계 그리기로 부지를 지정하면 설치 가능성이 표시됩니다.</div>'; ['feas-dot','feas-txt','roadview-btn'].forEach(id=>{const e=$(id);if(e)e.style.display='none';}); return; }
   body.innerHTML='<div class="feas-empty">설치 가능성 진단 중…'+(REGIONS.length>1?` (구역 ${REGIONS.length}개)`:'')+'</div>';
   const multi = REGIONS.length>1;
   const sections=[];
@@ -1616,8 +1617,14 @@ async function renderFeasibility(){
   // 전체 판정(신호등) — 구역별 worst 중 최악을 헤더에 표기 (녹색=가능, 주황=일부검토, 빨강=제약)
   let _ov='ok';
   for(const _r of REGIONS){ const _w=(_r._feas&&_r._feas.worst)||'na'; if(_w==='bad'){_ov='bad';break;} if(_w==='warn')_ov='warn'; }
+  const _lab=_ov==='ok'?'설치 양호':(_ov==='warn'?'일부 검토 필요':'설치 제약');
+  const _col=_ov==='ok'?'var(--good)':(_ov==='warn'?'var(--warn)':'var(--bad)');
   const _fd=$('feas-dot');
-  if(_fd){ _fd.className='dot feas-hdot '+_ov; _fd.style.display='inline-block'; _fd.title=_ov==='ok'?'설치 가능':(_ov==='warn'?'일부 검토 필요':'설치 제약 있음'); }
+  if(_fd){ _fd.className='dot feas-hdot '+_ov; _fd.style.display='inline-block'; _fd.title=_lab; }
+  const _ft=$('feas-txt');
+  if(_ft){ _ft.textContent=_lab; _ft.style.color=_col; _ft.style.display='inline'; }
+  const _rv=$('roadview-btn'), _cc=(typeof sepCenter==='function'?sepCenter():null);   // 로드뷰: 이격거리 원 아래, 부지 중심 좌표
+  if(_rv){ if(_cc){ _rv.dataset.roadview=_cc[0]+','+_cc[1]; _rv.style.display='flex'; } else _rv.style.display='none'; }
   const area=$('r-land').textContent, kw=$('r-kw').textContent, cnt=$('r-count').textContent;
   const hasLayout = !!(window.LAYOUT && window.LAYOUT.placed && window.LAYOUT.placed.length);
   const areaLbl = ((window.LAYOUT&&window.LAYOUT.roadArea)||0)>1?'실사용부지':'부지';
@@ -2361,6 +2368,7 @@ $('feas-overlay').addEventListener('click', e=>{ if(e.target===$('feas-overlay')
 document.addEventListener('keydown', e=>{ if(e.key==='Escape' && $('feas-overlay').classList.contains('open')) feasDetailOpen(false); });
 $('feas-body').addEventListener('click', e=>{ const t=e.target.closest('[data-region-detail]'); if(t) openFeasDetail(+t.dataset.regionDetail); });
 $('feas-body').addEventListener('click', e=>{ const r=e.target.closest('[data-roadview]'); if(r){ const [la,ln]=r.dataset.roadview.split(',').map(Number); openRoadview(la,ln); } });
+$('roadview-btn')?.addEventListener('click', ()=>{ const d=$('roadview-btn').dataset.roadview; if(d){ const [la,ln]=d.split(',').map(Number); openRoadview(la,ln); } });
 $('q-set-hd').onclick=()=>$('q-set').classList.toggle('closed');
 ['q-w','q-qty','q-unit','q-modwon','q-plants','q-apply','q-hours','q-addr'].forEach(id=> $(id).addEventListener('input', quoteCalc));
 $('q-modsel').addEventListener('change', e=>{ const p=e.target.value.split('|'); $('q-modwon').value=p[0]; quoteCalc(); });
