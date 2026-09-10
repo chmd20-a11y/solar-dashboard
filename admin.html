@@ -248,7 +248,8 @@ $('reload').onclick=loadUsers;
 /* ===== 개발 요청 관리 (접수·조회·처리사항 입력) ===== */
 let _devs=[];
 // 처리 단계(신호등): 접수완료(빨강)→검토중(주황)→처리중(노랑)→반영완료(초록)
-const STAGES={open:{l:'접수완료',c:'#d5443f'},review:{l:'검토중',c:'#f57c00'},progress:{l:'처리중',c:'#eab000'},done:{l:'반영완료',c:'#0f8a3c'}};
+const STAGES={open:{l:'접수완료',c:'#d5443f'},review:{l:'검토중',c:'#f57c00'},progress:{l:'처리중',c:'#eab000'},done:{l:'반영완료',c:'#0f8a3c'},reject:{l:'반영불가',c:'#8b95a6'}};
+function isClosed(s){ return s==='done'||s==='reject'; }
 function stage(s){ return STAGES[s]||STAGES.open; }
 const SHOT_RE=/^data:image\/(png|jpeg|jpg|webp|gif);base64,[A-Za-z0-9+/=]+$/;
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -262,7 +263,7 @@ async function loadDevReqs(){
   catch(e){ tb.innerHTML='<tr><td colspan="7" class="empty">불러오기 실패: '+esc((e&&e.message)||e)+'</td></tr>'; }
 }
 function renderDevReqs(){
-  const open=_devs.filter(d=>d.status!=='done').length;
+  const open=_devs.filter(d=>!isClosed(d.status)).length;
   $('dev-count').textContent=_devs.length?`(${_devs.length}건 · 미완료 ${open})`:'';
   const tc=$('dev-tabcnt'); if(tc){ tc.textContent=open; tc.style.display=open>0?'':'none'; }
   if(!_devs.length){ $('dev-rows').innerHTML='<tr><td colspan="7" class="empty">등록된 개발 요청이 없습니다.</td></tr>'; return; }
@@ -288,7 +289,7 @@ async function saveDev(id,btn){
   const sel=$('ds-'+id), ta=$('dp-'+id);
   const status=(sel?sel.value:'open'), note=(ta?ta.value:'').trim();
   btn.disabled=true; const old=btn.textContent; btn.textContent='저장 중…';
-  try{ const {error}=await sb.from('dev_requests').update({status,admin_note:note||null,resolved_at:status==='done'?new Date().toISOString():null}).eq('id',id); if(error) throw error;
+  try{ const {error}=await sb.from('dev_requests').update({status,admin_note:note||null,resolved_at:isClosed(status)?new Date().toISOString():null}).eq('id',id); if(error) throw error;
     const d=_devs.find(x=>x.id===id); if(d){ d.status=status; d.admin_note=note||null; } renderDevReqs();
   }catch(e){ alert('저장 실패: '+((e&&e.message)||e)); btn.disabled=false; btn.textContent=old; }
 }

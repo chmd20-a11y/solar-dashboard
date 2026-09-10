@@ -2619,9 +2619,10 @@ function openSettings(){ const m=$('set-modal'); if(!m) return; const e=$('set-e
   function zoom(src){ lbImg.src=src; lb.classList.add('open'); }
   lb.onclick=()=>{ lb.classList.remove('open'); lbImg.src=''; };
   // 처리 단계(신호등): 접수완료(빨강)→검토중(주황)→처리중(노랑)→반영완료(초록)
-  const STAGES={open:{l:'접수완료',c:'#d5443f'},review:{l:'검토중',c:'#f57c00'},progress:{l:'처리중',c:'#eab000'},done:{l:'반영완료',c:'#0f8a3c'}};
+  const STAGES={open:{l:'접수완료',c:'#d5443f'},review:{l:'검토중',c:'#f57c00'},progress:{l:'처리중',c:'#eab000'},done:{l:'반영완료',c:'#0f8a3c'},reject:{l:'반영불가',c:'#8b95a6'}};
   function stg(s){ return STAGES[s]||STAGES.open; }
-  async function save(id){ try{ const sel=$('ds-'+id),ta=$('dn-'+id); const status=sel?sel.value:'open'; const note=(ta?ta.value:'').trim(); const {error}=await _sb.from('dev_requests').update({status,admin_note:note||null,resolved_at:status==='done'?new Date().toISOString():null}).eq('id',id); if(error)throw error; loadList(); }catch(e){ alert('저장 실패: '+((e&&e.message)||e)); } }
+  const isClosed=s=>s==='done'||s==='reject';
+  async function save(id){ try{ const sel=$('ds-'+id),ta=$('dn-'+id); const status=sel?sel.value:'open'; const note=(ta?ta.value:'').trim(); const {error}=await _sb.from('dev_requests').update({status,admin_note:note||null,resolved_at:isClosed(status)?new Date().toISOString():null}).eq('id',id); if(error)throw error; loadList(); }catch(e){ alert('저장 실패: '+((e&&e.message)||e)); } }
   async function del(id){ if(!confirm('이 요청을 삭제할까요?'))return; try{ const {error}=await _sb.from('dev_requests').delete().eq('id',id); if(error)throw error; loadList(); }catch(e){ alert('삭제 실패: '+((e&&e.message)||e)); } }
   window.__dev={zoom,save,del};
   function render(rows){
