@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>솔라핏 SolarFit · 태양광 부지 분석·배치</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.14.2/dist/leaflet-geoman.css">
@@ -107,15 +107,19 @@
   /* 모바일: 좌/우 패널을 슬라이드 오버레이로, ☰로 여닫기 → 지도 가리지 않음 */
   #menu-fab{display:none;position:absolute;top:12px;left:12px;z-index:1000;width:42px;height:42px;border-radius:10px;background:var(--accent);color:#1a1400;border:0;font-size:20px;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.45)}
   #close-left{display:none;margin-left:auto;background:transparent;border:0;color:#8b98a6;font-size:20px;cursor:pointer;line-height:1}
-  @media (max-width:820px){
+  #m-backdrop{display:none}
+  @media (max-width:860px){
     #wrap{grid-template-columns:1fr !important}
-    #left{position:fixed;top:0;left:0;height:100%;width:87%;max-width:340px;z-index:1200;transform:translateX(-104%);transition:transform .25s ease;box-shadow:3px 0 20px rgba(0,0,0,.6)}
+    #left{position:fixed;top:0;left:0;height:100%;height:100dvh;width:87%;max-width:340px;z-index:1200;transform:translateX(-104%);transition:transform .25s ease;box-shadow:3px 0 20px rgba(0,0,0,.6)}
     #left.m-open{transform:translateX(0)}
-    #right{position:fixed;top:0;right:0;height:100%;width:87%;max-width:320px;z-index:1200;box-shadow:-3px 0 20px rgba(0,0,0,.6)}
-    #menu-fab{display:flex}
+    #right{position:fixed;top:0;right:0;height:100%;height:100dvh;width:87%;max-width:320px;z-index:1200;box-shadow:-3px 0 20px rgba(0,0,0,.6)}
+    #menu-fab{display:flex;top:calc(12px + env(safe-area-inset-top));left:calc(12px + env(safe-area-inset-left))}
     #close-left{display:block}
     .leaflet-top.leaflet-left{margin-top:58px}
-    #reopen-results{top:12px}
+    #reopen-results{top:calc(12px + env(safe-area-inset-top))}
+    /* 메뉴 열릴 때 지도 위를 덮는 딤 백드롭 — 바깥 탭하면 닫기 */
+    #m-backdrop{display:block;position:fixed;inset:0;z-index:1150;background:rgba(8,12,18,.42);opacity:0;visibility:hidden;transition:opacity .25s ease,visibility .25s ease}
+    #m-backdrop.on{opacity:1;visibility:visible}
   }
 </style>
 <style id="redesign">
@@ -306,6 +310,19 @@
     #wrap{grid-template-columns:1fr !important}
     #left,#right{background:var(--card);box-shadow:0 10px 40px rgba(21,32,46,.22)}
     #left{width:88%;max-width:360px}
+    /* 노치·홈바 안전영역 반영(패널 기본 여백에 safe-area 더함) */
+    #left{padding:calc(16px + env(safe-area-inset-top)) 14px calc(26px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left))}
+    #right{padding:calc(16px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) calc(26px + env(safe-area-inset-bottom)) 14px}
+    /* 가로 밀림 방지 */
+    html,body{overflow-x:hidden}
+    /* 터치 영역 확대 */
+    .sepchip{padding:7px 13px !important;font-size:12px !important}
+    #close-left,#close-results{padding:6px 4px;font-size:22px}
+    .sec h2{padding-top:6px;padding-bottom:6px}
+    /* 지도 하단 컨트롤·상태바 홈바 안전영역 */
+    #status{bottom:calc(14px + env(safe-area-inset-bottom))}
+    .leaflet-bottom{margin-bottom:env(safe-area-inset-bottom)}
+    .leaflet-right{margin-right:env(safe-area-inset-right)}
   }
 </style>
 </head>
@@ -327,6 +344,7 @@
   </div>
 </div>
 <div id="wrap">
+  <div id="m-backdrop"></div>
 
   <!-- ================= LEFT: INPUTS ================= -->
   <div id="left" class="col">
@@ -1242,7 +1260,7 @@ async function doSearch(){
   if(f && f.geometry){
     addSelectedParcel(f);           // 선택 목록에 추가(여러 지번 누적) → 합집합을 부지로
     $('addr').value='';             // 다음 지번 입력 대기
-    document.getElementById('left')?.classList.remove('m-open');   // 모바일: 검색 후 메뉴 닫아 지도/결과 표시
+    document.getElementById('left')?.classList.remove('m-open'); if(typeof syncBackdrop==='function') syncBackdrop();   // 모바일: 검색 후 메뉴 닫아 지도/결과 표시
   } else {
     L.marker([pt.lat,pt.lng]).addTo(map);
     setStatus('📍 위치는 찾았지만 지적 경계 자동취득 실패 — 「경계 그리기」로 직접 지정하세요.');
@@ -1616,15 +1634,23 @@ document.querySelectorAll('.sec h2').forEach(h=>h.addEventListener('click',()=>h
 function showResults(on){
   const w=document.getElementById('wrap'); if(!w) return;
   w.classList.toggle('results-open', on);
+  syncBackdrop();
   const rb=document.getElementById('reopen-results');
   if(rb) rb.style.display = (!on && window.LAYOUT) ? 'block' : 'none';
   setTimeout(()=>{ try{ map.invalidateSize(); }catch(e){} }, 60);   // 그리드 폭 변경 후 지도 리사이즈
 }
 document.getElementById('close-results')?.addEventListener('click', ()=>showResults(false));
 document.getElementById('reopen-results')?.addEventListener('click', ()=>showResults(true));
-// 모바일 좌측 메뉴 여닫기(☰/✕) — 지도 가림 방지
-document.getElementById('menu-fab')?.addEventListener('click', ()=>document.getElementById('left').classList.add('m-open'));
-document.getElementById('close-left')?.addEventListener('click', ()=>document.getElementById('left').classList.remove('m-open'));
+// 모바일 좌측 메뉴 여닫기(☰/✕) — 지도 가림 방지 + 딤 백드롭(바깥 탭 시 닫힘)
+function syncBackdrop(){
+  const openL=document.getElementById('left')?.classList.contains('m-open');
+  const openR=document.getElementById('wrap')?.classList.contains('results-open');
+  document.getElementById('m-backdrop')?.classList.toggle('on', !!(openL||openR));
+}
+function openMenu(v){ document.getElementById('left')?.classList.toggle('m-open', v); syncBackdrop(); }
+document.getElementById('menu-fab')?.addEventListener('click', ()=>openMenu(true));
+document.getElementById('close-left')?.addEventListener('click', ()=>openMenu(false));
+document.getElementById('m-backdrop')?.addEventListener('click', ()=>{ openMenu(false); showResults(false); });
 $('btn-toggle').onclick = ()=>{ const on=map.hasLayer(panelLayer); if(on){map.removeLayer(panelLayer);$('btn-toggle').textContent='패널 보이기';} else {map.addLayer(panelLayer);$('btn-toggle').textContent='패널 숨기기';} };
 $('btn-png').onclick = savePng;
 $('btn-png3d').onclick = save3D;
