@@ -806,9 +806,9 @@
           </tbody>
         </table>
 
-        <div class="q-sec-h blue" style="margin-top:10px">현장 배치도 (3D)</div>
+        <div class="q-sec-h blue" style="margin-top:10px">현장 배치도</div>
         <div id="q-photo-wrap">
-          <div id="q-photo-empty">🖼️ 아직 현장 배치도가 없습니다<br><b>⚙️ 영업자 설정</b>에서 <b>🗺️ 2D 지도 담기</b> 또는 <b>🧊 3D 뷰 담기</b>를<br>누르면 여기에 배치도가 담깁니다</div>
+          <div id="q-photo-empty">아직 현장 배치도가 없습니다. <b>영업자 설정</b>에서 <b>2D 지도 담기</b> 또는 <b>3D 뷰 담기</b>를 누르면 여기에 배치도가 담깁니다.</div>
           <img id="q-photo" style="display:none" alt="3D 현장 배치도">
           <div id="q-photo-note" style="display:none"></div>
         </div>
@@ -824,14 +824,14 @@
 </div>
 
 <style id="set-css">
-  .set-back{position:fixed;inset:0;background:rgba(21,32,46,.5);display:none;align-items:center;justify-content:center;z-index:3000;padding:20px}
+  .set-back{position:fixed;inset:0;background:rgba(21,32,46,.18);display:none;align-items:center;justify-content:center;z-index:3000;padding:20px}
   .set-back.open{display:flex}
-  .set-box{width:100%;max-width:400px;background:#fff;border:1px solid #e4e8ef;border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.3);overflow:hidden;font-family:inherit;display:flex;flex-direction:column;max-height:92vh}
+  .set-box{width:100%;max-width:400px;background:rgba(255,255,255,.40);-webkit-backdrop-filter:blur(22px) saturate(1.5);backdrop-filter:blur(22px) saturate(1.5);font-weight:700;text-shadow:0 1px 2px rgba(255,255,255,.7),0 0 3px rgba(255,255,255,.55);border:1px solid #e4e8ef;border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.3);overflow:hidden;font-family:inherit;display:flex;flex-direction:column;max-height:92vh}
   .set-h{display:flex;align-items:center;justify-content:space-between;padding:15px 18px;border-bottom:1px solid #e4e8ef;font-size:16px;font-weight:800;color:#15202e;flex:0 0 auto}
   .set-h button{background:none;border:0;font-size:22px;color:#647184;cursor:pointer;line-height:1;padding:0 2px}
   .set-body{padding:16px 18px 18px}
   .set-sec{margin-bottom:16px}
-  .set-lbl{font-size:11px;font-weight:800;color:#647184;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px}
+  .set-lbl{font-size:11px;font-weight:800;color:#253340;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px}
   .set-email{font-size:14px;font-weight:600;color:#15202e}
   .set-box input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #e4e8ef;background:#f5f7fa;font-size:14px;margin-bottom:8px;box-sizing:border-box;font-family:inherit;color:#15202e}
   .set-msg{font-size:12.5px;font-weight:600;color:#d5443f;min-height:16px;margin:2px 0 8px}
@@ -841,7 +841,7 @@
   #acct .setbtn{background:transparent;border:0;cursor:pointer;font-size:14px;padding:0 3px;line-height:1}
   .set-box-wide{max-width:820px}
   .set-tabs{display:flex;flex-wrap:wrap;gap:2px;padding:8px 14px 0;border-bottom:1px solid #e4e8ef;flex:0 0 auto}
-  .st-tab{background:transparent;border:0;border-bottom:2px solid transparent;padding:8px 9px;font-size:12.5px;font-weight:700;color:#647184;cursor:pointer;font-family:inherit;white-space:nowrap}
+  .st-tab{background:transparent;border:0;border-bottom:2px solid transparent;padding:8px 9px;font-size:12.5px;font-weight:700;color:#253340;cursor:pointer;font-family:inherit;white-space:nowrap}
   .st-tab.on{color:#0e7c66;border-bottom-color:#0e7c66}
   .set-body{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden}
   .st-pane{display:none}
