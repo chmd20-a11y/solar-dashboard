@@ -364,19 +364,241 @@
 </head>
 <body>
 <!-- ============ 로그인 게이트 (AUTH.enabled=true + Supabase 키 입력 시 활성) ============ -->
+<style id="lg-css">
+#auth-gate{
+  --lg-paper:#f4f7f4;--lg-surface:#fff;--lg-surface2:#eef3ef;
+  --lg-ink:#0d1a15;--lg-body:#33423b;--lg-muted:#66756c;--lg-faint:#93a099;
+  --lg-line:#e4eae5;--lg-field:#0e7c66;--lg-field-h:#0b6a58;--lg-field-soft:#e4f2ec;--lg-field-line:#c6e3d9;
+  --lg-sun:#d98d1a;--lg-hero:#0a1712;--lg-hmuted:#9fb4a9;--lg-hline:rgba(255,255,255,.12);
+  --lg-shadow:0 14px 46px rgba(11,26,20,.09);--lg-shadow-sm:0 3px 14px rgba(11,26,20,.06);
+  --lg-rad:16px;--lg-radlg:22px;
+  --lg-sans:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --lg-mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,"Roboto Mono",monospace;
+  font-family:var(--lg-sans);color:var(--lg-body);line-height:1.62;text-align:left;background:var(--lg-paper)
+}
+#auth-gate *{box-sizing:border-box}
+#auth-gate h1,#auth-gate h2,#auth-gate h3{color:var(--lg-ink);margin:0;letter-spacing:-.025em;line-height:1.14;font-weight:800}
+#auth-gate a{color:inherit;text-decoration:none}
+#auth-gate .lg-eyebrow{font-family:var(--lg-mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:600;color:var(--lg-field)}
+#auth-gate .lg-wrap{max-width:1200px;margin:0 auto;padding:0 30px}
+#auth-gate .lg-top{display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;padding:24px 30px}
+#auth-gate .lg-brand{display:flex;align-items:center;gap:11px}
+#auth-gate .lg-mark-pin{width:40px;height:40px;flex:0 0 auto;display:flex;align-items:center;justify-content:center}
+#auth-gate .lg-mark-pin svg{width:40px;height:40px}
+#auth-gate .lg-bt h2{font-size:18px;font-weight:800;display:flex;align-items:baseline;gap:7px}
+#auth-gate .lg-bt h2 span{font-family:var(--lg-mono);font-size:11px;font-weight:600;letter-spacing:.08em;color:var(--lg-field)}
+#auth-gate .lg-bt p{margin:1px 0 0;font-size:11.5px;color:var(--lg-muted)}
+#auth-gate .lg-tag{display:inline-flex;align-items:center;gap:8px;font-family:var(--lg-mono);font-size:11px;letter-spacing:.06em;color:var(--lg-muted);border:1px solid var(--lg-line);background:var(--lg-surface);padding:8px 13px;border-radius:100px}
+#auth-gate .lg-tag .lg-dot{width:6px;height:6px;border-radius:50%;background:var(--lg-field)}
+#auth-gate .lg-fold{display:grid;grid-template-columns:minmax(0,1.14fr) minmax(348px,.86fr);gap:24px;align-items:stretch;max-width:1200px;margin:0 auto;padding:12px 30px 46px}
+#auth-gate .lg-hero{position:relative;border-radius:var(--lg-radlg);overflow:hidden;background:var(--lg-hero);min-height:588px;display:flex;flex-direction:column;justify-content:space-between;isolation:isolate;box-shadow:var(--lg-shadow)}
+#auth-gate .lg-hero canvas{position:absolute;inset:0;width:100%;height:100%;z-index:0}
+#auth-gate .lg-scrim{position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(6,13,10,.82) 0%,rgba(6,13,10,.30) 36%,rgba(6,13,10,.28) 60%,rgba(6,13,10,.88) 100%),radial-gradient(130% 90% at 10% 6%,rgba(6,13,10,.55),transparent 58%)}
+#auth-gate .lg-hc{position:relative;z-index:2;padding:38px 38px 0}
+#auth-gate .lg-hey{color:var(--lg-sun);display:inline-flex;align-items:center;gap:9px}
+#auth-gate .lg-hey::before{content:"";width:18px;height:1.5px;background:var(--lg-sun);display:inline-block}
+#auth-gate .lg-hero h1{color:#fff;font-size:clamp(29px,3.4vw,43px);margin:17px 0 0;max-width:15ch;letter-spacing:-.03em}
+#auth-gate .lg-hero h1 em{font-style:normal;color:#79ddc2}
+#auth-gate .lg-hsub{color:#cfe0d8;font-size:clamp(13.5px,1.1vw,15.5px);margin:16px 0 0;max-width:43ch;line-height:1.64}
+#auth-gate .lg-hsub b{color:#eaf3ee;font-weight:700}
+#auth-gate .lg-htrust{position:relative;z-index:2;display:flex;flex-wrap:wrap;gap:9px 20px;padding:0 38px 32px;margin-top:24px}
+#auth-gate .lg-htrust span{font-family:var(--lg-mono);font-size:10.5px;letter-spacing:.04em;color:var(--lg-hmuted);display:inline-flex;align-items:center;gap:7px}
+#auth-gate .lg-htrust span::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--lg-sun);opacity:.9}
+#auth-gate .lg-hud{position:absolute;z-index:2;right:28px;bottom:108px;background:rgba(8,16,12,.6);backdrop-filter:blur(10px) saturate(1.3);-webkit-backdrop-filter:blur(10px) saturate(1.3);border:1px solid var(--lg-hline);border-radius:15px;padding:14px 16px;min-width:216px;box-shadow:0 12px 34px rgba(0,0,0,.42)}
+#auth-gate .lg-addr{display:flex;align-items:center;gap:7px;color:#cfe0d8;font-size:12px;font-weight:600;margin-bottom:11px}
+#auth-gate .lg-addr svg{width:13px;height:13px;color:var(--lg-sun);flex:0 0 auto}
+#auth-gate .lg-hrows{display:grid;gap:9px}
+#auth-gate .lg-hr{display:flex;align-items:baseline;justify-content:space-between;gap:16px}
+#auth-gate .lg-hr .k{font-size:11px;color:var(--lg-hmuted)}
+#auth-gate .lg-hr .v{font-family:var(--lg-mono);font-variant-numeric:tabular-nums;font-weight:700;color:#fff;font-size:15.5px}
+#auth-gate .lg-hr .v u{text-decoration:none;color:#79ddc2;font-size:11px;font-weight:600;margin-left:4px}
+#auth-gate .lg-hr .v.sun{color:var(--lg-sun)}
+#auth-gate .lg-hr .v.ok{color:#5fe39a;font-size:13.5px}
+#auth-gate .lg-auth{background:var(--lg-surface);border:1px solid var(--lg-line);border-radius:var(--lg-radlg);box-shadow:var(--lg-shadow);padding:34px 32px;display:flex;flex-direction:column}
+#auth-gate .lg-auth-h{font-size:22px;font-weight:800;color:var(--lg-ink);letter-spacing:-.02em}
+#auth-gate .lg-auth-sub{font-size:13px;color:var(--lg-muted);margin:7px 0 20px}
+#auth-gate .lg-tabs{display:flex;gap:4px;background:var(--lg-surface2);padding:4px;border-radius:11px;border:1px solid var(--lg-line);margin-bottom:18px}
+#auth-gate .lg-tabs button{flex:1;padding:10px;border:0;background:transparent;border-radius:8px;font-weight:700;font-size:13px;color:var(--lg-muted);cursor:pointer;font-family:inherit}
+#auth-gate .lg-tabs button.on{background:var(--lg-surface);color:var(--lg-field);box-shadow:var(--lg-shadow-sm)}
+#auth-gate .lg-field{margin-bottom:14px}
+#auth-gate .lg-field label{display:block;font-size:12px;font-weight:700;color:var(--lg-ink);margin-bottom:7px}
+#auth-gate .lg-field input{width:100%;padding:13px 15px;border:1px solid var(--lg-line);border-radius:12px;background:var(--lg-surface2);color:var(--lg-ink);font-size:14.5px;font-family:inherit;transition:border-color .15s,box-shadow .15s,background .15s}
+#auth-gate .lg-field input::placeholder{color:var(--lg-faint)}
+#auth-gate .lg-field input:focus{outline:none;border-color:var(--lg-field);box-shadow:0 0 0 3px var(--lg-field-soft);background:var(--lg-surface)}
+#auth-gate .lg-consent{display:flex;align-items:flex-start;gap:7px;font-size:11.5px;color:var(--lg-muted);margin-bottom:12px;line-height:1.5}
+#auth-gate .lg-consent input{width:auto;margin-top:2px;accent-color:var(--lg-field)}
+#auth-gate .lg-consent a{color:var(--lg-field);font-weight:600}
+#auth-gate .au-msg{text-align:left;font-size:12px;min-height:15px;margin:2px 0 10px;font-weight:600}
+#auth-gate .lg-submit{width:100%;padding:14px;border:0;border-radius:12px;background:var(--lg-field);color:#fff;font-size:15px;font-weight:800;font-family:inherit;cursor:pointer;box-shadow:0 7px 20px rgba(14,124,102,.26);transition:background .16s}
+#auth-gate .lg-submit:hover{background:var(--lg-field-h)}
+#auth-gate .lg-submit:disabled{opacity:.6;cursor:default}
+#auth-gate .lg-note{font-size:11.5px;color:var(--lg-muted);text-align:center;margin-top:14px;line-height:1.5}
+#auth-gate .lg-note b{color:var(--lg-field)}
+#auth-gate .lg-any{margin-top:20px;padding-top:18px;border-top:1px solid var(--lg-line);display:flex;align-items:center;gap:11px;color:var(--lg-muted);font-size:12.5px;line-height:1.5}
+#auth-gate .lg-any .lg-di{display:flex;gap:5px;color:var(--lg-field);flex:0 0 auto}
+#auth-gate .lg-any .lg-di svg{width:17px;height:17px}
+#auth-gate .lg-any b{color:var(--lg-ink);font-weight:700}
+#auth-gate .lg-block{padding:72px 0}
+#auth-gate .lg-sechead{max-width:640px;margin:0 auto 40px;text-align:center}
+#auth-gate .lg-sechead h2{font-size:clamp(24px,2.7vw,34px);margin-top:13px}
+#auth-gate .lg-sechead p{font-size:15px;color:var(--lg-muted);margin:14px 0 0}
+#auth-gate .lg-fin{max-width:540px;margin:0 auto;background:var(--lg-surface);border:1px solid var(--lg-line);border-radius:14px;box-shadow:var(--lg-shadow-sm);display:flex;align-items:center;gap:12px;padding:8px 8px 8px 18px}
+#auth-gate .lg-fin .lg-si{color:var(--lg-field);flex:0 0 auto;display:flex}
+#auth-gate .lg-fin .lg-si svg{width:19px;height:19px}
+#auth-gate .lg-fin .ph{flex:1;color:var(--lg-faint);font-size:14.5px}
+#auth-gate .lg-fin .go{background:var(--lg-field);color:#fff;font-weight:800;font-size:13.5px;padding:11px 18px;border-radius:10px;flex:0 0 auto}
+#auth-gate .lg-conn{display:flex;flex-direction:column;align-items:center;gap:4px;margin:16px 0 28px;color:var(--lg-faint)}
+#auth-gate .lg-conn .ln{width:1px;height:26px;background:linear-gradient(var(--lg-field),transparent)}
+#auth-gate .lg-conn .lab{font-family:var(--lg-mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--lg-field)}
+#auth-gate .lg-resg{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+#auth-gate .lg-res{background:var(--lg-surface);border:1px solid var(--lg-line);border-radius:var(--lg-rad);padding:24px 22px 22px;box-shadow:var(--lg-shadow-sm);transition:border-color .18s,box-shadow .18s}
+#auth-gate .lg-res:hover{border-color:var(--lg-field-line);box-shadow:var(--lg-shadow)}
+#auth-gate .lg-res .no{font-family:var(--lg-mono);font-size:11px;font-weight:600;color:var(--lg-faint);letter-spacing:.08em}
+#auth-gate .lg-res .ic{width:42px;height:42px;border-radius:11px;background:var(--lg-field-soft);color:var(--lg-field);display:flex;align-items:center;justify-content:center;margin:14px 0 15px}
+#auth-gate .lg-res .ic svg{width:21px;height:21px}
+#auth-gate .lg-res h3{font-size:16px;font-weight:800}
+#auth-gate .lg-res p{font-size:13px;color:var(--lg-muted);margin:9px 0 0;line-height:1.6}
+#auth-gate .lg-anywhere{background:var(--lg-surface2);border-top:1px solid var(--lg-line);border-bottom:1px solid var(--lg-line)}
+#auth-gate .lg-awg{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
+#auth-gate .lg-awc h2{font-size:clamp(23px,2.5vw,32px);margin-top:13px}
+#auth-gate .lg-awc p{font-size:15px;color:var(--lg-muted);margin:16px 0 0;max-width:42ch}
+#auth-gate .lg-awc p b{color:var(--lg-ink);font-weight:700}
+#auth-gate .lg-chips{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+#auth-gate .lg-chips span{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:var(--lg-ink);background:var(--lg-surface);border:1px solid var(--lg-line);padding:9px 14px;border-radius:100px}
+#auth-gate .lg-chips span svg{width:15px;height:15px;color:var(--lg-field)}
+#auth-gate .lg-awv{display:flex;justify-content:center}
+#auth-gate .lg-awv svg{width:100%;max-width:440px;height:auto}
+#auth-gate .lg-footer{padding:40px 0 46px}
+#auth-gate .lg-foot{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;border-top:1px solid var(--lg-line);padding-top:26px}
+#auth-gate .lg-foot .fl{display:flex;align-items:center;gap:9px;color:var(--lg-muted);font-size:13px}
+#auth-gate .lg-foot .fl b{color:var(--lg-ink);font-weight:800}
+#auth-gate .lg-foot nav{display:flex;gap:20px;font-size:12.5px;color:var(--lg-muted)}
+#auth-gate .lg-foot nav a:hover{color:var(--lg-field)}
+@media (max-width:960px){
+  #auth-gate .lg-fold{grid-template-columns:1fr;gap:18px;padding-bottom:34px}
+  #auth-gate .lg-hero{min-height:452px}
+  #auth-gate .lg-resg{grid-template-columns:repeat(2,1fr)}
+  #auth-gate .lg-awg{grid-template-columns:1fr;gap:34px}
+  #auth-gate .lg-awv{order:-1}
+  #auth-gate .lg-awc{text-align:center}
+  #auth-gate .lg-awc p{margin-left:auto;margin-right:auto}
+  #auth-gate .lg-chips{justify-content:center}
+}
+@media (max-width:640px){
+  #auth-gate .lg-wrap{padding:0 18px}
+  #auth-gate .lg-top{padding:16px 18px}
+  #auth-gate .lg-bt p{display:none}
+  #auth-gate .lg-tag{display:none}
+  #auth-gate .lg-fold{padding:8px 18px 28px}
+  #auth-gate .lg-hero{min-height:410px;border-radius:18px}
+  #auth-gate .lg-hc{padding:28px 22px 0}
+  #auth-gate .lg-htrust{padding:0 22px 24px;gap:8px 14px}
+  #auth-gate .lg-hud{right:16px;bottom:98px;min-width:0;padding:12px 13px}
+  #auth-gate .lg-hr .v{font-size:14px}
+  #auth-gate .lg-auth{padding:26px 20px;border-radius:18px}
+  #auth-gate .lg-block{padding:48px 0}
+  #auth-gate .lg-resg{grid-template-columns:1fr}
+  #auth-gate .lg-foot{justify-content:center;text-align:center}
+}
+@media (prefers-reduced-motion:reduce){ #auth-gate *{animation:none!important} }
+</style>
 <div id="auth-gate">
-  <div class="auth-card">
-    <div class="auth-brand">
-      <div class="logo-pin" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;flex:0 0 auto"><svg viewBox="0 0 48 48" style="width:44px;height:44px"><g><path d="M6 34 16 30 26 34 36 30 44 34 44 40 36 44 26 40 16 44 6 40Z" fill="#1a6b52"/><g stroke="#eef4ee" stroke-width="1.4" stroke-linecap="round" fill="none" opacity=".92"><path d="M16 30.6V43.4"/><path d="M26 34.2V39.8"/><path d="M36 30.6V43.4"/></g></g><path d="M24 5.5C16.8 5.5 11.2 11 11.2 17.9 11.2 25.6 24 36.4 24 36.4 24 36.4 36.8 25.6 36.8 17.9 36.8 11 31.2 5.5 24 5.5Z" fill="#1a6b52"/><circle cx="24" cy="17.4" r="5" fill="#f4ad2c"/><g stroke="#f4ad2c" stroke-width="1.9" stroke-linecap="round"><path d="M24 9.6V7"/><path d="M24 25.2v2.6"/><path d="M31.5 17.4h2.6"/><path d="M16.5 17.4H13.9"/><path d="M29.3 12.1l1.8-1.8"/><path d="M18.7 22.7l-1.8 1.8"/><path d="M29.3 22.7l1.8 1.8"/><path d="M18.7 12.1l-1.8-1.8"/></g></svg></div>
-      <div><div class="an">솔라핏 <span style="font-size:12px;color:var(--muted)">SolarFit</span></div><div class="as">태양광 부지 분석 · 자동 배치</div></div>
+  <div class="lg-top">
+    <div class="lg-brand">
+      <div class="lg-mark-pin"><svg viewBox="0 0 48 48"><g><path d="M6 34 16 30 26 34 36 30 44 34 44 40 36 44 26 40 16 44 6 40Z" fill="#1a6b52"/><g stroke="#eef4ee" stroke-width="1.4" stroke-linecap="round" fill="none" opacity=".92"><path d="M16 30.6V43.4"/><path d="M26 34.2V39.8"/><path d="M36 30.6V43.4"/></g></g><path d="M24 5.5C16.8 5.5 11.2 11 11.2 17.9 11.2 25.6 24 36.4 24 36.4 24 36.4 36.8 25.6 36.8 17.9 36.8 11 31.2 5.5 24 5.5Z" fill="#1a6b52"/><circle cx="24" cy="17.4" r="5" fill="#f4ad2c"/><g stroke="#f4ad2c" stroke-width="1.9" stroke-linecap="round"><path d="M24 9.6V7"/><path d="M24 25.2v2.6"/><path d="M31.5 17.4h2.6"/><path d="M16.5 17.4H13.9"/><path d="M29.3 12.1l1.8-1.8"/><path d="M18.7 22.7l-1.8 1.8"/><path d="M29.3 22.7l1.8 1.8"/><path d="M18.7 12.1l-1.8-1.8"/></g></svg></div>
+      <div class="lg-bt"><h2>솔라핏 <span>SolarFit</span></h2><p>태양광 부지 분석 · 자동 배치</p></div>
     </div>
-    <div class="auth-tabs"><button id="au-tab-login" class="on">로그인</button><button id="au-tab-signup">회원가입</button></div>
-    <div class="fld"><label>이메일</label><input type="email" id="au-email" placeholder="name@example.com" autocomplete="email"></div>
-    <div class="fld"><label>비밀번호</label><input type="password" id="au-pw" placeholder="6자 이상" autocomplete="current-password"></div>
-    <label id="au-consent-row" style="display:none;font-size:11.5px;color:var(--muted);align-items:flex-start;gap:7px"><input type="checkbox" id="au-consent" style="width:auto;margin-top:2px"><span><a href="/legal.html" target="_blank">이용약관·개인정보처리방침</a>에 동의합니다.</span></label>
-    <div id="au-msg" class="au-msg"></div>
-    <button class="btn primary" id="au-submit" style="width:100%">로그인</button>
-    <div class="au-note">현재 <b>무료 베타</b> — 가입 후 모든 기능을 무료로 이용하실 수 있습니다.</div>
+    <span class="lg-tag"><span class="lg-dot"></span>웹 기반 · 설치 없이 Android·iOS·PC</span>
+  </div>
+
+  <div class="lg-fold">
+    <div class="lg-hero">
+      <canvas id="lg-plot" aria-hidden="true"></canvas>
+      <div class="lg-scrim" aria-hidden="true"></div>
+      <div class="lg-hc">
+        <span class="lg-eyebrow lg-hey">태양광 부지 분석 · 자동 배치 플랫폼</span>
+        <h1>주소만 입력하면,<br>검토가 <em>한 번에</em></h1>
+        <p class="lg-hsub"><b>설치 가능성 진단</b>부터 <b>주변 선로 확인</b>, <b>원가·마진 계산</b>, <b>고객 견적서</b>까지 — 지번 하나로 자동으로 이어집니다.</p>
+      </div>
+      <div class="lg-hud">
+        <div class="lg-addr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.3-7-11a7 7 0 0 1 14 0c0 4.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>전남 나주시 그린로 20</div>
+        <div class="lg-hrows">
+          <div class="lg-hr"><span class="k">설치 가능성</span><span class="v ok">설치 양호</span></div>
+          <div class="lg-hr"><span class="k">예상 배치</span><span class="v"><b data-count="112">0</b>장<u data-count="72">0</u>kWp</span></div>
+          <div class="lg-hr"><span class="k">주변 선로 여유</span><span class="v sun"><b data-count="243">0</b>MW</span></div>
+        </div>
+      </div>
+      <div class="lg-htrust"><span>위성(글로벌) 지도 기반</span><span>한전 계통 데이터 연동</span><span>Android · iOS 호환</span></div>
+    </div>
+
+    <div class="lg-auth">
+      <div class="lg-auth-h">솔라핏 시작하기</div>
+      <div class="lg-auth-sub">계정으로 로그인하고 부지 분석을 시작하세요.</div>
+      <div class="lg-tabs"><button type="button" id="au-tab-login" class="on">로그인</button><button type="button" id="au-tab-signup">회원가입</button></div>
+      <div class="lg-field"><label for="au-email">이메일</label><input type="email" id="au-email" placeholder="name@example.com" autocomplete="email"></div>
+      <div class="lg-field"><label for="au-pw">비밀번호</label><input type="password" id="au-pw" placeholder="6자 이상" autocomplete="current-password"></div>
+      <label id="au-consent-row" class="lg-consent" style="display:none"><input type="checkbox" id="au-consent"><span><a href="/legal.html" target="_blank">이용약관·개인정보처리방침</a>에 동의합니다.</span></label>
+      <div id="au-msg" class="au-msg"></div>
+      <button type="button" class="lg-submit" id="au-submit">로그인</button>
+      <div class="lg-note">현재 <b>무료 베타</b> — 가입 후 모든 기능을 무료로 이용하실 수 있습니다.</div>
+      <div class="lg-any"><span class="lg-di"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 20h8M12 17v3"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2.4"/><path d="M11 18h2"/></svg></span><span>설치·앱 없이 <b>PC · Android · iOS</b> 어디서나 같은 화면으로.</span></div>
+    </div>
+  </div>
+
+  <div class="lg-block lg-wrap">
+    <div class="lg-sechead">
+      <span class="lg-eyebrow">ONE INPUT · EVERYTHING</span>
+      <h2>주소 하나면, 여기까지 한 번에</h2>
+      <p>지번만 넣으면 판단에 필요한 결과가 자동으로 이어집니다. 흩어진 조회·계산을 한 화면에서.</p>
+    </div>
+    <div class="lg-fin" aria-hidden="true"><span class="lg-si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg></span><span class="ph">도로명 · 지번 주소를 입력하세요</span><span class="go">분석</span></div>
+    <div class="lg-conn" aria-hidden="true"><span class="ln"></span><span class="lab">자동 분석</span><span class="ln"></span></div>
+    <div class="lg-resg">
+      <div class="lg-res"><div class="no">01</div><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="m9 14 2 2 4-4"/></svg></div><h3>설치 가능성 진단</h3><p>지목·경사·하천·용도지역·개발제한을 근거와 함께 자동 판정합니다.</p></div>
+      <div class="lg-res"><div class="no">02</div><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg></div><h3>주변 선로 확인</h3><p>인근 변전소의 접속 여유용량을 지도에서 즉시 확인합니다. 한전 데이터 기반.</p></div>
+      <div class="lg-res"><div class="no">03</div><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="8.01" y2="10"/><line x1="12" y1="10" x2="12.01" y2="10"/><line x1="16" y1="10" x2="16.01" y2="10"/><line x1="8" y1="14" x2="8.01" y2="14"/><line x1="12" y1="14" x2="12.01" y2="14"/><line x1="16" y1="14" x2="16" y2="18"/><line x1="8" y1="18" x2="12" y2="18"/></svg></div><h3>원가·마진 계산</h3><p>예상 설비용량 기준으로 내부 원가와 마진, 수익성을 산출합니다.</p></div>
+      <div class="lg-res"><div class="no">04</div><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></div><h3>고객 견적서 제공</h3><p>3D 현장 배치도까지 담은 제시용 견적서를 바로 출력합니다.</p></div>
+    </div>
+  </div>
+
+  <div class="lg-anywhere">
+    <div class="lg-block lg-wrap">
+      <div class="lg-awg">
+        <div class="lg-awc">
+          <span class="lg-eyebrow">ANYWHERE</span>
+          <h2>PC든 모바일이든,<br>똑같이 검토합니다</h2>
+          <p>설치할 프로그램도, 앱도 없습니다. 브라우저만 열면 Windows·macOS PC에서도, <b>Android·iOS 휴대폰·태블릿</b>에서도 같은 화면 그대로. 상담 자리에서 바로 열어 보여줄 수 있습니다.</p>
+          <div class="lg-chips">
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 20h8"/></svg>Windows · macOS</span>
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="14" rx="2"/><path d="M9 21h6"/></svg>태블릿</span>
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2.4"/><path d="M11 18h2"/></svg>Android</span>
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2.4"/><path d="M11 18h2"/></svg>iOS</span>
+          </div>
+        </div>
+        <div class="lg-awv" aria-hidden="true">
+          <svg viewBox="0 0 440 300" fill="none">
+            <defs>
+              <linearGradient id="lgScr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#12291d"/><stop offset="1" stop-color="#0b1c14"/></linearGradient>
+              <linearGradient id="lgPnl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b3350"/><stop offset="1" stop-color="#0f1e33"/></linearGradient>
+            </defs>
+            <rect x="26" y="34" width="300" height="188" rx="12" fill="var(--lg-surface)" stroke="var(--lg-line)"/>
+            <rect x="40" y="48" width="272" height="160" rx="7" fill="url(#lgScr)"/>
+            <path d="M108 96 L232 84 L246 150 L120 168 Z" fill="rgba(217,141,26,.08)" stroke="rgba(240,182,80,.85)" stroke-width="1.6" stroke-dasharray="6 5"/>
+            <rect x="120" y="104" width="20" height="12" rx="1.6" fill="url(#lgPnl)" stroke="rgba(120,205,180,.4)"/><rect x="145" y="102" width="20" height="12" rx="1.6" fill="url(#lgPnl)" stroke="rgba(120,205,180,.4)"/><rect x="170" y="100" width="20" height="12" rx="1.6" fill="url(#lgPnl)" stroke="rgba(120,205,180,.4)"/><rect x="195" y="98" width="20" height="12" rx="1.6" fill="url(#lgPnl)" stroke="rgba(120,205,180,.4)"/><rect x="122" y="122" width="20" height="12" rx="1.6" fill="url(#lgPnl)" stroke="rgba(120,205,180,.4)"/><rect x="147" y="120" width="20" height="12" rx="1.6" fill="url(#lgPnl)" stroke="rgba(120,205,180,.4)"/><rect x="172" y="118" width="20" height="12" rx="1.6" fill="url(#lgPnl)" stroke="rgba(120,205,180,.4)"/><rect x="197" y="116" width="20" height="12" rx="1.6" fill="url(#lgPnl)" stroke="rgba(120,205,180,.4)"/><rect x="126" y="140" width="20" height="12" rx="1.6" fill="url(#lgPnl)" stroke="rgba(120,205,180,.4)"/><rect x="151" y="138" width="20" height="12" rx="1.6" fill="url(#lgPnl)" stroke="rgba(120,205,180,.4)"/><rect x="176" y="136" width="20" height="12" rx="1.6" fill="url(#lgPnl)" stroke="rgba(120,205,180,.4)"/>
+            <rect x="238" y="152" width="66" height="44" rx="6" fill="rgba(8,16,12,.7)" stroke="rgba(255,255,255,.12)"/><rect x="246" y="160" width="34" height="5" rx="2.5" fill="#5fe39a"/><rect x="246" y="172" width="50" height="5" rx="2.5" fill="rgba(255,255,255,.5)"/><rect x="246" y="183" width="42" height="5" rx="2.5" fill="var(--lg-sun)"/>
+            <path d="M14 222 h324 l10 14 H4 z" fill="var(--lg-surface2)" stroke="var(--lg-line)"/>
+            <rect x="322" y="120" width="98" height="168" rx="16" fill="var(--lg-surface)" stroke="var(--lg-line)"/><rect x="331" y="132" width="80" height="144" rx="9" fill="url(#lgScr)"/><rect x="356" y="126" width="30" height="4" rx="2" fill="var(--lg-line)"/>
+            <path d="M344 158 L400 152 L406 196 L350 204 Z" fill="rgba(217,141,26,.08)" stroke="rgba(240,182,80,.85)" stroke-width="1.4" stroke-dasharray="5 4"/>
+            <rect x="350" y="164" width="15" height="9" rx="1.4" fill="url(#lgPnl)" stroke="rgba(120,205,180,.4)"/><rect x="369" y="162" width="15" height="9" rx="1.4" fill="url(#lgPnl)" stroke="rgba(120,205,180,.4)"/><rect x="352" y="177" width="15" height="9" rx="1.4" fill="url(#lgPnl)" stroke="rgba(120,205,180,.4)"/><rect x="371" y="175" width="15" height="9" rx="1.4" fill="url(#lgPnl)" stroke="rgba(120,205,180,.4)"/>
+            <rect x="340" y="220" width="64" height="40" rx="6" fill="rgba(8,16,12,.72)" stroke="rgba(255,255,255,.12)"/><rect x="348" y="228" width="30" height="5" rx="2.5" fill="#5fe39a"/><rect x="348" y="239" width="46" height="5" rx="2.5" fill="rgba(255,255,255,.5)"/><rect x="348" y="250" width="38" height="5" rx="2.5" fill="var(--lg-sun)"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="lg-footer lg-wrap">
+    <div class="lg-foot"><div class="fl"><b>솔라핏</b> · SolarFit — 태양광 부지 분석 · 자동 배치</div><nav><a href="/legal.html" target="_blank">이용약관</a><a href="/legal.html" target="_blank">개인정보처리방침</a><a href="/legal.html" target="_blank">면책조항</a></nav></div>
   </div>
 </div>
 <div id="wrap">
@@ -2675,6 +2897,55 @@ async function auSubmit(){
   }
   $('au-submit').disabled=false;
 }
+/* 로그인 화면(auth-gate) 랜딩 비주얼 — 위성 패널 반복 배치 모션 + 수치 카운트업 (앱 본체와 분리) */
+function lgInitVisuals(){
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  function countUp(el){ var target=+el.getAttribute('data-count'),s=null,dur=1100;
+    if(reduce){ el.textContent=target; return; }
+    function tick(ts){ if(!s)s=ts; var p=Math.min(1,(ts-s)/dur),e=1-Math.pow(1-p,3); el.textContent=Math.round(target*e); if(p<1) requestAnimationFrame(tick); } requestAnimationFrame(tick); }
+  var counted=false;
+  function startCounts(){ if(counted)return; counted=true; var ns=document.querySelectorAll('#auth-gate [data-count]'); for(var i=0;i<ns.length;i++) countUp(ns[i]); }
+  var cv=document.getElementById('lg-plot');
+  if(!cv||!cv.getContext){ startCounts(); return; }
+  var ctx=cv.getContext('2d'),W=0,H=0,panels=[],poly=[],t0=null,built=false;
+  var DPR=Math.min(window.devicePixelRatio||1,2);
+  var bg=document.createElement('canvas'),bgx=bg.getContext('2d');
+  var PER=20,DUR=400,HOLD=2200,FADE=560;
+  function pip(px,py,pl){var c=false;for(var i=0,j=pl.length-1;i<pl.length;j=i++){var xi=pl[i][0],yi=pl[i][1],xj=pl[j][0],yj=pl[j][1];if(((yi>py)!=(yj>py))&&(px<(xj-xi)*(py-yi)/(yj-yi)+xi))c=!c;}return c;}
+  function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+  function terrain(c){ var g=c.createLinearGradient(0,0,W,H); g.addColorStop(0,'#12251c');g.addColorStop(.5,'#0e1f18');g.addColorStop(1,'#0a1712');c.fillStyle=g;c.fillRect(0,0,W,H);
+    var bl=[[0.2,0.3,0.9,'#15291d'],[0.75,0.2,0.7,'#132419'],[0.85,0.8,1.0,'#0e2016'],[0.15,0.85,0.8,'#132a1e'],[0.5,0.55,1.2,'#0f2318']];
+    bl.forEach(function(b){var rg=c.createRadialGradient(W*b[0],H*b[1],0,W*b[0],H*b[1],Math.min(W,H)*0.5*b[2]);rg.addColorStop(0,b[3]);rg.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=rg;c.fillRect(0,0,W,H);});
+    c.save();c.globalAlpha=.06;c.strokeStyle='#8fd9bf';c.lineWidth=1;
+    for(var k=0;k<7;k++){c.beginPath();for(var x=0;x<=W;x+=14){var y=H*(0.16+k*0.12)+Math.sin(x*0.012+k)*10+Math.sin(x*0.03)*5;if(x===0)c.moveTo(x,y);else c.lineTo(x,y);}c.stroke();}
+    c.restore(); }
+  function parcelDraw(c){ c.save();c.beginPath();poly.forEach(function(p,i){i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]);});c.closePath();c.fillStyle='rgba(217,141,26,.06)';c.fill();c.setLineDash([7,6]);c.lineWidth=2;c.strokeStyle='rgba(240,182,80,.9)';c.shadowColor='rgba(217,141,26,.5)';c.shadowBlur=8;c.stroke();c.restore();c.setLineDash([]);poly.forEach(function(p){c.beginPath();c.arc(p[0],p[1],3,0,7);c.fillStyle='#ffd873';c.fill();}); }
+  function drawPanel(p,a,sc){ ctx.save();ctx.translate(p.cx,p.cy);ctx.rotate(Math.atan2(p.sn,p.cs));var lx=p.x-p.cx,ly=p.y-p.cy,w=p.pw*sc,h=p.ph*sc,x=lx+(p.pw-w)/2,y=ly+(p.ph-h)/2;ctx.globalAlpha=a;rr(ctx,x,y,w,h,2);var pg=ctx.createLinearGradient(x,y,x,y+h);pg.addColorStop(0,'#1b3350');pg.addColorStop(1,'#101f34');ctx.fillStyle=pg;ctx.fill();ctx.lineWidth=1;ctx.strokeStyle='rgba(120,205,180,.42)';ctx.stroke();ctx.globalAlpha=a*.5;ctx.beginPath();ctx.moveTo(x,y+h/2);ctx.lineTo(x+w,y+h/2);ctx.strokeStyle='rgba(150,220,200,.22)';ctx.stroke();ctx.globalAlpha=a*.45;rr(ctx,x,y,w,h*0.42,2);ctx.fillStyle='rgba(255,255,255,.05)';ctx.fill();ctx.restore(); }
+  function build(){ var r=cv.getBoundingClientRect();W=r.width;H=r.height;cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);
+    var cx=W*0.60,cy=H*0.60,s=Math.min(W,H);poly=[[cx-s*0.34,cy-s*0.20],[cx+s*0.40,cy-s*0.30],[cx+s*0.30,cy+s*0.30],[cx-s*0.40,cy+s*0.22]];
+    panels=[];var ang=-0.30,cs=Math.cos(ang),sn=Math.sin(ang);var pw=s*0.058,ph=s*0.036,gap=s*0.013,step=s*0.02;
+    var minx=W,miny=H,maxx=0,maxy=0;poly.forEach(function(p){minx=Math.min(minx,p[0]);miny=Math.min(miny,p[1]);maxx=Math.max(maxx,p[0]);maxy=Math.max(maxy,p[1]);});
+    var row=0;for(var gy=miny-ph;gy<maxy+ph;gy+=ph+step){var col=0,placed=false;for(var gx=minx-pw;gx<maxx+pw;gx+=pw+gap){var ox=gx-cx,oy=gy-cy,rx=cx+ox*cs-oy*sn,ry=cy+ox*sn+oy*cs;if(pip(rx,ry,poly)){panels.push({x:gx,y:gy,pw:pw,ph:ph,cx:cx,cy:cy,cs:cs,sn:sn,row:row,col:col});placed=true;}col++;}if(placed)row++;}
+    panels.sort(function(a,b){return a.row-b.row||a.col-b.col;});
+    bg.width=W*DPR;bg.height=H*DPR;bgx.setTransform(DPR,0,0,DPR,0,0);terrain(bgx);parcelDraw(bgx); }
+  function drawStatic(){ ctx.drawImage(bg,0,0,W,H);for(var i=0;i<panels.length;i++)drawPanel(panels[i],1,1); }
+  function loop(ts){
+    var r=cv.getBoundingClientRect();
+    if(r.width<2||cv.offsetParent===null){ requestAnimationFrame(loop); return; }
+    if(!built||Math.abs(r.width-W)>1||Math.abs(r.height-H)>1){ build();built=true;t0=null; }
+    startCounts();
+    if(reduce){ drawStatic(); requestAnimationFrame(loop); return; }
+    if(!t0) t0=ts;
+    var inDur=panels.length*PER+DUR, cycle=inDur+HOLD+FADE, el=(ts-t0)%cycle;
+    ctx.drawImage(bg,0,0,W,H);
+    var i,e,lp;
+    if(el<inDur){ for(i=0;i<panels.length;i++){lp=Math.min(1,Math.max(0,(el-i*PER)/DUR));if(lp<=0)continue;e=1-Math.pow(1-lp,3);drawPanel(panels[i],e,0.4+0.6*e);} var sx=(el/inDur)*W;ctx.save();var sg=ctx.createLinearGradient(sx-70,0,sx+10,0);sg.addColorStop(0,'rgba(121,221,194,0)');sg.addColorStop(1,'rgba(121,221,194,.12)');ctx.fillStyle=sg;ctx.fillRect(sx-70,0,80,H);ctx.restore(); }
+    else if(el<inDur+HOLD){ for(i=0;i<panels.length;i++)drawPanel(panels[i],1,1); }
+    else { var a=1-((el-inDur-HOLD)/FADE); for(i=0;i<panels.length;i++)drawPanel(panels[i],Math.max(0,a),1); }
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+}
 async function initAuth(){
   // 로그인 UI 배선(항상)
   const tl=$('au-tab-login'), ts=$('au-tab-signup'), sb=$('au-submit');
@@ -2854,6 +3125,7 @@ function openSettings(){ const m=$('set-modal'); if(!m) return; const e=$('set-e
 })();
 
 initAuth();
+lgInitVisuals();
 
 /* ===== 계통 여유용량 오버레이(메인 지도 통합) — 마커+팝업+검색+통계+신설계획 ===== */
 (function(){
