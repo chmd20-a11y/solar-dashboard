@@ -784,6 +784,19 @@
   .st-chk input{width:auto}
   .st-note{font-size:11px;color:#8b95a6;margin-top:4px;line-height:1.5}
   .set-savebar{display:flex;align-items:center;justify-content:flex-end;gap:12px;border-top:1px solid #e4e8ef;padding-top:12px;margin-top:8px}
+  /* 항목 설명 툴팁(ⓘ) — PC 마우스오버 + 모바일 탭 */
+  .st-info{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:#dbe2ea;color:#5a6675;font-size:10px;font-weight:800;line-height:1;cursor:pointer;position:relative;vertical-align:middle;margin-left:3px;user-select:none;-webkit-tap-highlight-color:transparent}
+  .st-info::after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);width:220px;max-width:62vw;background:#15202e;color:#eef2f7;font-size:11.5px;font-weight:500;line-height:1.55;text-align:left;letter-spacing:0;text-transform:none;padding:8px 10px;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.28);opacity:0;visibility:hidden;transition:opacity .13s;z-index:60;pointer-events:none;white-space:normal}
+  .st-info::before{content:'';position:absolute;left:50%;bottom:calc(100% + 2px);transform:translateX(-50%);border:6px solid transparent;border-top-color:#15202e;opacity:0;visibility:hidden;transition:opacity .13s;z-index:60}
+  .st-info:hover::after,.st-info:hover::before,.st-info.tip-open::after,.st-info.tip-open::before{opacity:1;visibility:visible}
+  /* 구조물·전기 단가표 매트릭스 */
+  .st-struct-t{margin-bottom:12px}
+  .st-struct-h{font-size:12px;font-weight:700;color:#15202e;margin:6px 0 5px}
+  .st-mx{width:100%;border-collapse:collapse;font-size:12px}
+  .st-mx th{font-size:10.5px;color:#647184;font-weight:700;padding:3px 4px;text-align:center;border-bottom:1px solid #e4e8ef}
+  .st-mx td{padding:2px 3px;text-align:center}
+  .st-mx-cap{font-size:11px;color:#647184;text-align:left!important;white-space:nowrap}
+  .st-mx input{width:100%;min-width:50px;padding:5px 4px;border:1px solid #e4e8ef;border-radius:7px;background:#f5f7fa;font-size:12.5px;font-family:inherit;color:#15202e;text-align:center;box-sizing:border-box}
 </style>
 <div id="set-modal" class="set-back">
   <div class="set-box set-box-wide">
@@ -850,10 +863,68 @@
       </div>
       <!-- 원가·마진 -->
       <div class="st-pane" data-pane="cost">
+        <div class="st-note" style="margin-bottom:12px">아래 값은 <b>원가·마진 계산</b>과 <b>고객 견적서</b>에 함께 반영됩니다. 시세·정책이 바뀌면 이곳에서 수정하세요. 각 항목의 <span class="st-info" data-tip="이렇게 물음표에 마우스를 올리거나(PC) 탭하면(모바일) 설명이 보입니다.">ⓘ</span> 를 누르면 설명이 나옵니다.</div>
+
         <div class="set-sec"><div class="set-lbl">원가·설치 단가</div>
-          <div class="st-row"><label>모듈 원가 (원/W)</label><input type="number" id="st-modcost" value="310"></div>
-          <div class="st-row"><label>kW당 설치단가 (원)</label><input type="number" id="st-kwunit" value="950000"></div>
-          <div class="st-row"><label>목표 마진 (%)</label><input type="number" id="st-margin" value="5" step="0.5"></div>
+          <div class="st-row"><label>모듈 원가 (원/W) <span class="st-info" data-tip="모듈 1W당 매입 원가. 예) 310원 × 출력(W) × 매수 = 모듈 원가 합계. 모듈 시세에 따라 조정.">ⓘ</span></label><input type="number" id="st-modcost" value="310"></div>
+          <div class="st-row"><label>kW당 설치단가 (원) <span class="st-info" data-tip="고객에게 청구하는 kW당 시공금액(매출 단가). 시공금액 = 이 값 × 설치용량(kW). VAT 별도.">ⓘ</span></label><input type="number" id="st-kwunit" value="950000"></div>
+          <div class="st-row"><label>목표 마진 (%) <span class="st-info" data-tip="목표로 삼는 영업이익률. 참고 지표로 표시되며 실제 이익은 (시공금액−원가합계)로 계산됩니다.">ⓘ</span></label><input type="number" id="st-margin" value="5" step="0.5"></div>
+          <div class="st-row"><label>구조검토비 (원/현장) <span class="st-info" data-tip="현장(발전소) 1곳당 구조검토 용역비. 현장 수만큼 곱해집니다.">ⓘ</span></label><input type="number" id="st-c-review" value="500000"></div>
+          <div class="st-row"><label>사다리차 (원/건물) <span class="st-info" data-tip="건물(지붕) 설치 시 건물 1동당 사다리차(고소작업) 비용. 노지는 0원.">ⓘ</span></label><input type="number" id="st-c-ladder" value="600000"></div>
+        </div>
+
+        <div class="set-sec"><div class="set-lbl">인버터 원가 (원/대) <span class="st-info" data-tip="용량별 인버터 대당 원가. 그로와트·화훼이 두 조합 중 총액이 더 싼 쪽이 자동 선택됩니다.">ⓘ</span></div>
+          <div class="st-grid2">
+            <div class="st-row"><label>그로와트 125kW <span class="st-info" data-tip="그로와트 125kW급 인버터 1대 원가.">ⓘ</span></label><input type="number" id="st-c-invg125" value="5600000"></div>
+            <div class="st-row"><label>그로와트 50kW <span class="st-info" data-tip="그로와트 50kW급 인버터 1대 원가.">ⓘ</span></label><input type="number" id="st-c-invg50" value="3800000"></div>
+            <div class="st-row"><label>그로와트 36kW <span class="st-info" data-tip="그로와트 36kW급 인버터 1대 원가.">ⓘ</span></label><input type="number" id="st-c-invg36" value="2500000"></div>
+            <div class="st-row"><label>화훼이 110kW <span class="st-info" data-tip="화훼이 110kW급 인버터 1대 원가.">ⓘ</span></label><input type="number" id="st-c-invh110" value="5100000"></div>
+            <div class="st-row"><label>화훼이 50kW <span class="st-info" data-tip="화훼이 50kW급 인버터 1대 원가.">ⓘ</span></label><input type="number" id="st-c-invh50" value="3200000"></div>
+            <div class="st-row"><label>고객가 마진 (원/대) <span class="st-info" data-tip="고객 견적서의 인버터 판매가 = 원가 + 이 값(대당). 기본 100만원.">ⓘ</span></label><input type="number" id="st-c-invmargin" value="1000000"></div>
+          </div>
+        </div>
+
+        <div class="set-sec"><div class="set-lbl">접속반·계량기함 (원) <span class="st-info" data-tip="설치용량 구간별 접속반+계량기함 원가. 해당 용량 구간의 값 하나가 적용됩니다.">ⓘ</span></div>
+          <div class="st-grid2">
+            <div class="st-row"><label>~100kW <span class="st-info" data-tip="설치용량 100kW 이하일 때.">ⓘ</span></label><input type="number" id="st-c-mtr100" value="1200000"></div>
+            <div class="st-row"><label>~200kW <span class="st-info" data-tip="100kW 초과 ~ 200kW 이하.">ⓘ</span></label><input type="number" id="st-c-mtr200" value="1550000"></div>
+            <div class="st-row"><label>~300kW <span class="st-info" data-tip="200kW 초과 ~ 300kW 이하.">ⓘ</span></label><input type="number" id="st-c-mtr300" value="3100000"></div>
+            <div class="st-row"><label>~500kW <span class="st-info" data-tip="300kW 초과 ~ 500kW 이하.">ⓘ</span></label><input type="number" id="st-c-mtr500" value="11500000"></div>
+            <div class="st-row"><label>~600kW <span class="st-info" data-tip="500kW 초과 ~ 600kW 이하.">ⓘ</span></label><input type="number" id="st-c-mtr600" value="63500000"></div>
+            <div class="st-row"><label>~700kW <span class="st-info" data-tip="600kW 초과 ~ 700kW 이하.">ⓘ</span></label><input type="number" id="st-c-mtr700" value="64000000"></div>
+            <div class="st-row"><label>~800kW <span class="st-info" data-tip="700kW 초과 ~ 800kW 이하.">ⓘ</span></label><input type="number" id="st-c-mtr800" value="64500000"></div>
+            <div class="st-row"><label>~900kW <span class="st-info" data-tip="800kW 초과 ~ 900kW 이하.">ⓘ</span></label><input type="number" id="st-c-mtr900" value="65000000"></div>
+            <div class="st-row"><label>900kW+ <span class="st-info" data-tip="900kW 초과.">ⓘ</span></label><input type="number" id="st-c-mtr1000" value="65500000"></div>
+          </div>
+        </div>
+
+        <div class="set-sec"><div class="set-lbl">구조물·전기 단가표 (만원/kW) <span class="st-info" data-tip="설치용량 구간과 설치형태(노지/건물)에 따른 kW당 단가. 구조물 제작+공사+전기공사비 = 각 단가 × 설치용량(kW) × 1만원.">ⓘ</span></div>
+          <div id="st-struct"></div>
+          <div class="st-note">해당 프로젝트의 설치용량 구간·설치형태에 맞는 행 하나가 자동 적용됩니다. 값은 kW당 <b>만원</b> 단위입니다.</div>
+        </div>
+
+        <div class="set-sec"><div class="set-lbl">설계감리·기술지도·안전진단</div>
+          <div class="st-grid2">
+            <div class="st-row"><label>설계감리 100kW당 (원) <span class="st-info" data-tip="설계감리비 = 기본금 + (100kW당 이 금액). 용량을 100kW 단위로 올림해 곱합니다.">ⓘ</span></label><input type="number" id="st-c-designper" value="700000"></div>
+            <div class="st-row"><label>설계감리 기본 (원) <span class="st-info" data-tip="설계감리 기본금(고정). 위 100kW당 금액과 합산.">ⓘ</span></label><input type="number" id="st-c-designbase" value="100000"></div>
+            <div class="st-row"><label>기술지도 1억↑ (만원) <span class="st-info" data-tip="시공금액이 1억원 초과일 때 현장당 기술지도 수수료(만원). 2억 이하 구간에 적용.">ⓘ</span></label><input type="number" id="st-c-guide1" value="46"></div>
+            <div class="st-row"><label>기술지도 2억↑ (만원) <span class="st-info" data-tip="시공금액이 2억원 초과일 때 현장당 기술지도 수수료(만원).">ⓘ</span></label><input type="number" id="st-c-guide2" value="68"></div>
+            <div class="st-row"><label>안전진단 300kW↑ (원) <span class="st-info" data-tip="설치용량 300kW 이상 500kW 미만일 때 안전진단비.">ⓘ</span></label><input type="number" id="st-c-safe300" value="1300000"></div>
+            <div class="st-row"><label>안전진단 500kW↑ (원) <span class="st-info" data-tip="설치용량 500kW 이상일 때 안전진단비.">ⓘ</span></label><input type="number" id="st-c-safe500" value="2500000"></div>
+          </div>
+        </div>
+
+        <div class="set-sec"><div class="set-lbl">사용전검사 수수료 <span class="st-info" data-tip="한전 사용전검사 수수료 = 기본금 + (kW당 금액 × 설치용량). 용량 구간별로 공식이 다릅니다.">ⓘ</span></div>
+          <div class="st-grid2">
+            <div class="st-row"><label>~20kW 기본 (원) <span class="st-info" data-tip="20kW 이하 구간의 기본금.">ⓘ</span></label><input type="number" id="st-c-insp1b" value="81300"></div>
+            <div class="st-row"><label>~20kW kW당 (원) <span class="st-info" data-tip="20kW 이하 구간의 kW당 가산액.">ⓘ</span></label><input type="number" id="st-c-insp1r" value="292"></div>
+            <div class="st-row"><label>~300kW 기본 (원) <span class="st-info" data-tip="20kW 초과 ~ 300kW 이하 구간의 기본금.">ⓘ</span></label><input type="number" id="st-c-insp2b" value="138000"></div>
+            <div class="st-row"><label>~300kW kW당 (원) <span class="st-info" data-tip="20kW 초과 ~ 300kW 이하 구간의 kW당 가산액.">ⓘ</span></label><input type="number" id="st-c-insp2r" value="611"></div>
+            <div class="st-row"><label>~500kW 기본 (원) <span class="st-info" data-tip="300kW 초과 ~ 500kW 이하 구간의 기본금.">ⓘ</span></label><input type="number" id="st-c-insp3b" value="239600"></div>
+            <div class="st-row"><label>~500kW kW당 (원) <span class="st-info" data-tip="300kW 초과 ~ 500kW 이하 구간의 kW당 가산액.">ⓘ</span></label><input type="number" id="st-c-insp3r" value="426"></div>
+            <div class="st-row"><label>500kW+ 기본 (원) <span class="st-info" data-tip="500kW 초과 구간의 기본금.">ⓘ</span></label><input type="number" id="st-c-insp4b" value="351900"></div>
+            <div class="st-row"><label>500kW+ kW당 (원) <span class="st-info" data-tip="500kW 초과 구간의 kW당 가산액.">ⓘ</span></label><input type="number" id="st-c-insp4r" value="349"></div>
+          </div>
         </div>
       </div>
       <!-- 고객견적서 -->
@@ -1645,42 +1716,45 @@ function save3D(){
 }
 
 /* ================= 원가·마진 (영업자 전용) — 견적서 엑셀 로직 재현 ================= */
+// 원가 상수 읽기(폴백=기본값) — ⚙️ 원가·마진 설정과 연동
+function cs(k,d){ try{ const v=(typeof SETTINGS!=='undefined')?SETTINGS[k]:undefined; return (v!=null&&v!==''&&!isNaN(+v))?+v:d; }catch(e){ return d; } }
+function structTbl(form){ const dflt=(form==='노지'?SET_DEFAULTS.structNoji:SET_DEFAULTS.structBldg); try{ const t=(typeof SETTINGS!=='undefined')?(form==='노지'?SETTINGS.structNoji:SETTINGS.structBldg):null; if(t&&typeof t==='object'&&Object.keys(t).length) return t; }catch(e){} return dflt; }
 // 인버터 자동선정: 그로와트(125/50/36) vs 화훼이(110/50) 중 저가 조합
 function invCost(kw){
+  const g125=cs('cInvG125',5600000),g50=cs('cInvG50',3800000),g36=cs('cInvG36',2500000),h110=cs('cInvH110',5100000),h50=cs('cInvH50',3200000);
   const K2=Math.floor(kw/125), L2=kw-125*K2;
   const gLow = (L2>50?1:0), n125=K2+gLow, n50=(L2>50?0:(L2>36?1:0)), n36=(L2>36?0:1);
-  const grow = n125*5600000 + n50*3800000 + n36*2500000;
+  const grow = n125*g125 + n50*g50 + n36*g36;
   const K3=Math.floor(kw/110), L3=kw-110*K3;
   const m110=K3+(L3>50?1:0), m50=(L3>50?0:1);
-  const hua = m110*5100000 + m50*3200000;
+  const hua = m110*h110 + m50*h50;
   return Math.min(grow, hua);
 }
 // 계량기함: 용량 구간별
 function meterCost(kw){
-  if(kw<=100) return 1200000;
-  if(kw<=200) return 1550000;
-  if(kw<=300) return 3100000;
-  if(kw<=500) return 11500000;
-  if(kw<=600) return 63500000;
-  if(kw<=700) return 64000000;
-  if(kw<=800) return 64500000;
-  if(kw<=900) return 65000000;
-  return 65500000;
+  if(kw<=100) return cs('cMtr100',1200000);
+  if(kw<=200) return cs('cMtr200',1550000);
+  if(kw<=300) return cs('cMtr300',3100000);
+  if(kw<=500) return cs('cMtr500',11500000);
+  if(kw<=600) return cs('cMtr600',63500000);
+  if(kw<=700) return cs('cMtr700',64000000);
+  if(kw<=800) return cs('cMtr800',64500000);
+  if(kw<=900) return cs('cMtr900',65000000);
+  return cs('cMtr1000',65500000);
 }
 // 구조물 제작/공사·전기 단가(만원/kW) — 용량구간 × 설치형태
 function structRates(kw, form){
-  const b = kw>700?1000 : kw>500?700 : kw>300?500 : kw>100?300 : kw>50?100 : kw>30?50 : 30;
-  const noji = {30:[15,15,17],50:[15,15,17],100:[14,14,16],300:[13,13,15],500:[12,12,14],700:[11,11,13],1000:[10,10,12]};
-  const bldg = {30:[14,14,18],50:[13,13,17],100:[12,12,16],300:[11,11,15],500:[10,10,14],700:[10,10,14],1000:[10,10,14]};
-  const r = (form==='노지'?noji:bldg)[b];
-  return {make:r[0], build:r[1], elec:r[2]};
+  const b = kw>700?'1000' : kw>500?'700' : kw>300?'500' : kw>100?'300' : kw>50?'100' : kw>30?'50' : '30';
+  const t = structTbl(form);
+  const r = (t && t[b]) || (form==='노지'?SET_DEFAULTS.structNoji:SET_DEFAULTS.structBldg)[b];
+  return {make:+r[0], build:+r[1], elec:+r[2]};
 }
-// 사용전검사 수수료: 용량 구간별
+// 사용전검사 수수료: 용량 구간별 (기본단가 + kW당)
 function inspectCost(kw){
-  if(kw<=20) return 81300+kw*292;
-  if(kw<=300) return 138000+kw*611;
-  if(kw<=500) return 239600+kw*426;
-  return 351900+kw*349;
+  if(kw<=20) return cs('cInsp1b',81300)+kw*cs('cInsp1r',292);
+  if(kw<=300) return cs('cInsp2b',138000)+kw*cs('cInsp2r',611);
+  if(kw<=500) return cs('cInsp3b',239600)+kw*cs('cInsp3r',426);
+  return cs('cInsp4b',351900)+kw*cs('cInsp4r',349);
 }
 function won(n){ return Math.round(n).toLocaleString(); }
 function costCalc(){
@@ -1689,17 +1763,17 @@ function costCalc(){
   const plants=+$('c-plants').value||0, bldgs=+$('c-bldgs').value||0;
   const kw = qty*W/1000;
   const amt = unit*kw;                                   // 시공금액
-  const review = 500000*plants;                          // 구조검토
+  const review = cs('cReview',500000)*plants;            // 구조검토
   const module = W*qty*modwon;                           // 모듈
   const inv = kw>0 ? invCost(kw) : 0;                     // 인버터
   const meter = kw>0 ? meterCost(kw) : 0;                // 계량기함
   const rt = structRates(kw, form);
   const make = kw*rt.make*10000, build = kw*rt.build*10000, elec = kw*rt.elec*10000;
-  const design = kw>0 ? Math.ceil(kw/100)*700000+100000 : 0;  // 설계감리
-  const ladder = form==='노지' ? 0 : bldgs*600000;       // 사다리비용-60
-  const guide = (amt>200000000?68:(amt>100000000?46:0))*10000*plants; // 기술지도
+  const design = kw>0 ? Math.ceil(kw/100)*cs('cDesignPer',700000)+cs('cDesignBase',100000) : 0;  // 설계감리
+  const ladder = form==='노지' ? 0 : bldgs*cs('cLadder',600000);  // 사다리비용-60
+  const guide = (amt>200000000?cs('cGuide2',68):(amt>100000000?cs('cGuide1',46):0))*10000*plants; // 기술지도
   const inspect = kw>0 ? inspectCost(kw) : 0;            // 사용전검사
-  const safety = kw>=500?2500000:(kw>=300?1300000:0);   // 안전진단
+  const safety = kw>=500?cs('cSafe500',2500000):(kw>=300?cs('cSafe300',1300000):0);   // 안전진단
   const cost = review+module+inv+meter+make+build+elec+design+ladder+guide+inspect+safety;
   const profit = amt-cost;
   const perKwCost = kw?cost/kw:0, perKwProfit = kw?profit/kw:0, rate = amt?profit/amt*100:0;
@@ -1758,20 +1832,21 @@ $('c-reload').onclick = ()=>{ costPull(); costCalc(); };
 /* ================= 고객 견적서(제안서) — 국산/중국-제안서·상환 로직 재현 ================= */
 // 인버터: 저가벤더 선정 후 고객가(원가단가+대당 100만) + 모델라벨/대수
 function invPlan(kw){
+  const g125=cs('cInvG125',5600000),g50=cs('cInvG50',3800000),g36=cs('cInvG36',2500000),h110=cs('cInvH110',5100000),h50=cs('cInvH50',3200000),mg=cs('cInvMargin',1000000);
   const K2=Math.floor(kw/125), L2=kw-125*K2;
   const n125=K2+(L2>50?1:0), n50g=(L2>50?0:(L2>36?1:0)), n36=(L2>36?0:1);
-  const growCost=n125*5600000+n50g*3800000+n36*2500000;
+  const growCost=n125*g125+n50g*g50+n36*g36;
   const K3=Math.floor(kw/110), L3=kw-110*K3;
   const m110=K3+(L3>50?1:0), m50=(L3>50?0:1);
-  const huaCost=m110*5100000+m50*3200000;
+  const huaCost=m110*h110+m50*h50;
   if(kw<=0) return {count:0, price:0, label:'-'};
   if(growCost<huaCost){
     const types=(n125>0)+(n50g>0)+(n36>0);
-    return {count:n125+n50g+n36, price:n125*6600000+n50g*4800000+n36*3500000,
+    return {count:n125+n50g+n36, price:n125*(g125+mg)+n50g*(g50+mg)+n36*(g36+mg),
             label:(n125>0?'125kW':(n50g>0?'50kW':'36kW'))+(types>1?' 외':'')};
   }
   const types=(m110>0)+(m50>0);
-  return {count:m110+m50, price:m110*6100000+m50*4200000, label:(m110>0?'110kW':'50kW')+(types>1?' 외':'')};
+  return {count:m110+m50, price:m110*(h110+mg)+m50*(h50+mg), label:(m110>0?'110kW':'50kW')+(types>1?' 외':'')};
 }
 // 고객 계량기함(제안서 표): 원가표보다 높음
 function meterCustomer(kw){
@@ -1826,9 +1901,9 @@ function quoteCalc(){
   const fMod=W*qty*(modwon+20);
   const inv=invPlan(kw), fInv=inv.price;
   const fMeter=kw>0?meterCustomer(kw):0;
-  const guide=(V3>200000000?68:(V3>100000000?46:0))*10000*plants;
+  const guide=(V3>200000000?cs('cGuide2',68):(V3>100000000?cs('cGuide1',46):0))*10000*plants;
   const fStruct=1000000+guide;
-  const inspect=kw>0?inspectCost(kw):0, safety=kw>=500?2500000:(kw>=300?1300000:0);
+  const inspect=kw>0?inspectCost(kw):0, safety=kw>=500?cs('cSafe500',2500000):(kw>=300?cs('cSafe300',1300000):0);
   const fInspect=inspect+safety;
   const fPermit=kw<100?500000:(kw<500?1000000:2000000);
   const fMgmt=V3*0.02;
@@ -2304,7 +2379,17 @@ async function initAuth(){
 }
 /* ===== 설정 화면(⚙️) — 7탭 (일반/타당성/경계/모듈/배치/원가/견적) · localStorage 저장 ===== */
 const SET_KEY='solarfit_settings';
-const SET_DEFAULTS={ company:'',phone:'',defmap:'esriko', gz:true,slope:15,setres:200, buffer:2,roadmask:true, krBrand:'현대',krW:645,krX:1134,krY:2465, cnBrand:'AIKO',cnW:655,cnX:1134,cnY:2382, tilt:15,incid:25,gap:10, modcost:310,kwunit:950000,margin:5, apply:178,hours:3.6,rate:2.5,defer:5,repay:10,loanpct:80 };
+const SET_DEFAULTS={ company:'',phone:'',defmap:'esriko', gz:true,slope:15,setres:200, buffer:2,roadmask:true, krBrand:'현대',krW:645,krX:1134,krY:2465, cnBrand:'AIKO',cnW:655,cnX:1134,cnY:2382, tilt:15,incid:25,gap:10, modcost:310,kwunit:950000,margin:5, apply:178,hours:3.6,rate:2.5,defer:5,repay:10,loanpct:80,
+  // ===== 원가 상수(⚙️ 원가·마진 — costCalc/견적서 연동) =====
+  cReview:500000, cLadder:600000,
+  cInvG125:5600000, cInvG50:3800000, cInvG36:2500000, cInvH110:5100000, cInvH50:3200000, cInvMargin:1000000,
+  cMtr100:1200000, cMtr200:1550000, cMtr300:3100000, cMtr500:11500000, cMtr600:63500000, cMtr700:64000000, cMtr800:64500000, cMtr900:65000000, cMtr1000:65500000,
+  cDesignPer:700000, cDesignBase:100000,
+  cGuide1:46, cGuide2:68,
+  cInsp1b:81300, cInsp1r:292, cInsp2b:138000, cInsp2r:611, cInsp3b:239600, cInsp3r:426, cInsp4b:351900, cInsp4r:349,
+  cSafe300:1300000, cSafe500:2500000,
+  structNoji:{'30':[15,15,17],'50':[15,15,17],'100':[14,14,16],'300':[13,13,15],'500':[12,12,14],'700':[11,11,13],'1000':[10,10,12]},
+  structBldg:{'30':[14,14,18],'50':[13,13,17],'100':[12,12,16],'300':[11,11,15],'500':[10,10,14],'700':[10,10,14],'1000':[10,10,14]} };
 function loadSettings(){ try{ return Object.assign({},SET_DEFAULTS,JSON.parse(localStorage.getItem(SET_KEY)||'{}')); }catch(e){ return Object.assign({},SET_DEFAULTS); } }
 function accKey(){ return (typeof _authUser!=='undefined'&&_authUser)?('solarfit_settings_'+_authUser.id):null; }   // 계정별 저장 키
 let SETTINGS=Object.assign({},SET_DEFAULTS);   // 초기=기본값(로그인 시 계정별 설정 로드)
@@ -2315,9 +2400,33 @@ const SET_MAP=[['st-company','company','t'],['st-phone','phone','t'],['st-defmap
   ['st-cn-brand','cnBrand','t'],['st-cn-w','cnW','n'],['st-cn-x','cnX','n'],['st-cn-y','cnY','n'],
   ['st-tilt','tilt','n'],['st-incid','incid','n'],['st-gap','gap','n'],
   ['st-modcost','modcost','n'],['st-kwunit','kwunit','n'],['st-margin','margin','n'],
-  ['st-apply','apply','n'],['st-hours','hours','n'],['st-rate','rate','n'],['st-defer','defer','n'],['st-repay','repay','n'],['st-loanpct','loanpct','n']];
-function populateSettings(){ SET_MAP.forEach(([id,key,t])=>{ const el=$(id); if(!el) return; if(t==='c') el.checked=!!SETTINGS[key]; else el.value=SETTINGS[key]; }); }
-function collectSettings(){ SET_MAP.forEach(([id,key,t])=>{ const el=$(id); if(!el) return; if(t==='c') SETTINGS[key]=el.checked; else if(t==='n') SETTINGS[key]=parseFloat(el.value)||0; else SETTINGS[key]=(el.value||'').trim(); }); }
+  ['st-apply','apply','n'],['st-hours','hours','n'],['st-rate','rate','n'],['st-defer','defer','n'],['st-repay','repay','n'],['st-loanpct','loanpct','n'],
+  // 원가 상수
+  ['st-c-review','cReview','n'],['st-c-ladder','cLadder','n'],
+  ['st-c-invg125','cInvG125','n'],['st-c-invg50','cInvG50','n'],['st-c-invg36','cInvG36','n'],['st-c-invh110','cInvH110','n'],['st-c-invh50','cInvH50','n'],['st-c-invmargin','cInvMargin','n'],
+  ['st-c-mtr100','cMtr100','n'],['st-c-mtr200','cMtr200','n'],['st-c-mtr300','cMtr300','n'],['st-c-mtr500','cMtr500','n'],['st-c-mtr600','cMtr600','n'],['st-c-mtr700','cMtr700','n'],['st-c-mtr800','cMtr800','n'],['st-c-mtr900','cMtr900','n'],['st-c-mtr1000','cMtr1000','n'],
+  ['st-c-designper','cDesignPer','n'],['st-c-designbase','cDesignBase','n'],
+  ['st-c-guide1','cGuide1','n'],['st-c-guide2','cGuide2','n'],
+  ['st-c-safe300','cSafe300','n'],['st-c-safe500','cSafe500','n'],
+  ['st-c-insp1b','cInsp1b','n'],['st-c-insp1r','cInsp1r','n'],['st-c-insp2b','cInsp2b','n'],['st-c-insp2r','cInsp2r','n'],['st-c-insp3b','cInsp3b','n'],['st-c-insp3r','cInsp3r','n'],['st-c-insp4b','cInsp4b','n'],['st-c-insp4r','cInsp4r','n']];
+// ===== 구조물·전기 단가표(매트릭스) — 노지/건물 × 용량구간 × 제작/공사/전기 =====
+const STRUCT_CAPS=[['30','~30kW'],['50','~50kW'],['100','~100kW'],['300','~300kW'],['500','~500kW'],['700','~700kW'],['1000','700kW+']];
+const STRUCT_COLS=['제작','공사','전기'];
+function buildStructTables(){ const box=$('st-struct'); if(!box||box.dataset.built) return;
+  const mk=(pfx,title)=>{ let h=`<div class="st-struct-t"><div class="st-struct-h">${title}</div><table class="st-mx"><thead><tr><th>용량</th>${STRUCT_COLS.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>`;
+    STRUCT_CAPS.forEach(([cap,lab])=>{ h+=`<tr><td class="st-mx-cap">${lab}</td>`+STRUCT_COLS.map((c,i)=>`<td><input type="number" id="st-${pfx}-${cap}-${i}" step="0.5"></td>`).join('')+`</tr>`; });
+    return h+`</tbody></table></div>`; };
+  box.innerHTML=mk('sn','노지')+mk('sb','건물'); box.dataset.built='1';
+}
+function fillStructInputs(){ buildStructTables();
+  const set=(pfx,tbl)=>{ const t=(tbl&&typeof tbl==='object')?tbl:{}; STRUCT_CAPS.forEach(([cap])=>{ const row=t[cap]||(pfx==='sn'?SET_DEFAULTS.structNoji:SET_DEFAULTS.structBldg)[cap]; STRUCT_COLS.forEach((c,i)=>{ const el=$(`st-${pfx}-${cap}-${i}`); if(el) el.value=(row&&row[i]!=null)?row[i]:''; }); }); };
+  set('sn',SETTINGS.structNoji); set('sb',SETTINGS.structBldg);
+}
+function readStructInputs(){ const get=(pfx)=>{ const o={}; STRUCT_CAPS.forEach(([cap])=>{ o[cap]=STRUCT_COLS.map((c,i)=>{ const el=$(`st-${pfx}-${cap}-${i}`); return el?(parseFloat(el.value)||0):0; }); }); return o; };
+  if($('st-sn-30-0')){ SETTINGS.structNoji=get('sn'); SETTINGS.structBldg=get('sb'); }
+}
+function populateSettings(){ SET_MAP.forEach(([id,key,t])=>{ const el=$(id); if(!el) return; if(t==='c') el.checked=!!SETTINGS[key]; else el.value=SETTINGS[key]; }); try{ fillStructInputs(); }catch(e){} }
+function collectSettings(){ SET_MAP.forEach(([id,key,t])=>{ const el=$(id); if(!el) return; if(t==='c') SETTINGS[key]=el.checked; else if(t==='n') SETTINGS[key]=parseFloat(el.value)||0; else SETTINGS[key]=(el.value||'').trim(); }); try{ readStructInputs(); }catch(e){} }
 function applySettings(){ try{ if(typeof S!=='undefined'&&S){ S.tilt=(+SETTINGS.tilt)||15; S.incidence=(+SETTINGS.incid)||25; S.setback=(SETTINGS.buffer!=null?(+SETTINGS.buffer):2); } window.__stackGap=(+SETTINGS.gap)||10; const fv=$('fixedvals'); if(fv) fv.textContent=`모듈각도 ${SETTINGS.tilt}° · 입사각 ${SETTINGS.incid}° · 2단 적재 간격 ${SETTINGS.gap}mm`; }catch(e){} }
 // 기본지도(defmap) 적용 — 로그인 시 1회
 function applyDefmap(){ try{ const dm=SETTINGS.defmap||'esriko'; const T={esriko:esriHybrid,hybrid:vworldAerialHybrid,esri:esriImagery,base:vworldBase}; [esriHybrid,vworldAerialHybrid,vworldAerial,esriImagery,vworldBase].forEach(L=>{ if(L&&map.hasLayer(L)) map.removeLayer(L); }); (T[dm]||esriHybrid).addTo(map); }catch(e){} }
@@ -2332,6 +2441,8 @@ async function loadSettingsCloud(){
 }
 async function saveSettingsCloud(){ try{ if(_sb&&_authUser){ await _sb.from('user_settings').upsert({id:_authUser.id, settings:SETTINGS}); } }catch(e){} }
 function openSettings(){ const m=$('set-modal'); if(!m) return; const e=$('set-email'); if(e) e.textContent=(_authUser&&_authUser.email)||'–'; const msg=$('set-msg'); if(msg){ msg.textContent=''; msg.className='set-msg'; } if($('set-pw1'))$('set-pw1').value=''; if($('set-pw2'))$('set-pw2').value=''; populateSettings(); const sm=$('st-savemsg'); if(sm){ sm.textContent=''; sm.className='set-msg'; } m.classList.add('open'); }
+// 항목 설명 툴팁(ⓘ): PC는 마우스오버(CSS), 모바일은 탭 토글 — 다른 곳 탭하면 닫힘
+document.addEventListener('click',e=>{ const info=(e.target.closest)?e.target.closest('.st-info'):null; document.querySelectorAll('.st-info.tip-open').forEach(x=>{ if(x!==info) x.classList.remove('tip-open'); }); if(info){ info.classList.toggle('tip-open'); e.preventDefault(); e.stopPropagation(); } });
 (function(){ const bk=$('set-modal'); if(!bk) return; const x=$('set-x'), sv=$('set-save');
   const close=()=>bk.classList.remove('open');
   if(x) x.onclick=close;
