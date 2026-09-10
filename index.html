@@ -63,6 +63,9 @@
   .disc{font-size:10.5px;color:#7f8ea0;line-height:1.5;margin-top:8px;border-top:1px dashed var(--line);padding-top:8px}
   .leaflet-container{background:#0b0f14}
   #viewtoggle{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:600;display:flex;gap:4px;padding:4px}
+  #btn-reset{position:absolute;top:14px;left:14px;z-index:600;display:inline-flex;align-items:center;gap:6px;padding:8px 13px;font-size:13px;font-weight:700;cursor:pointer;color:var(--ink);border:1px solid var(--line);border-radius:11px;background:var(--card);box-shadow:var(--shadow)}
+  #btn-reset:hover{filter:brightness(.97)}
+  #btn-reset .ic-sm{flex:none;stroke:var(--muted)}
   #viewtoggle button{padding:7px 15px;border:0;border-radius:8px;background:transparent;color:#cdd8e4;font-size:13px;cursor:pointer;font-weight:700}
   #viewtoggle button.on{background:var(--accent);color:#1a1400}
   #sunbar{position:absolute;bottom:14px;right:14px;z-index:600;display:flex;align-items:center;gap:8px;padding:8px 12px;font-size:12px;color:#cdd8e4}
@@ -113,6 +116,7 @@
     #close-left{display:block}
     .leaflet-top.leaflet-left{margin-top:58px}
     #reopen-results{top:12px}
+    #btn-reset{top:64px;left:12px}
   }
 </style>
 <style id="redesign">
@@ -420,6 +424,7 @@
     <div id="map"></div>
     <div id="three"></div>
     <button id="menu-fab" title="메뉴 열기"><svg class="ic" viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+    <button id="btn-reset" title="지도 배율은 유지하고, 선택·그림·배치 결과를 모두 초기화합니다"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M3 2v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L3 8"/></svg>초기화</button>
     <div id="viewtoggle" class="panel">
       <button id="v2d" class="on"><svg class="ic ic-sm" viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>2D 지도</button>
       <button id="v3d"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>3D 뷰</button>
@@ -1541,6 +1546,31 @@ $('btn-draw').onclick = ()=>{
     : '꼭짓점을 순서대로 클릭, <b>시작점 클릭 또는 더블클릭</b>으로 완성하세요. (완성 후 다시 눌러 구역 추가 가능)');
 };
 $('btn-clear').onclick = ()=>{ clearBoundary(); selected=[]; renderSelList(); panelLayer.clearLayers(); bufferLayer.clearLayers(); resetStats(); window.LAYOUT=null; _rivKey=''; renderFeasibility(); setStatus('모든 구역을 지웠습니다.'); };
+// 초기화: 지도 배율/위치는 그대로 두고(사용자 조정 유지), 나머지 선택·그림·결과·옵션을 전부 기본값으로
+function resetAll(){
+  // 1) 그려둔 부지·선택 필지·배치결과·타당성 (지우기와 동일)
+  clearBoundary(); selected=[]; renderSelList();
+  panelLayer.clearLayers(); bufferLayer.clearLayers();
+  resetStats(); window.LAYOUT=null; _rivKey=''; renderFeasibility();
+  // 2) 이격거리 원·검색어
+  SEP_RADIUS=0; drawSepCircle(); renderSepChips();
+  $('addr').value='';
+  // 3) 모듈 규격·배치 옵션 = 기본값 (기존 핸들러 재사용 → 라벨·내부상태 S 동기화)
+  const fire=(id,val)=>{ const el=$(id); if(!el) return; el.value=val; el.dispatchEvent(new Event('input')); };
+  document.querySelector('#seg-mod button[data-m="kr"]')?.click();      // 국산 → 가로·세로·출력 자동 채움
+  if($('m-o')) $('m-o').value='portrait';
+  fire('m-stack',2);
+  document.querySelector('#seg-type button[data-t="ground"]')?.click(); // 노지
+  fire('o-set',20);                                                     // 완충 2.0m
+  document.querySelector('#seg-opt button[data-o="1"]')?.click();       // 자동(정남) → 수동방위 숨김
+  fire('o-az',0);
+  document.querySelector('#seg-pitch button[data-p="auto"]')?.click();  // 자동 → 수동 열간격 숨김
+  fire('o-pitch',50);                                                   // 5.0m
+  // 4) 결과창 닫기·안내 (지도 배율/위치는 건드리지 않음)
+  try{ showResults(false); }catch(e){}
+  setStatus('초기화되었습니다. <span style="color:var(--muted)">지도 배율은 유지됩니다.</span>');
+}
+$('btn-reset').onclick = resetAll;
 map.on('pm:create', async e=>{
   const idx=REGIONS.length;
   try{ e.layer.setStyle({color:REGION_COLORS[idx%REGION_COLORS.length], weight:2, fillOpacity:.06}); }catch(_){}
