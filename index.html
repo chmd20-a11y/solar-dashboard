@@ -957,12 +957,12 @@
   .dev-list-h{font-size:11px;font-weight:800;color:#647184;text-transform:uppercase;letter-spacing:.04em;margin:4px 2px 9px}
   .dev-list{display:flex;flex-direction:column;gap:10px}
   .dev-card{border:1px solid #e4e8ef;border-radius:12px;padding:12px 13px;background:#fff}
-  .dev-card-top{display:flex;align-items:center;gap:8px;margin-bottom:7px;flex-wrap:wrap}
+  .dev-card-top{display:flex;align-items:center;gap:7px;margin-bottom:7px;flex-wrap:wrap}
   .dev-who{font-size:12px;font-weight:700;color:#15202e}
   .dev-date{font-size:11px;color:#8b95a6}
-  .dev-badge{font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:20px;margin-left:auto}
-  .dev-badge.open{background:#fff3e0;color:#c26a00;border:1px solid #ffcf99}
-  .dev-badge.done{background:#e3f2ec;color:#0b6a58;border:1px solid #9ed3bf}
+  .dev-dot{width:12px;height:12px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 0 2px rgba(0,0,0,.05)}
+  .dev-stage{font-size:12px;font-weight:800}
+  .dev-sel2{width:100%;box-sizing:border-box;padding:7px 9px;border:1px solid #e4e8ef;border-radius:8px;background:#fff;font-size:12.5px;font-family:inherit;color:#15202e;font-weight:600;margin-bottom:7px}
   .dev-txt{font-size:13px;color:#15202e;line-height:1.5;white-space:pre-wrap;word-break:break-word;margin-bottom:8px}
   .dev-thumb{max-width:180px;max-height:120px;border-radius:8px;border:1px solid #e4e8ef;cursor:zoom-in;display:block}
   .dev-note{margin-top:9px;padding:8px 10px;background:#e3f2ec;border:1px solid #9ed3bf;border-radius:8px;font-size:12px;color:#0b6a58;line-height:1.5}
@@ -2618,25 +2618,29 @@ function openSettings(){ const m=$('set-modal'); if(!m) return; const e=$('set-e
   document.addEventListener('paste',e=>{ if(!modal.classList.contains('open'))return; const items=(e.clipboardData&&e.clipboardData.items)||[]; for(const it of items){ if(it.type&&it.type.indexOf('image')===0){ const b=it.getAsFile(); if(b){ setShot(b); e.preventDefault(); break; } } } });
   function zoom(src){ lbImg.src=src; lb.classList.add('open'); }
   lb.onclick=()=>{ lb.classList.remove('open'); lbImg.src=''; };
-  function badge(s){ return s==='done'?'<span class="dev-badge done">✅ 반영됨</span>':'<span class="dev-badge open">검토중</span>'; }
-  async function markDone(id,note){ try{ const {error}=await _sb.from('dev_requests').update({status:'done',admin_note:(note||'').trim()||null,resolved_at:new Date().toISOString()}).eq('id',id); if(error)throw error; loadList(); }catch(e){ alert('반영 처리 실패: '+((e&&e.message)||e)); } }
-  async function reopen(id){ try{ await _sb.from('dev_requests').update({status:'open',resolved_at:null}).eq('id',id); loadList(); }catch(e){} }
+  // 처리 단계(신호등): 접수완료(빨강)→검토중(주황)→처리중(노랑)→반영완료(초록)
+  const STAGES={open:{l:'접수완료',c:'#d5443f'},review:{l:'검토중',c:'#f57c00'},progress:{l:'처리중',c:'#eab000'},done:{l:'반영완료',c:'#0f8a3c'}};
+  function stg(s){ return STAGES[s]||STAGES.open; }
+  async function save(id){ try{ const sel=$('ds-'+id),ta=$('dn-'+id); const status=sel?sel.value:'open'; const note=(ta?ta.value:'').trim(); const {error}=await _sb.from('dev_requests').update({status,admin_note:note||null,resolved_at:status==='done'?new Date().toISOString():null}).eq('id',id); if(error)throw error; loadList(); }catch(e){ alert('저장 실패: '+((e&&e.message)||e)); } }
   async function del(id){ if(!confirm('이 요청을 삭제할까요?'))return; try{ const {error}=await _sb.from('dev_requests').delete().eq('id',id); if(error)throw error; loadList(); }catch(e){ alert('삭제 실패: '+((e&&e.message)||e)); } }
-  window.__dev={zoom,markDone,reopen,del};
+  window.__dev={zoom,save,del};
   function render(rows){
     const box=$('dev-list'),hd=$('dev-list-h'); hd.textContent=_isAdmin?`전체 요청 (${rows.length})`:'내 요청';
     if(!rows.length){ box.innerHTML='<div class="dev-empty">아직 등록된 요청이 없습니다.</div>'; return; }
     box.innerHTML=rows.map(r=>{
+      const st=stg(r.status);
       const who=_isAdmin?`<span class="dev-who">${esc(r.email||'-')}</span>`:'';
       const safe=(r.shot&&SHOT_RE.test(r.shot))?r.shot:'';
       const thumb=safe?`<img class="dev-thumb" src="${safe}" alt="스크린샷" onclick="__dev.zoom(this.src)">`:'';
-      const note=(r.status==='done')?`<div class="dev-note"><b>💬 처리 결과</b>${r.admin_note?'<br>'+esc(r.admin_note):' · 반영 완료되었습니다.'}</div>`:'';
+      const note=r.admin_note?`<div class="dev-note"><b>💬 처리 결과</b><br>${esc(r.admin_note)}</div>`:'';
       let admin='';
       if(_isAdmin){
-        if(r.status==='open') admin=`<div class="dev-admin"><textarea id="dn-${r.id}" rows="2" placeholder="반영 안내 코멘트(선택) — 작성자에게 표시됩니다"></textarea><div class="dev-admin-row"><button class="dev-btn-del" onclick="__dev.del('${r.id}')">삭제</button><button class="dev-btn-done" onclick="__dev.markDone('${r.id}', document.getElementById('dn-${r.id}').value)">반영 처리</button></div></div>`;
-        else admin=`<div class="dev-admin"><div class="dev-admin-row"><button class="dev-btn-del" onclick="__dev.del('${r.id}')">삭제</button><button class="dev-btn-del" onclick="__dev.reopen('${r.id}')">검토중으로</button></div></div>`;
-      } else if(r.status!=='done'){ admin=`<div class="dev-admin"><div class="dev-admin-row"><button class="dev-btn-del" onclick="__dev.del('${r.id}')">삭제</button></div></div>`; }
-      return `<div class="dev-card"><div class="dev-card-top">${who}<span class="dev-date">${fmtDate(r.created_at)}</span>${badge(r.status)}</div><div class="dev-txt">${esc(r.content)}</div>${thumb}${note}${admin}</div>`;
+        const opts=Object.keys(STAGES).map(k=>`<option value="${k}"${r.status===k?' selected':''}>${STAGES[k].l}</option>`).join('');
+        admin=`<div class="dev-admin"><select id="ds-${r.id}" class="dev-sel2">${opts}</select><textarea id="dn-${r.id}" rows="2" placeholder="처리사항(답변) — 작성자에게 표시됩니다">${esc(r.admin_note||'')}</textarea><div class="dev-admin-row"><button class="dev-btn-del" onclick="__dev.del('${r.id}')">삭제</button><button class="dev-btn-done" onclick="__dev.save('${r.id}')">저장</button></div></div>`;
+      } else {
+        admin=`<div class="dev-admin"><div class="dev-admin-row"><button class="dev-btn-del" onclick="__dev.del('${r.id}')">삭제</button></div></div>`;
+      }
+      return `<div class="dev-card"><div class="dev-card-top"><span class="dev-dot" style="background:${st.c}"></span><span class="dev-stage" style="color:${st.c}">${st.l}</span>${who}<span class="dev-date" style="margin-left:auto">${fmtDate(r.created_at)}</span></div><div class="dev-txt">${esc(r.content)}</div>${thumb}${note}${admin}</div>`;
     }).join('');
   }
   async function loadList(){ const box=$('dev-list'); if(!_sb||!_authUser){ box.innerHTML='<div class="dev-empty">로그인 후 이용할 수 있습니다.</div>'; return; }
