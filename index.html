@@ -410,6 +410,7 @@
     <button class="btn" id="btn-cost" style="margin-bottom:8px"><svg class="ic ic-sm" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="14" x2="8.01" y2="14"/><line x1="12" y1="14" x2="12.01" y2="14"/><line x1="16" y1="14" x2="16" y2="18"/><line x1="8" y1="18" x2="12" y2="18"/></svg>원가·마진 계산 <span style="font-weight:500;font-size:11px;color:var(--muted)">· 내부용</span></button>
     <button class="btn" id="btn-quote" style="margin-bottom:12px"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>고객 견적서 <span style="font-weight:500;font-size:11px;color:var(--muted)">· 고객 제시용</span></button>
     <a class="btn" href="javascript:void(0)" id="btn-grid" style="margin-bottom:12px;background:#e3f2ec;border-color:#0e7c66;color:#0b6a58;font-weight:700;text-decoration:none;justify-content:flex-start"><svg class="ic ic-sm" viewBox="0 0 24 24" style="stroke:#0b6a58"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg><span class="gc-lbl">계통 여유용량 분석</span> <span class="gc-sub" style="font-weight:500;font-size:11px;color:var(--muted)">· 변전소 접속여유</span></a>
+    <button class="btn" id="btn-dev" style="margin-bottom:12px"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>개발 요청 <span style="font-weight:500;font-size:11px;color:var(--muted)">· 오류·개선 신고</span></button>
     <div id="acct"></div>
     <div class="lp-foot"><a href="/legal.html" target="_blank">이용약관 · 개인정보처리방침 · 면책조항</a></div>
   </div>
@@ -901,6 +902,74 @@
     </div>
   </div>
 </div>
+<style>
+  .dev-back{position:fixed;inset:0;background:rgba(21,32,46,.5);display:none;align-items:center;justify-content:center;z-index:3200;padding:20px}
+  .dev-back.open{display:flex}
+  .dev-box{width:100%;max-width:720px;background:#fff;border:1px solid #e4e8ef;border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.3);overflow:hidden;font-family:inherit;display:flex;flex-direction:column;max-height:92vh}
+  .dev-h{display:flex;align-items:center;justify-content:space-between;padding:15px 18px;border-bottom:1px solid #e4e8ef;font-size:16px;font-weight:800;color:#15202e;flex:0 0 auto}
+  .dev-h button{background:none;border:0;font-size:22px;color:#647184;cursor:pointer;line-height:1;padding:0 2px}
+  .dev-body{padding:16px 18px 18px;overflow-y:auto;flex:1 1 auto;min-height:0}
+  .dev-form{background:#f5f7fa;border:1px solid #e4e8ef;border-radius:12px;padding:13px 14px;margin-bottom:16px}
+  .dev-flbl{font-size:11px;font-weight:800;color:#647184;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px}
+  #dev-content{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #e4e8ef;border-radius:10px;background:#fff;font-size:14px;font-family:inherit;color:#15202e;resize:vertical;margin-bottom:9px}
+  .dev-shot-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .dev-attach{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border:1px dashed #0e7c66;border-radius:9px;color:#0b6a58;font-size:12.5px;font-weight:700;cursor:pointer;background:#eef7f2}
+  .dev-shot-hint{font-size:11px;color:#8b95a6}
+  .dev-shot-prev{position:relative;display:inline-block;margin-top:10px}
+  .dev-shot-prev img{max-width:220px;max-height:150px;border-radius:8px;border:1px solid #e4e8ef;display:block}
+  .dev-shot-prev button{position:absolute;top:-8px;right:-8px;width:22px;height:22px;border-radius:50%;background:#15202e;color:#fff;border:0;font-size:14px;cursor:pointer;line-height:1}
+  .dev-form-foot{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-top:12px}
+  .dev-msg{font-size:12px;color:#d5443f;font-weight:600;margin-right:auto}
+  .dev-msg.ok{color:#0e7c66}
+  .dev-submit{background:#0e7c66;color:#fff;border:0;border-radius:10px;padding:10px 20px;font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit}
+  .dev-submit:disabled{opacity:.55;cursor:default}
+  .dev-list-h{font-size:11px;font-weight:800;color:#647184;text-transform:uppercase;letter-spacing:.04em;margin:4px 2px 9px}
+  .dev-list{display:flex;flex-direction:column;gap:10px}
+  .dev-card{border:1px solid #e4e8ef;border-radius:12px;padding:12px 13px;background:#fff}
+  .dev-card-top{display:flex;align-items:center;gap:8px;margin-bottom:7px;flex-wrap:wrap}
+  .dev-who{font-size:12px;font-weight:700;color:#15202e}
+  .dev-date{font-size:11px;color:#8b95a6}
+  .dev-badge{font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:20px;margin-left:auto}
+  .dev-badge.open{background:#fff3e0;color:#c26a00;border:1px solid #ffcf99}
+  .dev-badge.done{background:#e3f2ec;color:#0b6a58;border:1px solid #9ed3bf}
+  .dev-txt{font-size:13px;color:#15202e;line-height:1.5;white-space:pre-wrap;word-break:break-word;margin-bottom:8px}
+  .dev-thumb{max-width:180px;max-height:120px;border-radius:8px;border:1px solid #e4e8ef;cursor:zoom-in;display:block}
+  .dev-note{margin-top:9px;padding:8px 10px;background:#e3f2ec;border:1px solid #9ed3bf;border-radius:8px;font-size:12px;color:#0b6a58;line-height:1.5}
+  .dev-admin{margin-top:10px;border-top:1px dashed #e4e8ef;padding-top:9px}
+  .dev-admin textarea{width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #e4e8ef;border-radius:8px;font-size:12.5px;font-family:inherit;resize:vertical;margin-bottom:7px}
+  .dev-admin-row{display:flex;gap:8px;justify-content:flex-end}
+  .dev-btn-done{background:#0e7c66;color:#fff;border:0;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+  .dev-btn-del{background:#fff;color:#d5443f;border:1px solid #f0c4bf;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+  .dev-empty{font-size:12.5px;color:#8b95a6;text-align:center;padding:22px 0}
+  .dev-lightbox{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:4000;padding:20px;cursor:zoom-out}
+  .dev-lightbox.open{display:flex}
+  .dev-lightbox img{max-width:96vw;max-height:92vh;border-radius:8px}
+  @media (max-width:640px){
+    .dev-back{padding:0}
+    .dev-box{max-width:100%;width:100%;height:100vh;height:100dvh;max-height:100dvh;border-radius:0;border:0}
+  }
+</style>
+<div id="dev-modal" class="dev-back">
+  <div class="dev-box">
+    <div class="dev-h"><span>🛠 개발 요청</span><button id="dev-x" title="닫기">×</button></div>
+    <div class="dev-body">
+      <div class="dev-form">
+        <div class="dev-flbl">새 요청 작성</div>
+        <textarea id="dev-content" rows="3" placeholder="개선하고 싶은 점이나 오류 내용을 적어주세요."></textarea>
+        <div class="dev-shot-row">
+          <label class="dev-attach" for="dev-file">📎 스크린샷 첨부 (필수)</label>
+          <input type="file" id="dev-file" accept="image/*" hidden>
+          <span class="dev-shot-hint">이미지를 선택하거나, 캡처 후 여기에 붙여넣기(Cmd/Ctrl+V)</span>
+        </div>
+        <div id="dev-shot-prev" class="dev-shot-prev" style="display:none"><img id="dev-shot-img" alt="첨부 미리보기"><button type="button" id="dev-shot-clear" title="제거">×</button></div>
+        <div class="dev-form-foot"><span class="dev-msg" id="dev-msg"></span><button class="dev-submit" id="dev-submit">요청 보내기</button></div>
+      </div>
+      <div class="dev-list-h" id="dev-list-h">내 요청</div>
+      <div id="dev-list" class="dev-list"></div>
+    </div>
+  </div>
+</div>
+<div id="dev-lightbox" class="dev-lightbox"><img id="dev-lightbox-img" alt="스크린샷"></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.14.2/dist/leaflet-geoman.min.js"></script>
 <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
@@ -2423,6 +2492,73 @@ function openSettings(){ const m=$('set-modal'); if(!m) return; const e=$('set-e
     sv.disabled=false;
   };
   applySettings();
+})();
+
+/* ===== 개발 요청 게시판 — 로그인 기반(작성자 본인/관리자만 조회) · 스크린샷 필수 · 반영완료 안내 ===== */
+(function(){
+  const openBtn=$('btn-dev'); if(!openBtn) return;
+  const modal=$('dev-modal'), lb=$('dev-lightbox'), lbImg=$('dev-lightbox-img');
+  let shot=null;   // 압축 base64 data URL
+  const SHOT_RE=/^data:image\/(png|jpeg|jpg|webp|gif);base64,[A-Za-z0-9+/=]+$/;
+  function msg(t,ok){ const m=$('dev-msg'); if(!m)return; m.textContent=t||''; m.className='dev-msg'+(ok?' ok':''); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function fmtDate(s){ try{ const d=new Date(s),p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}.${p(d.getMonth()+1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; }catch(e){ return ''; } }
+  // 스크린샷 압축(최대 1400px, JPEG 0.7)
+  function compress(blob){ return new Promise((res,rej)=>{ const img=new Image(),url=URL.createObjectURL(blob);
+    img.onload=()=>{ let w=img.naturalWidth,h=img.naturalHeight,mx=1400; if(w>mx){h=Math.round(h*mx/w);w=mx;} if(h>mx){w=Math.round(w*mx/h);h=mx;}
+      const c=document.createElement('canvas'); c.width=w;c.height=h; const x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,w,h); x.drawImage(img,0,0,w,h); URL.revokeObjectURL(url);
+      try{ res(c.toDataURL('image/jpeg',0.7)); }catch(e){ rej(e); } };
+    img.onerror=()=>{ URL.revokeObjectURL(url); rej(new Error('이미지를 읽지 못했습니다.')); }; img.src=url; }); }
+  async function setShot(blob){ if(!blob)return; try{ shot=await compress(blob); $('dev-shot-img').src=shot; $('dev-shot-prev').style.display='inline-block'; msg(''); }catch(e){ msg('이미지 처리 실패: '+((e&&e.message)||e)); } }
+  function clearShot(){ shot=null; $('dev-file').value=''; $('dev-shot-prev').style.display='none'; $('dev-shot-img').src=''; }
+  $('dev-file').addEventListener('change',e=>{ const f=e.target.files&&e.target.files[0]; if(f) setShot(f); });
+  $('dev-shot-clear').onclick=clearShot;
+  document.addEventListener('paste',e=>{ if(!modal.classList.contains('open'))return; const items=(e.clipboardData&&e.clipboardData.items)||[]; for(const it of items){ if(it.type&&it.type.indexOf('image')===0){ const b=it.getAsFile(); if(b){ setShot(b); e.preventDefault(); break; } } } });
+  function zoom(src){ lbImg.src=src; lb.classList.add('open'); }
+  lb.onclick=()=>{ lb.classList.remove('open'); lbImg.src=''; };
+  function badge(s){ return s==='done'?'<span class="dev-badge done">✅ 반영됨</span>':'<span class="dev-badge open">검토중</span>'; }
+  async function markDone(id,note){ try{ const {error}=await _sb.from('dev_requests').update({status:'done',admin_note:(note||'').trim()||null,resolved_at:new Date().toISOString()}).eq('id',id); if(error)throw error; loadList(); }catch(e){ alert('반영 처리 실패: '+((e&&e.message)||e)); } }
+  async function reopen(id){ try{ await _sb.from('dev_requests').update({status:'open',resolved_at:null}).eq('id',id); loadList(); }catch(e){} }
+  async function del(id){ if(!confirm('이 요청을 삭제할까요?'))return; try{ const {error}=await _sb.from('dev_requests').delete().eq('id',id); if(error)throw error; loadList(); }catch(e){ alert('삭제 실패: '+((e&&e.message)||e)); } }
+  window.__dev={zoom,markDone,reopen,del};
+  function render(rows){
+    const box=$('dev-list'),hd=$('dev-list-h'); hd.textContent=_isAdmin?`전체 요청 (${rows.length})`:'내 요청';
+    if(!rows.length){ box.innerHTML='<div class="dev-empty">아직 등록된 요청이 없습니다.</div>'; return; }
+    box.innerHTML=rows.map(r=>{
+      const who=_isAdmin?`<span class="dev-who">${esc(r.email||'-')}</span>`:'';
+      const safe=(r.shot&&SHOT_RE.test(r.shot))?r.shot:'';
+      const thumb=safe?`<img class="dev-thumb" src="${safe}" alt="스크린샷" onclick="__dev.zoom(this.src)">`:'';
+      const note=(r.status==='done')?`<div class="dev-note"><b>✅ 반영 완료</b>${r.admin_note?' · '+esc(r.admin_note):''}</div>`:'';
+      let admin='';
+      if(_isAdmin){
+        if(r.status==='open') admin=`<div class="dev-admin"><textarea id="dn-${r.id}" rows="2" placeholder="반영 안내 코멘트(선택) — 작성자에게 표시됩니다"></textarea><div class="dev-admin-row"><button class="dev-btn-del" onclick="__dev.del('${r.id}')">삭제</button><button class="dev-btn-done" onclick="__dev.markDone('${r.id}', document.getElementById('dn-${r.id}').value)">반영 처리</button></div></div>`;
+        else admin=`<div class="dev-admin"><div class="dev-admin-row"><button class="dev-btn-del" onclick="__dev.del('${r.id}')">삭제</button><button class="dev-btn-del" onclick="__dev.reopen('${r.id}')">검토중으로</button></div></div>`;
+      } else if(r.status!=='done'){ admin=`<div class="dev-admin"><div class="dev-admin-row"><button class="dev-btn-del" onclick="__dev.del('${r.id}')">삭제</button></div></div>`; }
+      return `<div class="dev-card"><div class="dev-card-top">${who}<span class="dev-date">${fmtDate(r.created_at)}</span>${badge(r.status)}</div><div class="dev-txt">${esc(r.content)}</div>${thumb}${note}${admin}</div>`;
+    }).join('');
+  }
+  async function loadList(){ const box=$('dev-list'); if(!_sb||!_authUser){ box.innerHTML='<div class="dev-empty">로그인 후 이용할 수 있습니다.</div>'; return; }
+    box.innerHTML='<div class="dev-empty">불러오는 중…</div>';
+    try{ const {data,error}=await _sb.from('dev_requests').select('*').order('created_at',{ascending:false}); if(error)throw error; render(data||[]); }
+    catch(e){ box.innerHTML='<div class="dev-empty">목록을 불러오지 못했습니다.</div>'; }
+  }
+  async function submit(){
+    const content=($('dev-content').value||'').trim();
+    if(!_sb||!_authUser){ msg('로그인이 필요합니다.'); return; }
+    if(!content){ msg('내용을 입력하세요.'); return; }
+    if(!shot||!SHOT_RE.test(shot)){ msg('스크린샷을 첨부해야 제출할 수 있습니다.'); return; }
+    const btn=$('dev-submit'); btn.disabled=true; msg('보내는 중…');
+    try{ const {error}=await _sb.from('dev_requests').insert({ user_id:_authUser.id, email:_authUser.email, content, shot, status:'open' }); if(error)throw error;
+      $('dev-content').value=''; clearShot(); msg('요청이 접수되었습니다 ✓',true); loadList();
+    }catch(e){ msg('전송 실패: '+((e&&e.message)||e)); }
+    btn.disabled=false;
+  }
+  $('dev-submit').onclick=submit;
+  function open(){ if(!_authUser){ if(typeof showAuthGate==='function') showAuthGate(); return; } modal.classList.add('open'); msg(''); loadList(); }
+  function close(){ modal.classList.remove('open'); }
+  openBtn.onclick=open; $('dev-x').onclick=close;
+  modal.addEventListener('click',e=>{ if(e.target===modal) close(); });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if(lb.classList.contains('open')) lb.classList.remove('open'); else if(modal.classList.contains('open')) close(); } });
 })();
 
 initAuth();
