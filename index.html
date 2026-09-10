@@ -297,7 +297,12 @@
   .leaflet-bar a,.leaflet-control-layers{border-radius:10px!important;border:1px solid var(--line)!important;box-shadow:var(--shadow)!important;color:var(--ink)!important}
   .leaflet-bar a{background:var(--card)!important}
   .leaflet-bar a:hover{background:var(--surface-2)!important;color:var(--accent)!important}
-  .leaflet-control-layers-toggle{background-color:var(--card)!important}
+  .leaflet-control-layers{border-radius:13px!important;overflow:hidden}
+  .leaflet-control-layers-toggle,.leaflet-retina .leaflet-control-layers-toggle{
+    width:42px!important;height:42px!important;background-color:var(--card)!important;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230e7c66' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolygon points='12 2 2 7 12 12 22 7 12 2'/%3E%3Cpolyline points='2 17 12 22 22 17'/%3E%3Cpolyline points='2 12 12 17 22 12'/%3E%3C/svg%3E")!important;
+    background-size:23px 23px!important;background-position:center!important;background-repeat:no-repeat!important;transition:background-color .15s}
+  .leaflet-control-layers-toggle:hover{background-color:var(--accent-soft,#e1f2ee)!important}
   .leaflet-control-attribution{background:rgba(255,255,255,.8)!important;color:#8b95a6!important;font-size:10px!important}
 
   /* account chip + legal footer */
