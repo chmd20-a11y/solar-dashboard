@@ -155,7 +155,9 @@
   #right{background:var(--bg);border-left:1px solid var(--line);padding:16px 14px 26px}
   /* 반투명 패널(플로팅/시트) 위 보조텍스트·아이콘 시인성 보완 — 패널 한정(모달·오버레이 무영향) */
   /* 얇은 보조텍스트만 500으로 살짝 굵게(헤딩·버튼은 자기 weight 유지) + 토큰 더 진하게 + 흰색 글로우 강화 */
-  #left,#right{--muted:#253340;--faint:#384654;font-weight:600;text-shadow:0 1px 2px rgba(255,255,255,.7),0 0 3px rgba(255,255,255,.55)}
+  #left,#right{--muted:#253340;--faint:#384654;font-weight:700;text-shadow:0 1px 2px rgba(255,255,255,.7),0 0 3px rgba(255,255,255,.55)}
+  /* 명시적 600 본문요소(라벨·상세행 제목)도 700로 맞춰 굵기 역전 방지 */
+  #left .fld label,#right .fld label,#left .feas-row .ft .t,#right .feas-row .ft .t{font-weight:700}
   #center{background:#d7dde4}
   .col::-webkit-scrollbar{width:11px}
   .col::-webkit-scrollbar-thumb{background:#ccd4de;border-radius:9px;border:3px solid var(--bg)}
@@ -1445,7 +1447,7 @@ function renderSepChips(){
     const b=document.createElement('span'); b.className='sepchip';
     b.textContent=r?r+'m':'끄기';
     const on=SEP_RADIUS===r;
-    b.style.cssText='cursor:pointer;padding:2px 10px;border-radius:12px;font-size:11px;border:1px solid var(--line,#2a3644);'+(on?'background:#ffd54a;color:#111;font-weight:700':'color:var(--muted);font-weight:600');
+    b.style.cssText='cursor:pointer;padding:2px 10px;border-radius:12px;font-size:11px;border:1px solid var(--line,#2a3644);'+(on?'background:#ffd54a;color:#111;font-weight:700':'color:var(--muted);font-weight:700');
     b.onclick=()=>{ SEP_RADIUS=r; renderSepChips(); drawSepCircle(); if(SEP_CIRCLE){ try{ map.fitBounds(SEP_CIRCLE.getBounds().pad(0.4)); }catch(e){} } };
     box.appendChild(b);
   });
