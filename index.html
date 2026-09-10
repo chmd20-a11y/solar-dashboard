@@ -516,6 +516,10 @@
   .fd-prob{display:flex;gap:8px;padding:7px 0;border-bottom:1px solid var(--line-2);font-size:12.5px;color:var(--ink)}
   .fd-note{font-size:10.5px;color:var(--faint);line-height:1.5;margin-top:13px;border-top:1px dashed var(--line);padding-top:8px}
   .feas-clickable{cursor:pointer}
+  .feas-roadview{cursor:pointer;margin-top:8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:12px;font-weight:700;color:var(--ink);background:var(--card);display:flex;align-items:center;gap:6px}
+  .feas-roadview:hover{filter:brightness(.96)}
+  .feas-roadview .ic-sm{flex:none;stroke:var(--muted)}
+  .feas-roadview .rv-hint{margin-left:auto;font-weight:600;font-size:11px;color:var(--muted)}
   .feas-more{margin-left:auto;font-size:11px;font-weight:700;opacity:.85;white-space:nowrap}
   .feas-sum.feas-clickable:hover,.feas-region-h.feas-clickable:hover{filter:brightness(.97)}
 </style>
@@ -1405,6 +1409,16 @@ function renderSepChips(){
     box.appendChild(b);
   });
 }
+// ── 로드뷰 열기 (격리 지점) ─────────────────────────────────────────
+// 지금은 카카오 로드뷰를 '새 창(외부 링크)'으로 연다 → API 키·비용·상업확인 불필요.
+// 향후 '앱 안 임베드'로 승격할 때는 이 함수 본문만 교체하면 된다
+// (카카오 지도 Web SDK 로드 + RoadviewClient.getNearestPanoId → 앱 내 팝업 표시).
+// 버튼·호출부는 그대로라 다른 코드는 손댈 필요가 없다.
+function openRoadview(lat, lng){
+  if(!isFinite(lat)||!isFinite(lng)){ setStatus('로드뷰를 열 좌표를 찾지 못했습니다.'); return; }
+  window.open('https://map.kakao.com/link/roadview/'+lat+','+lng, '_blank', 'noopener,noreferrer');
+}
+
 // 한 구역의 타당성 rows HTML(지목·하천·경사·용도·규제·계통) — 구역별 각각 조회
 async function feasRegionHTML(region, idx, multi){
   const layer=region&&region.layer, parcel=(region&&region.parcel)||{};
@@ -1497,6 +1511,7 @@ async function feasRegionHTML(region, idx, multi){
     h+=row('na', '계통 연계 여유', '인근 변전소 조회 실패');
   }
   if(!multi){ h+=row('na', '공시지가', jiga); }
+  if(gcenter){ h+=`<div class="feas-roadview" data-roadview="${gcenter[1]},${gcenter[0]}" title="이 부지 주변을 로드뷰로 봅니다"><svg class="ic ic-sm" viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/></svg>로드뷰로 주변 보기<span class="rv-hint">새 창 ▸</span></div>`; }
   return h;
 }
 async function renderFeasibility(){
@@ -2185,6 +2200,7 @@ $('feas-close').onclick=()=>feasDetailOpen(false);
 $('feas-overlay').addEventListener('click', e=>{ if(e.target===$('feas-overlay')) feasDetailOpen(false); });
 document.addEventListener('keydown', e=>{ if(e.key==='Escape' && $('feas-overlay').classList.contains('open')) feasDetailOpen(false); });
 $('feas-body').addEventListener('click', e=>{ const t=e.target.closest('[data-region-detail]'); if(t) openFeasDetail(+t.dataset.regionDetail); });
+$('feas-body').addEventListener('click', e=>{ const r=e.target.closest('[data-roadview]'); if(r){ const [la,ln]=r.dataset.roadview.split(',').map(Number); openRoadview(la,ln); } });
 $('q-set-hd').onclick=()=>$('q-set').classList.toggle('closed');
 ['q-w','q-qty','q-unit','q-modwon','q-plants','q-apply','q-hours','q-addr'].forEach(id=> $(id).addEventListener('input', quoteCalc));
 $('q-modsel').addEventListener('change', e=>{ const p=e.target.value.split('|'); $('q-modwon').value=p[0]; quoteCalc(); });
