@@ -265,6 +265,7 @@
   .feas-row .ft .d{color:var(--muted)}
   .feas-row a{color:var(--accent2)}
   .dot.ok{background:var(--good)}.dot.warn{background:var(--warn)}.dot.bad{background:var(--bad)}.dot.na{background:#b4bdca}
+  .feas-hdot{width:11px;height:11px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 0 3px rgba(21,32,46,.06)}
   .jibun-list{border:1px solid var(--line);background:var(--surface-2);color:var(--ink)}
   .jibun-list div{border-bottom:1px solid var(--line-2)}
   .jibun-list::-webkit-scrollbar-thumb{background:#cbd3dd}
@@ -407,7 +408,7 @@
     </div>
 
     <div class="sec collapsed" id="sec-feas">
-      <h2><span class="n"><svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="m9 14 2 2 4-4"/></svg></span> 설치 가능성 진단</h2>
+      <h2><span class="n"><svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="m9 14 2 2 4-4"/></svg></span> 설치 가능성 진단<span class="dot feas-hdot" id="feas-dot" style="display:none" title=""></span></h2>
       <div id="feas-body"><div class="feas-empty">지번 검색 또는 경계 그리기로 부지를 지정하면 설치 가능성이 표시됩니다.</div></div>
     </div>
 
@@ -1240,7 +1241,7 @@ function rebuildSelection(fit){
   syncPrimary();
   _rivKey='';
   renderSelList();
-  if(uni){ document.getElementById('sec-feas')?.classList.remove('collapsed'); runLayout(); }
+  if(uni){ runLayout(); }   // 설치 가능성 진단은 자동으로 펼치지 않음 — 헤더 신호등만 갱신, 필요 시 사용자가 펼침
   else { panelLayer.clearLayers(); bufferLayer.clearLayers(); resetStats(); renderFeasibility(); setStatus('⚠️ 도로 지번만 선택됨 — 대지 등 실사용 지번을 추가하세요.'); }
 }
 function renderSelList(){
@@ -1607,11 +1608,16 @@ async function feasRegionHTML(region, idx, multi){
 }
 async function renderFeasibility(){
   const body=$('feas-body'); if(!body) return;
-  if(!REGIONS.length){ body.innerHTML='<div class="feas-empty">지번 검색 또는 경계 그리기로 부지를 지정하면 설치 가능성이 표시됩니다.</div>'; return; }
+  if(!REGIONS.length){ body.innerHTML='<div class="feas-empty">지번 검색 또는 경계 그리기로 부지를 지정하면 설치 가능성이 표시됩니다.</div>'; const _fd0=$('feas-dot'); if(_fd0)_fd0.style.display='none'; return; }
   body.innerHTML='<div class="feas-empty">설치 가능성 진단 중…'+(REGIONS.length>1?` (구역 ${REGIONS.length}개)`:'')+'</div>';
   const multi = REGIONS.length>1;
   const sections=[];
   for(let i=0;i<REGIONS.length;i++){ try{ sections.push(await feasRegionHTML(REGIONS[i], i, multi)); }catch(e){} }
+  // 전체 판정(신호등) — 구역별 worst 중 최악을 헤더에 표기 (녹색=가능, 주황=일부검토, 빨강=제약)
+  let _ov='ok';
+  for(const _r of REGIONS){ const _w=(_r._feas&&_r._feas.worst)||'na'; if(_w==='bad'){_ov='bad';break;} if(_w==='warn')_ov='warn'; }
+  const _fd=$('feas-dot');
+  if(_fd){ _fd.className='dot feas-hdot '+_ov; _fd.style.display='inline-block'; _fd.title=_ov==='ok'?'설치 가능':(_ov==='warn'?'일부 검토 필요':'설치 제약 있음'); }
   const area=$('r-land').textContent, kw=$('r-kw').textContent, cnt=$('r-count').textContent;
   const hasLayout = !!(window.LAYOUT && window.LAYOUT.placed && window.LAYOUT.placed.length);
   const areaLbl = ((window.LAYOUT&&window.LAYOUT.roadArea)||0)>1?'실사용부지':'부지';
@@ -1671,8 +1677,7 @@ map.on('pm:create', async e=>{
   setStatus(`📍 구역 ${idx+1} 추가 · 지번 조회 중…`);
   await setRegionParcel(region);
   window.LAYOUT=null; resetStats();
-  document.getElementById('sec-feas')?.classList.remove('collapsed');
-  renderFeasibility();
+  renderFeasibility();   // 설치 가능성 진단은 자동으로 펼치지 않음 — 헤더 신호등만 갱신
   setStatus(`구역 <b>${REGIONS.length}개</b> 지정됨 · <b>배치 계산</b>을 누르면 전 구역 합산 · ‘경계 그리기’로 더 추가 가능`);
 });
 
