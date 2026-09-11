@@ -1165,6 +1165,14 @@
   body.a2hs-ios .a2hs-only-ios{display:block}
   body.a2hs-ios .a2hs-only-other{display:none}
   body:not(.a2hs-ios) .a2hs-steps{display:none}
+  /* 인앱브라우저(카톡 등) 안내 배너 */
+  #iab-banner{position:fixed;top:0;left:0;right:0;z-index:6000;display:none;align-items:center;gap:9px;padding:10px 12px;background:#15202e;color:#fff;font-size:13px;box-shadow:0 2px 12px rgba(0,0,0,.35);font-family:"Pretendard","Apple SD Gothic Neo",-apple-system,sans-serif}
+  #iab-banner.show{display:flex}
+  #iab-banner .iab-txt{flex:1;line-height:1.4}
+  #iab-banner .iab-txt b{color:#e7cf92}
+  #iab-banner #iab-open{flex:0 0 auto;background:#a98a45;color:#fff;border:0;border-radius:8px;padding:8px 12px;font-size:12.5px;font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap}
+  #iab-banner #iab-close{flex:0 0 auto;background:transparent;border:0;color:#93a3b5;font-size:16px;cursor:pointer;padding:2px 4px;line-height:1}
+  .a2hs-toast{display:block;font-size:12px;color:#12925a;font-weight:700;margin-top:8px;min-height:15px}
   /* 항목 설명 툴팁(ⓘ) — PC 마우스오버 + 모바일 탭 */
   .st-info{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:#dbe2ea;color:#5a6675;font-size:10px;font-weight:800;line-height:1;cursor:pointer;vertical-align:middle;margin-left:3px;user-select:none;-webkit-tap-highlight-color:transparent}
   /* 툴팁: body에 고정(fixed)으로 띄워 화면 안으로 위치 계산 → 모달에 잘리지 않음 */
@@ -1193,6 +1201,28 @@
     #quote-overlay{padding:calc(16px + env(safe-area-inset-top)) 10px calc(16px + env(safe-area-inset-bottom))}
   }
 </style>
+<!-- 인앱브라우저(카톡 등) 안내 배너 -->
+<div id="iab-banner">
+  <span class="iab-txt">📱 더 편하게 쓰시려면 <b>브라우저</b>에서 열어주세요</span>
+  <button id="iab-open">브라우저에서 열기</button>
+  <button id="iab-close" aria-label="닫기">✕</button>
+</div>
+<!-- 인앱브라우저 → 진짜 브라우저로 열기 안내(아이폰/아이패드) -->
+<div id="iab-modal" class="a2hs-back">
+  <div class="a2hs-card">
+    <button class="a2hs-x" id="iab-x" aria-label="닫기">✕</button>
+    <div class="a2hs-tile"><svg viewBox="0 0 48 48" fill="none"><rect x="6" y="6" width="36" height="36" rx="9.5" stroke="currentColor" stroke-width="2.1"/><path d="M6 24h36M24 6v36" stroke="currentColor" stroke-width="1.3" opacity=".4"/><circle cx="24" cy="24" r="3.1" fill="currentColor"/><path d="M16 20v-4h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity=".75"/><path d="M32 28v4h-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity=".75"/></svg></div>
+    <h3 class="a2hs-h">브라우저에서 열어주세요</h3>
+    <p class="a2hs-lead">지금은 <b>카톡 안의 브라우저</b>라 홈 화면 추가가 안 돼요. 아래처럼 <b>Safari</b>로 열면 됩니다.</p>
+    <ol class="a2hs-steps" style="display:flex">
+      <li><span class="a2hs-n">1</span><div class="a2hs-txt">오른쪽 아래 <b>더보기</b>를 누르세요<span class="a2hs-a2h"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>더보기</span></div></li>
+      <li><span class="a2hs-n">2</span><div class="a2hs-txt"><b>‘Safari로 열기’</b>를 누르세요<span class="a2hs-a2h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M15.6 8.4l-2.1 5.1-5.1 2.1 2.1-5.1z" fill="currentColor" stroke="none"/></svg>Safari로 열기</span></div></li>
+      <li><span class="a2hs-n">3</span><div class="a2hs-txt">열린 <b>Safari</b>에서 설정 → <b>홈 화면에 추가</b>를 하면 끝!</div></li>
+    </ol>
+    <button class="a2hs-ok" id="iab-copy" style="background:#a98a45">🔗 또는 주소 복사하기</button>
+    <span class="a2hs-toast" id="iab-toast"></span>
+  </div>
+</div>
 <!-- 홈 화면에 추가 안내(아이폰/아이패드) -->
 <div id="a2hs-modal" class="a2hs-back">
   <div class="a2hs-card">
@@ -3159,8 +3189,42 @@ function updateInstallBtn(){
   b.disabled=false; b.classList.remove('done'); b.textContent='📲 홈 화면에 추가';
   if(note) note.textContent = _deferredPrompt ? '버튼을 누르면 설치창이 바로 열립니다.' : '버튼을 누르면 추가 방법을 그림으로 안내해 드려요.';
 }
+// 카톡 등 인앱브라우저 감지(홈 화면 추가는 진짜 브라우저에서만 됨)
+function inAppBrowser(){ const ua=(navigator.userAgent||'').toLowerCase();
+  if(/kakaotalk/.test(ua)) return 'kakao';
+  if(/instagram/.test(ua)) return 'instagram';
+  if(/fban|fbav|fb_iab/.test(ua)) return 'facebook';
+  if(/\bline\//.test(ua)) return 'line';
+  if(/naver\(inapp|inapp;\s*naver/.test(ua)) return 'naver';
+  if(/daumapps/.test(ua)) return 'daum';
+  return null;
+}
+function openExternal(){   // 진짜 브라우저로 열기(안드로이드=자동, iOS=안내)
+  const url=location.href, ua=(navigator.userAgent||'').toLowerCase(), which=inAppBrowser();
+  if(/android/.test(ua)){
+    if(which==='kakao'){ location.href='kakaotalk://web/openExternal?url='+encodeURIComponent(url); return; }
+    if(which==='line'){ location.href=url+(url.indexOf('?')>-1?'&':'?')+'openExternalBrowser=1'; return; }
+    location.href='intent://'+url.replace(/^https?:\/\//,'')+'#Intent;scheme=https;package=com.android.chrome;end';
+    return;
+  }
+  openIAB();   // iOS 등은 앱이 브라우저를 강제로 못 열어 → 그림 안내 + 주소 복사
+}
+function fallbackCopy(text,cb){ try{ const t=document.createElement('textarea'); t.value=text; t.style.position='fixed'; t.style.top='-1000px'; document.body.appendChild(t); t.focus(); t.select(); document.execCommand('copy'); document.body.removeChild(t); cb&&cb(true); }catch(e){ cb&&cb(false); } }
+function copyUrl(){ const url=location.href, toast=document.getElementById('iab-toast'), btn=document.getElementById('iab-copy');
+  const ok=s=>{ if(toast) toast.textContent = s?'✓ 주소가 복사됐어요 — Safari 주소창을 길게 눌러 붙여넣기 하세요.':'복사가 안 됐어요. 주소를 길게 눌러 직접 복사해주세요.'; if(btn&&s) btn.textContent='✓ 복사됨'; };
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(url).then(()=>ok(true)).catch(()=>fallbackCopy(url,ok)); } else fallbackCopy(url,ok);
+}
+function openIAB(){ const m=document.getElementById('iab-modal'); if(m){ const t=document.getElementById('iab-toast'); if(t) t.textContent=''; m.classList.add('open'); } }
+function closeIAB(){ const m=document.getElementById('iab-modal'); if(m) m.classList.remove('open'); }
+function initIABBanner(){ const which=inAppBrowser(); if(!which||isStandaloneApp()) return;
+  try{ if(sessionStorage.getItem('iab_dismiss')==='1') return; }catch(e){}
+  const banner=document.getElementById('iab-banner'), openBtn=document.getElementById('iab-open'); if(!banner) return;
+  if(openBtn) openBtn.textContent = /android/i.test(navigator.userAgent) ? '브라우저에서 열기' : 'Safari로 여는 법';
+  banner.classList.add('show');
+}
 async function doInstall(){
   if(isStandaloneApp()) return;
+  if(inAppBrowser()){ openExternal(); return; }   // 카톡 등 인앱브라우저면 먼저 진짜 브라우저로 유도
   if(_deferredPrompt){ try{ _deferredPrompt.prompt(); await _deferredPrompt.userChoice; _deferredPrompt=null; updateInstallBtn(); return; }catch(e){ } }
   openA2HS();   // 아이폰/아이패드(및 설치창 미지원 브라우저) = 그림 안내
 }
@@ -3169,8 +3233,15 @@ function closeA2HS(){ const m=document.getElementById('a2hs-modal'); if(m) m.cla
 { const b=document.getElementById('st-install'); if(b) b.onclick=doInstall;
   ['a2hs-x','a2hs-ok'].forEach(id=>{ const el=document.getElementById(id); if(el) el.onclick=closeA2HS; });
   const ov=document.getElementById('a2hs-modal'); if(ov) ov.addEventListener('click',e=>{ if(e.target===ov) closeA2HS(); });
-  document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElementById('a2hs-modal')?.classList.contains('open')) closeA2HS(); });
+  // 인앱브라우저 배너·안내모달 연결
+  const ibo=document.getElementById('iab-open'); if(ibo) ibo.onclick=()=>{ if(/android/i.test(navigator.userAgent)) openExternal(); else openIAB(); };
+  const ibc=document.getElementById('iab-close'); if(ibc) ibc.onclick=()=>{ const bn=document.getElementById('iab-banner'); if(bn) bn.classList.remove('show'); try{ sessionStorage.setItem('iab_dismiss','1'); }catch(e){} };
+  const ibx=document.getElementById('iab-x'); if(ibx) ibx.onclick=closeIAB;
+  const ibcopy=document.getElementById('iab-copy'); if(ibcopy) ibcopy.onclick=copyUrl;
+  const iov=document.getElementById('iab-modal'); if(iov) iov.addEventListener('click',e=>{ if(e.target===iov) closeIAB(); });
+  document.addEventListener('keydown',e=>{ if(e.key!=='Escape') return; if(document.getElementById('a2hs-modal')?.classList.contains('open')) closeA2HS(); if(document.getElementById('iab-modal')?.classList.contains('open')) closeIAB(); });
   try{ updateInstallBtn(); }catch(e){}
+  try{ initIABBanner(); }catch(e){}
 }
 function openSettings(){ const m=$('set-modal'); if(!m) return; const e=$('set-email'); if(e) e.textContent=(_authUser&&_authUser.email)||'–'; const msg=$('set-msg'); if(msg){ msg.textContent=''; msg.className='set-msg'; } if($('set-pw1'))$('set-pw1').value=''; if($('set-pw2'))$('set-pw2').value=''; populateSettings(); try{ updateInstallBtn(); }catch(_){ } const sm=$('st-savemsg'); if(sm){ sm.textContent=''; sm.className='set-msg'; } m.classList.add('open'); }
 // 항목 설명 툴팁(ⓘ): body에 고정 버블로 띄우고 화면 안으로 위치 보정 → 모달에 잘리지 않음. PC 마우스오버 + 모바일 탭.
