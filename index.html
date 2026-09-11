@@ -687,7 +687,7 @@
       <div class="fld"><label>열 간격 (그림자 방지)</label>
         <div class="seg" id="seg-pitch"><button data-p="auto" class="on">자동</button><button data-p="manual">수동</button></div>
       </div>
-      <div class="fld" id="pitch-manual" style="display:none"><label>수동 열 간격</label><div class="rng"><input type="range" id="o-pitch" min="10" max="120" value="50"><b id="v-pitch">5.0 m</b></div></div>
+      <div class="fld" id="pitch-manual" style="display:none"><label>모듈 열 이격 <span style="color:var(--faint);font-weight:500">· 어레이 앞뒤 틈</span></label><div class="row" style="align-items:center;gap:6px"><input type="number" id="o-pitch" min="0" max="10" step="0.01" value="2.5" style="flex:1"><b style="min-width:auto;color:var(--muted)">m</b></div><div style="font-size:10.5px;color:var(--muted);margin-top:4px">실측 도면의 <b>모듈간격</b>(예: 1.62)을 그대로 입력 · 행 피치 = 어레이 깊이 + 이 값<span id="v-pitch"></span></div></div>
     </div>
 
     <button class="btn" id="btn-cost" style="margin-bottom:8px"><svg class="ic ic-sm" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="14" x2="8.01" y2="14"/><line x1="12" y1="14" x2="12.01" y2="14"/><line x1="16" y1="14" x2="16" y2="18"/><line x1="8" y1="18" x2="12" y2="18"/></svg>원가·마진 계산 <span style="font-weight:500;font-size:11px;color:var(--muted)">· 내부용</span></button>
@@ -1420,7 +1420,7 @@ let selected = [];                               // 부지 찾기에서 추가�
 const canvasRenderer = L.canvas({padding:0.5});
 
 // ---------- state ----------
-const S = {type:'ground', tilt:15, az:0, setback:2.0, pitchMode:'auto', pitch:5.0, stack:2, optimize:true, incidence:25};
+const S = {type:'ground', tilt:15, az:0, setback:2.0, pitchMode:'auto', pitch:2.5, stack:2, optimize:true, incidence:25};   // pitch = 수동 시 어레이 앞뒤 이격(틈, m)
 
 // ---------- UI wiring ----------
 const $=id=>document.getElementById(id);
@@ -1898,7 +1898,7 @@ function resetAll(){
   document.querySelector('#seg-opt button[data-o="1"]')?.click();       // 자동(정남) → 수동방위 숨김
   fire('o-az',0);
   document.querySelector('#seg-pitch button[data-p="auto"]')?.click();  // 자동 → 수동 열간격 숨김
-  fire('o-pitch',50);                                                   // 5.0m
+  fire('o-pitch',2.5);                                                  // 어레이 앞뒤 이격(틈) 2.5m
   // 4) 결과창 닫기·안내 (지도 배율/위치는 건드리지 않음)
   try{ showResults(false); }catch(e){}
   setStatus('초기화되었습니다. <span style="color:var(--muted)">지도 배율은 유지됩니다.</span>');
@@ -1929,7 +1929,7 @@ $('m-stack').oninput = e=>{ S.stack=+e.target.value; $('v-stack').innerHTML=S.st
 // 모듈각도(15°)·입사각(25°)은 고정 — 조절 UI 제거(S.tilt/S.incidence 기본값 사용)
 $('o-az').oninput = e=>{ S.az=+e.target.value; $('v-az').innerHTML = S.az===0?'정남':(S.az<0?'남동 '+(-S.az)+'°':'남서 '+S.az+'°'); };
 $('o-set').oninput = e=>{ S.setback=(+e.target.value)/10; $('v-set').innerHTML=S.setback.toFixed(1)+' m'; };
-$('o-pitch').oninput = e=>{ S.pitch=(+e.target.value)/10; $('v-pitch').innerHTML=S.pitch.toFixed(1)+' m'; };
+$('o-pitch').oninput = e=>{ S.pitch=Math.max(0, parseFloat(e.target.value)||0); };   // 수동 = 어레이 앞뒤 이격(틈, m)
 document.querySelectorAll('#seg-type button').forEach(b=>b.onclick=()=>{ document.querySelectorAll('#seg-type button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); S.type=b.dataset.t; });
 document.querySelectorAll('#seg-pitch button').forEach(b=>b.onclick=()=>{ document.querySelectorAll('#seg-pitch button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); S.pitchMode=b.dataset.p; $('pitch-manual').style.display = S.pitchMode==='manual'?'block':'none'; });
 document.querySelectorAll('#seg-opt button').forEach(b=>b.onclick=()=>{ document.querySelectorAll('#seg-opt button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); S.optimize=(b.dataset.o==='1'); $('az-manual').style.display = S.optimize?'none':'block'; });
@@ -2033,7 +2033,7 @@ function runLayout(){
   const alongSlope = S.stack*lSlope1 + (S.stack-1)*intra;
   const depth = alongSlope*Math.cos(tilt);
   let pitch;
-  if(S.pitchMode==='manual'){ pitch = Math.max(depth+0.1, S.pitch); }
+  if(S.pitchMode==='manual'){ pitch = depth + Math.max(0.1, S.pitch); }   // 수동 = 어레이 앞뒤 이격(틈) → 피치 = 어레이 깊이 + 틈
   else { const incR=Math.max(5,S.incidence)*Math.PI/180; pitch = depth + alongSlope*Math.sin(tilt)/Math.tan(incR); }
   const stepU = wRow + gapU;
 
