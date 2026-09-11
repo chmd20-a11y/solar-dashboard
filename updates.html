@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PLOT · 업데이트 소식</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#0a0d11">
+<meta property="og:title" content="PLOT · 업데이트 소식">
+<meta property="og:description" content="PLOT의 새 기능·개선·수정 소식을 확인하세요.">
+<meta property="og:image" content="https://solar-dashboard-seven-xi.vercel.app/og.png">
+<style>
+  :root{
+    --pu-bg:#e9edf3; --pu-card:#fff; --pu-ink:#15202e; --pu-muted:#647184; --pu-faint:#8b95a6;
+    --pu-line:#e4e8ef; --pu-line2:#eef1f6; --pu-brass:#a98a45; --pu-gold:#d8c188;
+    --pu-new:#12925a; --pu-new-s:#e6f5ec; --pu-improve:#2563eb; --pu-improve-s:#e7edfd;
+    --pu-fix:#c07d00; --pu-fix-s:#fbf1db; --pu-notice:#647184; --pu-notice-s:#eef1f6;
+    --pu-shadow:0 20px 60px rgba(15,23,40,.22); --pu-shadow-sm:0 3px 14px rgba(15,23,40,.09);
+    --pu-sans:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+    --pu-wf:"Helvetica Neue",Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--pu-sans);background:var(--pu-bg);color:var(--pu-ink);-webkit-font-smoothing:antialiased;word-break:keep-all}
+  .top{background:var(--pu-card);border-bottom:1px solid var(--pu-line)}
+  .top-in{max-width:760px;margin:0 auto;padding:18px 20px;display:flex;align-items:center;gap:12px}
+  .tile{width:40px;height:40px;flex:0 0 auto;border-radius:26%;background:radial-gradient(120% 120% at 30% 18%,#151b24,#090c10);color:var(--pu-gold);display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(216,193,136,.2)}
+  .tile svg{width:64%;height:64%;stroke:currentColor;fill:none}
+  .wm{font-family:var(--pu-wf);font-weight:300;text-transform:uppercase;letter-spacing:.24em;font-size:19px;color:#15171a;line-height:1}
+  .top .sub{font-size:12px;color:var(--pu-muted);margin-top:3px}
+  .top .home{margin-left:auto;font-size:12.5px;color:var(--pu-muted);border:1px solid var(--pu-line);border-radius:9px;padding:8px 13px;text-decoration:none;white-space:nowrap}
+  .top .home:hover{border-color:var(--pu-brass);color:var(--pu-brass)}
+  .wrap{max-width:760px;margin:0 auto;padding:18px 20px 60px}
+  .filters{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px}
+  .chip{font-size:12.5px;font-weight:700;padding:7px 14px;border-radius:20px;border:1px solid var(--pu-line);background:var(--pu-card);color:var(--pu-muted);cursor:pointer}
+  .chip.on{background:#15202e;color:#fff;border-color:#15202e}
+  .item{background:var(--pu-card);border:1px solid var(--pu-line);border-radius:16px;padding:18px 20px;margin-bottom:12px;cursor:pointer;transition:.15s}
+  .item:hover{box-shadow:var(--pu-shadow-sm);border-color:#d4dbe6}
+  .item .row{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+  .tag{font-size:11.5px;font-weight:800;padding:2px 10px;border-radius:20px}
+  .tag.new{color:var(--pu-new);background:var(--pu-new-s)}
+  .tag.improve{color:var(--pu-improve);background:var(--pu-improve-s)}
+  .tag.fix{color:var(--pu-fix);background:var(--pu-fix-s)}
+  .tag.notice{color:var(--pu-notice);background:var(--pu-notice-s)}
+  .pin{font-size:11.5px;color:var(--pu-brass);font-weight:800}
+  .date{font-size:12px;color:var(--pu-faint);margin-left:auto}
+  .item h3{font-size:16px;font-weight:800;margin:0 0 6px;line-height:1.4}
+  .item .ex{font-size:13.5px;color:var(--pu-muted);margin:0;line-height:1.6;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .empty{text-align:center;color:var(--pu-faint);padding:50px 0;font-size:14px}
+  .foot{max-width:760px;margin:0 auto;padding:0 20px 40px;color:var(--pu-faint);font-size:12px;text-align:center}
+
+  .back{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;background:rgba(8,12,18,.55);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);padding:18px}
+  .back.open{display:flex}
+  .modal{width:100%;max-width:520px;max-height:88vh;max-height:88dvh;overflow-y:auto;background:var(--pu-card);border-radius:18px;box-shadow:var(--pu-shadow)}
+  .mhead{position:sticky;top:0;background:var(--pu-card);padding:20px 22px 15px;border-bottom:1px solid var(--pu-line);border-radius:18px 18px 0 0}
+  .mhead .row{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+  .mhead .x{margin-left:auto;width:32px;height:32px;border:0;background:#f0f2f5;border-radius:9px;color:#66756c;font-size:16px;cursor:pointer}
+  .mhead h2{font-size:19px;font-weight:800;margin:0;line-height:1.35}
+  .mbody{padding:18px 22px 26px;font-size:14.5px;line-height:1.75;color:#33424f}
+  .mbody b{color:var(--pu-ink)}
+  .mbody ul{margin:10px 0;padding-left:20px}
+  .mbody li{margin:5px 0}
+  .mbody img{display:block;max-width:100%;border:1px solid var(--pu-line);border-radius:12px;margin:14px 0 4px;cursor:zoom-in}
+  .mbody .cap{font-size:11.5px;color:var(--pu-faint);text-align:center;margin-bottom:10px}
+  .lb{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;background:rgba(4,7,12,.92);padding:20px;cursor:zoom-out}
+  .lb.open{display:flex}
+  .lb img{max-width:96%;max-height:92%;border-radius:10px}
+</style>
+</head>
+<body>
+<div class="top"><div class="top-in">
+  <span class="tile"><svg viewBox="0 0 48 48" fill="none"><rect x="6" y="6" width="36" height="36" rx="9.5" stroke="currentColor" stroke-width="2.1"/><path d="M6 24h36M24 6v36" stroke="currentColor" stroke-width="1.3" opacity=".4"/><circle cx="24" cy="24" r="3.1" fill="currentColor"/><path d="M16 20v-4h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity=".75"/><path d="M32 28v4h-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity=".75"/></svg></span>
+  <div><div class="wm">PLOT</div><div class="sub">업데이트 소식</div></div>
+  <a class="home" href="/">← 앱으로</a>
+</div></div>
+
+<div class="wrap">
+  <div class="filters" id="filters"></div>
+  <div id="list"></div>
+</div>
+<div class="foot">PLOT — 부지 분석 · 자동 배치</div>
+
+<div class="back" id="back"><div class="modal" id="modal"></div></div>
+<div class="lb" id="lb"></div>
+
+<script>
+const CAT={new:{k:'new',t:'신규',e:'🟢'},improve:{k:'improve',t:'개선',e:'🔵'},fix:{k:'fix',t:'수정',e:'🟠'},notice:{k:'notice',t:'공지',e:'⚙️'}};
+const $=s=>document.querySelector(s);
+let ALL=[], filter='all';
+function tag(c){const x=CAT[c]||CAT.notice;return '<span class="tag '+x.k+'">'+x.e+' '+x.t+'</span>';}
+function strip(h){return (h||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();}
+function imgsHTML(d){ if(!d.images||!d.images.length) return '';
+  return d.images.map(src=>'<img src="'+src+'" alt="변경 화면" loading="lazy">').join('')+'<div class="cap">이미지를 누르면 크게 볼 수 있어요</div>'; }
+function openModal(id){
+  const d=ALL.find(x=>x.id===id); if(!d) return;
+  $('#modal').innerHTML='<div class="mhead"><div class="row">'+tag(d.category)+(d.pinned?'<span class="pin">📌 중요</span>':'')+'<span class="date">'+d.date+'</span><button class="x" id="mx">✕</button></div><h2>'+d.title+'</h2></div><div class="mbody">'+(d.body||'')+imgsHTML(d)+'</div>';
+  $('#back').classList.add('open');
+  $('#mx').onclick=()=>$('#back').classList.remove('open');
+  $('#modal').querySelectorAll('.mbody img').forEach(im=>im.onclick=()=>{ const lb=$('#lb'); lb.innerHTML='<img src="'+im.src+'">'; lb.classList.add('open'); });
+}
+$('#back').onclick=e=>{ if(e.target===$('#back')) $('#back').classList.remove('open'); };
+$('#lb').onclick=()=>$('#lb').classList.remove('open');
+function render(){
+  $('#filters').innerHTML=['all','new','improve','fix','notice'].map(f=>{
+    const label=f==='all'?'전체':CAT[f].e+' '+CAT[f].t;
+    return '<span class="chip '+(filter===f?'on':'')+'" data-f="'+f+'">'+label+'</span>';}).join('');
+  $('#filters').querySelectorAll('.chip').forEach(c=>c.onclick=()=>{filter=c.dataset.f;render();});
+  const items=ALL.filter(d=>filter==='all'||d.category===filter);
+  $('#list').innerHTML=items.length?items.map(d=>
+    '<div class="item" data-id="'+d.id+'"><div class="row">'+tag(d.category)+(d.pinned?'<span class="pin">📌 중요</span>':'')+'<span class="date">'+d.date+'</span></div><h3>'+d.title+'</h3><p class="ex">'+strip(d.body).slice(0,110)+'…</p></div>'
+  ).join(''):'<div class="empty">아직 소식이 없습니다.</div>';
+  $('#list').querySelectorAll('.item').forEach(c=>c.onclick=()=>openModal(+c.dataset.id));
+}
+(async()=>{
+  try{
+    const r=await fetch('/updates.json?_='+Date.now());
+    const data=await r.json();
+    ALL=(Array.isArray(data)?data:[]).filter(d=>d && d.published===true)
+      .sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0) || String(b.date).localeCompare(String(a.date)) || (b.id-a.id));
+  }catch(e){ ALL=[]; }
+  render();
+})();
+</script>
+</body>
+</html>

@@ -3,3 +3,7 @@
 *.jpeg
 *.png
 verify.*
+
+# 공지(업데이트 소식) 이미지는 추적 — 위의 png/jpg 무시 예외
+!updates/img/
+!updates/img/**

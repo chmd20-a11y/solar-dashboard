@@ -400,6 +400,50 @@
     .leaflet-right{margin-right:env(safe-area-inset-right)}
   }
 </style>
+<style id="plot-updates-css">
+/* PLOT 업데이트 소식 — 전부 .pu-/#pu- 스코프(앱 본체·인증과 충돌 없음). 색은 변수로 분리 → 재스킨 용이 */
+:root{--pu-new:#12925a;--pu-new-s:#e6f5ec;--pu-improve:#2563eb;--pu-improve-s:#e7edfd;--pu-fix:#c07d00;--pu-fix-s:#fbf1db;--pu-notice:#647184;--pu-notice-s:#eef1f6;--pu-brass:#a98a45;--pu-line:#e4e8ef;--pu-ink:#15202e;--pu-muted:#647184;--pu-faint:#8b95a6}
+#pu-bell{position:relative}
+#pu-bell .pu-badge{position:absolute;top:6px;right:9px;width:9px;height:9px;border-radius:50%;background:#e5484d;border:2px solid #fff;display:none}
+#pu-bell.pu-unread .pu-badge{display:block}
+#pu-panel{position:fixed;top:0;right:0;bottom:0;width:min(380px,90%);background:#fff;color:var(--pu-ink);z-index:3600;transform:translateX(106%);transition:transform .32s cubic-bezier(.32,.72,0,1);box-shadow:-16px 0 50px rgba(15,23,40,.26);display:flex;flex-direction:column;font-family:"Pretendard","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,system-ui,sans-serif}
+#pu-panel.pu-open{transform:none}
+#pu-panel .pu-head{display:flex;align-items:center;gap:9px;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px 12px;border-bottom:1px solid var(--pu-line)}
+#pu-panel .pu-head .pu-t{font-size:15.5px;font-weight:800}
+#pu-panel .pu-head .pu-cnt{font-size:11px;font-weight:800;color:#fff;background:var(--pu-brass);border-radius:20px;padding:2px 8px}
+#pu-panel .pu-head .pu-x{margin-left:auto;width:30px;height:30px;border:0;background:#f0f2f5;border-radius:9px;color:#66756c;font-size:15px;cursor:pointer}
+#pu-panel .pu-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px}
+.pu-card{background:#fff;border:1px solid var(--pu-line);border-radius:14px;padding:14px;margin-bottom:10px;cursor:pointer;transition:.15s}
+.pu-card:hover{border-color:var(--pu-brass);box-shadow:0 3px 14px rgba(15,23,40,.09)}
+.pu-card .pu-row,.pu-mhead .pu-row{display:flex;align-items:center;gap:7px;margin-bottom:7px;flex-wrap:wrap}
+.pu-card h4{font-size:14px;font-weight:700;margin:0 0 4px;line-height:1.4;color:var(--pu-ink)}
+.pu-card p{font-size:12.5px;color:var(--pu-muted);margin:0;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pu-tag{font-size:11px;font-weight:800;padding:2px 9px;border-radius:20px;white-space:nowrap}
+.pu-tag.new{color:var(--pu-new);background:var(--pu-new-s)}
+.pu-tag.improve{color:var(--pu-improve);background:var(--pu-improve-s)}
+.pu-tag.fix{color:var(--pu-fix);background:var(--pu-fix-s)}
+.pu-tag.notice{color:var(--pu-notice);background:var(--pu-notice-s)}
+.pu-pin{font-size:11px;color:var(--pu-brass);font-weight:800}
+.pu-draft{font-size:11px;font-weight:800;color:#8a5a00;background:#fff3d6;border-radius:20px;padding:2px 8px}
+.pu-date{font-size:11px;color:var(--pu-faint);margin-left:auto}
+.pu-empty{color:var(--pu-faint);text-align:center;padding:40px 0;font-size:13px}
+#pu-panel .pu-foot{padding:12px 16px calc(env(safe-area-inset-bottom,0px) + 12px);border-top:1px solid var(--pu-line)}
+#pu-panel .pu-allbtn{width:100%;padding:11px;border:1px solid var(--pu-line);border-radius:11px;background:#eef1f6;color:var(--pu-ink);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+#pu-panel .pu-allbtn:hover{border-color:var(--pu-brass);color:var(--pu-brass)}
+#pu-back{position:fixed;inset:0;z-index:3700;display:none;align-items:center;justify-content:center;background:rgba(8,12,18,.5);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);padding:18px;font-family:"Pretendard","Apple SD Gothic Neo",-apple-system,sans-serif}
+#pu-back.pu-open{display:flex}
+#pu-modal{width:100%;max-width:460px;max-height:88vh;max-height:88dvh;overflow-y:auto;background:#fff;color:var(--pu-ink);border-radius:18px;box-shadow:0 24px 70px rgba(0,0,0,.4)}
+.pu-mhead{position:sticky;top:0;background:#fff;padding:18px 20px 14px;border-bottom:1px solid var(--pu-line);border-radius:18px 18px 0 0}
+.pu-mhead .pu-x{margin-left:auto;width:30px;height:30px;border:0;background:#f0f2f5;border-radius:9px;color:#66756c;font-size:15px;cursor:pointer}
+.pu-mhead h3{font-size:17px;font-weight:800;margin:0;line-height:1.35;color:var(--pu-ink)}
+.pu-mbody{padding:16px 20px 24px;font-size:13.5px;line-height:1.7;color:#33424f}
+.pu-mbody b{color:var(--pu-ink)}.pu-mbody ul{margin:8px 0;padding-left:18px}.pu-mbody li{margin:4px 0}
+.pu-shot{display:block;max-width:100%;border:1px solid var(--pu-line);border-radius:12px;margin:12px 0 4px;cursor:zoom-in}
+.pu-cap{font-size:11px;color:var(--pu-faint);text-align:center;margin-bottom:8px}
+#pu-lb{position:fixed;inset:0;z-index:3800;display:none;align-items:center;justify-content:center;background:rgba(4,7,12,.92);padding:20px;cursor:zoom-out}
+#pu-lb.pu-open{display:flex}
+#pu-lb img{max-width:96%;max-height:92%;border-radius:10px}
+</style>
 </head>
 <body>
 <!-- ============ 로그인 게이트 (AUTH.enabled=true + Supabase 키 입력 시 활성) ============ -->
@@ -742,6 +786,7 @@
     <div id="status">위 <b>지번 검색</b> 또는 <b>경계 그리기</b>로 부지를 지정하세요.</div>
     <button id="reopen-results" title="배치 결과 보기"><svg class="ic ic-sm" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>배치 결과</button>
     <div id="draw-tools">
+      <button id="pu-bell" title="새 소식"><svg class="ic" viewBox="0 0 24 24" fill="none"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span>소식</span><span class="pu-badge"></span></button>
       <a id="btn-admin-m" href="/admin.html" title="관리자 페이지"><svg class="ic" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>관리자</span></a>
       <button id="btn-draw" title="부지 경계 그리기 — 꼭짓점을 클릭해 부지를 그립니다"><svg class="ic" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span>경계</span></button>
       <button id="btn-undo" title="마지막에 찍은 꼭짓점 하나 취소 (Backspace)" style="display:none"><svg class="ic" viewBox="0 0 24 24"><polyline points="9 14 4 9 9 4"/><path d="M4 9h11a5 5 0 0 1 0 10h-4"/></svg><span>점취소</span></button>
@@ -1223,6 +1268,14 @@
     #quote-overlay{padding:calc(16px + env(safe-area-inset-top)) 10px calc(16px + env(safe-area-inset-bottom))}
   }
 </style>
+<!-- PLOT 업데이트 소식: 슬라이드 패널 · 상세모달 · 라이트박스 -->
+<div id="pu-panel" aria-hidden="true">
+  <div class="pu-head"><span class="pu-t">새 소식</span><span class="pu-cnt" id="pu-cnt">0</span><button class="pu-x" id="pu-pclose" aria-label="닫기">✕</button></div>
+  <div class="pu-list" id="pu-list"></div>
+  <div class="pu-foot"><button class="pu-allbtn" id="pu-pall">전체 보기 (지난 소식) →</button></div>
+</div>
+<div id="pu-back"><div id="pu-modal"></div></div>
+<div id="pu-lb"></div>
 <!-- 회원 탈퇴 확인 -->
 <div id="del-modal" class="a2hs-back">
   <div class="a2hs-card" style="max-width:420px">
@@ -3512,6 +3565,75 @@ lgInitVisuals();
   btn.addEventListener('click',e=>{ e.preventDefault(); setOn(!on); });
   // 배치결과창(#wrap.results-open) 표시 변화 감지 → 레이어 컨트롤 자동 이동
   try{ const wrap=document.getElementById('wrap'); if(wrap&&window.MutationObserver){ new MutationObserver(updateRightShift).observe(wrap,{attributes:true,attributeFilter:['class']}); } window.addEventListener('resize',updateRightShift); updateRightShift(); }catch(e){}
+})();
+
+/* ================= PLOT 업데이트 소식(공지) — 스코프 격리, 인증 로직 미변경(읽기만) ================= */
+(function(){
+  const SEEN_KEY='pu_seen_v1', PIN_KEY='pu_pin_seen_v1';
+  let ITEMS=[], LOADED=false;
+  const q=s=>document.querySelector(s);
+  const CAT={new:['new','🟢 신규'],improve:['improve','🔵 개선'],fix:['fix','🟠 수정'],notice:['notice','⚙️ 공지']};
+  const tag=c=>{const x=CAT[c]||CAT.notice;return '<span class="pu-tag '+x[0]+'">'+x[1]+'</span>';};
+  const strip=h=>(h||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+  function isAdmin(){ try{ return !!(typeof _isAdmin!=='undefined' && _isAdmin); }catch(e){ return false; } }
+  function pubItems(){ return ITEMS.filter(d=>d&&d.published===true); }
+  function shownItems(){ return ITEMS.filter(d=>d&&(d.published===true||isAdmin())); }   // 관리자는 초안(미발행)도 미리보기
+  function sortItems(a){ return a.slice().sort((x,y)=>(y.pinned?1:0)-(x.pinned?1:0) || String(y.date).localeCompare(String(x.date)) || (y.id-x.id)); }
+  function latestKey(){ const v=sortItems(pubItems()); return v.length? (v[0].date+'#'+v[0].id):''; }
+  function hasUnread(){ try{ const k=latestKey(); return !!k && k!==localStorage.getItem(SEEN_KEY); }catch(e){ return false; } }
+  function refreshBadge(){ const b=q('#pu-bell'); if(b) b.classList.toggle('pu-unread', hasUnread()); }
+  function markSeen(){ try{ localStorage.setItem(SEEN_KEY, latestKey()); }catch(e){} refreshBadge(); }
+  function imgsHTML(d){ if(!d.images||!d.images.length) return ''; return d.images.map(s=>'<img src="'+s+'" class="pu-shot" alt="변경 화면" loading="lazy">').join('')+'<div class="pu-cap">이미지를 누르면 크게 볼 수 있어요</div>'; }
+  function badges(d){ return tag(d.category)+(d.pinned?'<span class="pu-pin">📌 중요</span>':'')+(d.published?'':'<span class="pu-draft">초안</span>'); }
+  function renderList(){
+    const list=q('#pu-list'); if(!list) return;
+    const items=sortItems(shownItems());
+    const cnt=q('#pu-cnt'); if(cnt) cnt.textContent=String(items.length);
+    list.innerHTML=items.length? items.map(d=>'<div class="pu-card" data-id="'+d.id+'"><div class="pu-row">'+badges(d)+'<span class="pu-date">'+d.date+'</span></div><h4>'+d.title+'</h4><p>'+strip(d.body).slice(0,80)+'…</p></div>').join('')
+      : '<div class="pu-empty">아직 소식이 없습니다.</div>';
+    list.querySelectorAll('.pu-card').forEach(c=>c.onclick=()=>openItem(+c.dataset.id));
+  }
+  function openPanel(){ renderList(); const p=q('#pu-panel'); if(p) p.classList.add('pu-open'); markSeen(); }
+  function closePanel(){ const p=q('#pu-panel'); if(p) p.classList.remove('pu-open'); }
+  function openItem(id){
+    const d=ITEMS.find(x=>x.id===id); if(!d) return;
+    const m=q('#pu-modal'); if(!m) return;
+    m.innerHTML='<div class="pu-mhead"><div class="pu-row">'+badges(d)+'<span class="pu-date">'+d.date+'</span><button class="pu-x" id="pu-mx" aria-label="닫기">✕</button></div><h3>'+d.title+'</h3></div><div class="pu-mbody">'+(d.body||'')+imgsHTML(d)+'</div>';
+    q('#pu-back').classList.add('pu-open');
+    const x=q('#pu-mx'); if(x) x.onclick=closeItem;
+    m.querySelectorAll('.pu-shot').forEach(im=>im.onclick=()=>{ const lb=q('#pu-lb'); lb.innerHTML='<img src="'+im.getAttribute('src')+'" alt="확대 이미지">'; lb.classList.add('pu-open'); });
+  }
+  function closeItem(){ const b=q('#pu-back'); if(b) b.classList.remove('pu-open'); }
+  function maybePinnedModal(){
+    try{
+      const gate=document.getElementById('auth-gate');
+      if(gate && gate.classList.contains('open')) return;   // 로그인 전이면 대기
+      const pin=sortItems(pubItems().filter(d=>d.pinned))[0];
+      if(!pin) return;
+      if(String(pin.id)===localStorage.getItem(PIN_KEY)) return;
+      localStorage.setItem(PIN_KEY, String(pin.id));
+      openItem(pin.id);
+    }catch(e){}
+  }
+  function wire(){
+    const bell=q('#pu-bell'); if(bell) bell.onclick=openPanel;
+    const pc=q('#pu-pclose'); if(pc) pc.onclick=closePanel;
+    const pa=q('#pu-pall'); if(pa) pa.onclick=()=>{ location.href='/updates.html'; };
+    const back=q('#pu-back'); if(back) back.addEventListener('click',e=>{ if(e.target===back) closeItem(); });
+    const lb=q('#pu-lb'); if(lb) lb.onclick=()=>lb.classList.remove('pu-open');
+    document.addEventListener('keydown',e=>{ if(e.key!=='Escape') return;
+      if(q('#pu-lb')&&q('#pu-lb').classList.contains('pu-open')) q('#pu-lb').classList.remove('pu-open');
+      else if(q('#pu-back')&&q('#pu-back').classList.contains('pu-open')) closeItem();
+      else if(q('#pu-panel')&&q('#pu-panel').classList.contains('pu-open')) closePanel(); });
+    // 로그인 게이트가 닫히는 순간(로그인 완료) 배지 갱신 + 중요공지 1회 표시
+    try{ const gate=document.getElementById('auth-gate'); if(gate&&window.MutationObserver){ new MutationObserver(()=>{ if(!gate.classList.contains('open')){ refreshBadge(); if(LOADED) maybePinnedModal(); } }).observe(gate,{attributes:true,attributeFilter:['class']}); } }catch(e){}
+  }
+  async function load(){
+    try{ const r=await fetch('/updates.json?_='+(new Date().getTime())); const data=await r.json(); ITEMS=Array.isArray(data)?data:[]; }
+    catch(e){ ITEMS=[]; }
+    LOADED=true; refreshBadge(); maybePinnedModal();
+  }
+  wire(); load();
 })();
 </script>
 </body>
