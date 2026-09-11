@@ -712,6 +712,7 @@
     <div id="draw-tools">
       <a id="btn-admin-m" href="/admin.html" title="관리자 페이지"><svg class="ic" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>관리자</span></a>
       <button id="btn-draw" title="부지 경계 그리기 — 꼭짓점을 클릭해 부지를 그립니다"><svg class="ic" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span>경계</span></button>
+      <button id="btn-undo" title="마지막에 찍은 꼭짓점 하나 취소 (Backspace)" style="display:none"><svg class="ic" viewBox="0 0 24 24"><polyline points="9 14 4 9 9 4"/><path d="M4 9h11a5 5 0 0 1 0 10h-4"/></svg><span>점취소</span></button>
       <button id="btn-clear" title="그린 구역 지우기"><svg class="ic" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><span>지우기</span></button>
       <button id="btn-run" title="배치 계산 — 선택/그린 부지에 패널을 자동 배치"><svg class="ic" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span>배치</span></button>
       <button id="btn-grid" title="계통 여유용량 — 변전소 접속여유 표시 켜기/끄기"><svg class="ic" viewBox="0 0 24 24"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg><span class="gc-lbl">계통</span></button>
@@ -1222,6 +1223,7 @@
           <div class="st-row"><label>적용단가 (원/kWh)</label><input type="number" id="st-apply" value="178"></div>
           <div class="st-row"><label>일 발전시간 (h)</label><input type="number" id="st-hours" value="3.6" step="0.1"></div>
           <div class="st-row"><label>견적서 현장 배치도</label><select id="st-qphoto"><option value="2d">2D 지도</option><option value="3d">3D 뷰</option></select></div>
+          <div class="st-row"><label>배치도에 필지 경계 표시</label><select id="st-qparcel"><option value="on">표시</option><option value="off">숨김</option></select></div>
         </div>
         <div class="set-sec"><div class="set-lbl">정책자금 조건</div>
           <div class="st-grid2"><div class="st-row"><label>이율 (%)</label><input type="number" id="st-rate" value="2.5" step="0.1"></div><div class="st-row"><label>거치 (년)</label><input type="number" id="st-defer" value="5"></div><div class="st-row"><label>상환 (년)</label><input type="number" id="st-repay" value="10"></div><div class="st-row"><label>대출 비율 (%)</label><input type="number" id="st-loanpct" value="80" step="1"></div></div>
@@ -1870,14 +1872,35 @@ async function renderFeasibility(){
 }
 $('btn-draw').onclick = ()=>{
   const btn=$('btn-draw');
-  if(btn.classList.contains('on')){ try{ map.pm.disableDraw(); }catch(e){} btn.classList.remove('on'); setStatus('경계 그리기를 취소했습니다.'); return; }
+  if(btn.classList.contains('on')){ try{ map.pm.disableDraw(); }catch(e){} btn.classList.remove('on'); showUndo(false); setStatus('경계 그리기를 취소했습니다.'); return; }
   const c = REGION_COLORS[REGIONS.length % REGION_COLORS.length];
   map.pm.enableDraw('Polygon', {snappable:true, templineStyle:{color:c}, hintlineStyle:{color:c,dashArray:'4,4'}, pathOptions:{color:c,weight:2,fillOpacity:.06}});
-  btn.classList.add('on');
+  btn.classList.add('on'); showUndo(true);
   setStatus(REGIONS.length
     ? `구역 ${REGIONS.length+1} 그리기: 꼭짓점 클릭 → 시작점/더블클릭으로 완성 (여러 구역 추가 가능)`
     : '꼭짓점을 순서대로 클릭, <b>시작점 클릭 또는 더블클릭</b>으로 완성하세요. (완성 후 다시 눌러 구역 추가 가능)');
 };
+// 그리기 중 '점취소' 버튼 표시/숨김 + 마지막 꼭짓점 하나씩 되돌리기
+function showUndo(on){ const b=document.getElementById('btn-undo'); if(b) b.style.display = on ? 'flex' : 'none'; }
+function undoLastVertex(){
+  try{
+    const dp = map.pm && map.pm.Draw && map.pm.Draw.Polygon;
+    if(!dp || !dp._layer){ return; }
+    const n = (dp._layer._latlngs && dp._layer._latlngs.length) || 0;
+    if(n<=0){ setStatus('취소할 점이 없습니다. 꼭짓점을 먼저 찍어주세요.'); return; }
+    dp._removeLastVertex();
+    const left = Math.max(0, n-1);
+    setStatus(left>0 ? `마지막 점을 취소했습니다 · 남은 점 <b>${left}개</b>` : '모든 점을 취소했습니다. 처음부터 다시 찍으세요.');
+  }catch(e){}
+}
+document.getElementById('btn-undo').onclick = undoLastVertex;
+document.addEventListener('keydown', e=>{
+  if((e.key==='Backspace'||e.key==='Delete') && document.getElementById('btn-draw')?.classList.contains('on')){
+    const t=e.target, tag=(t&&t.tagName||'').toLowerCase();
+    if(tag==='input'||tag==='textarea'||tag==='select'||(t&&t.isContentEditable)) return;   // 입력칸 편집 중엔 방해 안 함
+    e.preventDefault(); undoLastVertex();
+  }
+});
 $('btn-clear').onclick = ()=>{ clearBoundary(); selected=[]; renderSelList(); panelLayer.clearLayers(); bufferLayer.clearLayers(); resetStats(); window.LAYOUT=null; _rivKey=''; renderFeasibility(); setStatus('모든 구역을 지웠습니다.'); };
 // 초기화: 지도 배율/위치는 그대로 두고(사용자 조정 유지), 나머지 선택·그림·결과·옵션을 전부 기본값으로
 function resetAll(){
@@ -1910,7 +1933,7 @@ map.on('pm:create', async e=>{
   const region={layer:e.layer, parcel:null, roadGeom:null, _river:undefined};
   REGIONS.push(region); syncPrimary();
   map.pm.disableDraw();
-  document.getElementById('btn-draw')?.classList.remove('on');
+  document.getElementById('btn-draw')?.classList.remove('on'); showUndo(false);
   selected=[]; renderSelList();
   setStatus(`📍 구역 ${idx+1} 추가 · 지번 조회 중…`);
   await setRegionParcel(region);
@@ -2444,7 +2467,7 @@ function quoteCalc(){
   applyQuotePhoto();
 }
 // 3D 뷰 캡처 → 견적서 현장 배치도로 삽입
-let _quotePhoto=null;
+let _quotePhoto=null, _quotePhotoMode=null;   // _quotePhotoMode: 현재 담긴 배치도가 '2d'인지 '3d'인지 (설정과 다르면 다시 담음)
 // 3D 캔버스 → 부지(화면중앙) 담은 가로형(1.6:1) 중앙 크롭 dataURL
 function grab3D(){
   if(typeof three==='undefined' || !three) return null;
@@ -2460,7 +2483,7 @@ function grab3D(){
 }
 function captureQuote3D(){
   if(typeof three==='undefined' || !three){ setStatus('⚠️ 먼저 상단 <b>🧊 3D 뷰</b>를 열어 각도를 맞춘 뒤 캡처해주세요.'); return false; }
-  try{ _quotePhoto=grab3D(); applyQuotePhoto(); setStatus('🧊 3D 화면을 견적서에 담았습니다.'); return true; }
+  try{ _quotePhoto=grab3D(); _quotePhotoMode='3d'; applyQuotePhoto(); setStatus('🧊 3D 화면을 견적서에 담았습니다.'); return true; }
   catch(e){ setStatus('⚠️ 3D 캡처 실패: '+((e&&e.message)||e)); return false; }
 }
 // 2D 지도(타일+벡터) 합성 → 가로형 dataURL
@@ -2487,17 +2510,27 @@ async function captureQuoteImg(mode){
     if(mode==='2d'){
       if(view3D){ document.getElementById('v2d').click(); await new Promise(r=>setTimeout(r,900)); }
       if(view3D){ setStatus('⚠️ 2D 지도로 전환하지 못했습니다.'); return; }
-      const u=grab2D(); if(!u){ setStatus('⚠️ 2D 캡처 실패 — 배치를 표시한 뒤 다시 시도해주세요.'); return; }
-      _quotePhoto=u; applyQuotePhoto(); setStatus('🗺️ 2D 지도를 견적서에 담았습니다.');
+      // 설정(⚙️ 고객견적서 → 필지 경계 표시)대로 필지선 담기 — 캡처 동안만 맞추고 사용자 화면은 원복
+      const wantParcel = !(typeof SETTINGS!=='undefined' && SETTINGS.qparcel==='off');   // 기본 표시
+      const parcelWasOn = map.hasLayer(parcelLayer);
+      try{
+        if(wantParcel && !parcelWasOn){ parcelLayer.addTo(map); _parcelOn=true; await drawParcels(); await new Promise(r=>setTimeout(r,300)); }
+        else if(!wantParcel && parcelWasOn){ map.removeLayer(parcelLayer); _parcelOn=false; await new Promise(r=>setTimeout(r,150)); }
+        const u=grab2D(); if(!u){ setStatus('⚠️ 2D 캡처 실패 — 배치를 표시한 뒤 다시 시도해주세요.'); return; }
+        _quotePhoto=u; _quotePhotoMode='2d'; applyQuotePhoto(); setStatus('🗺️ 2D 지도를 견적서에 담았습니다.');
+      } finally {   // 캡처 전 상태로 원복(사용자가 켜둔/꺼둔 오버레이 그대로)
+        if(wantParcel && !parcelWasOn){ map.removeLayer(parcelLayer); _parcelOn=false; }
+        else if(!wantParcel && parcelWasOn){ parcelLayer.addTo(map); _parcelOn=true; drawParcels(); }
+      }
     } else {
       if(typeof three==='undefined'||!three){ if(!window.LAYOUT){ setStatus('⚠️ 먼저 <b>배치 계산</b> 후 3D를 담을 수 있습니다.'); return; } document.getElementById('v3d').click(); await new Promise(r=>setTimeout(r,1200)); }
       const u=grab3D(); if(!u){ setStatus('⚠️ 3D 캡처 실패'); return; }
-      _quotePhoto=u; applyQuotePhoto(); setStatus('🧊 3D 뷰를 견적서에 담았습니다.');
+      _quotePhoto=u; _quotePhotoMode='3d'; applyQuotePhoto(); setStatus('🧊 3D 뷰를 견적서에 담았습니다.');
     }
   }catch(e){ setStatus('⚠️ 캡처 실패: '+((e&&e.message)||e)); }
 }
 // 3D 지형·건물 로딩 완료 시점에 조용히 배치도 미리 캡처(견적서 열기 전 준비)
-function quoteAutoCapture(){ try{ const u=grab3D(); if(u){ _quotePhoto=u; applyQuotePhoto(); } }catch(e){} }
+function quoteAutoCapture(){ try{ if(((typeof SETTINGS!=='undefined'&&SETTINGS.qphoto)||'2d')!=='3d') return; const u=grab3D(); if(u){ _quotePhoto=u; _quotePhotoMode='3d'; applyQuotePhoto(); } }catch(e){} }
 function applyQuotePhoto(){
   const img=$('q-photo'), empty=$('q-photo-empty'), note=$('q-photo-note');
   if(!img) return;
@@ -2533,7 +2566,8 @@ function quotePull(){
 function quoteOpen(on){
   const ov=$('quote-overlay');
   if(on){ quotePull(); quoteCalc();
-    if(!_quotePhoto){ const _hasSite=(window.LAYOUT||(typeof REGIONS!=='undefined'&&REGIONS.length)); if(_hasSite){ const _mode=((typeof SETTINGS!=='undefined'&&SETTINGS.qphoto)||'2d'); try{ captureQuoteImg(_mode); }catch(e){} } }
+    { const _hasSite=(window.LAYOUT||(typeof REGIONS!=='undefined'&&REGIONS.length)); const _mode=((typeof SETTINGS!=='undefined'&&SETTINGS.qphoto)||'2d');
+      if(_hasSite && (!_quotePhoto || _quotePhotoMode!==_mode)){ try{ captureQuoteImg(_mode); }catch(e){} } }   // 설정(2D/3D)과 다르게 담겨 있으면 설정값대로 다시 캡처
     applyQuotePhoto(); { const qc=$('q-company'); if(qc) qc.textContent=(typeof SETTINGS!=='undefined'&&SETTINGS.company)?(SETTINGS.company+(SETTINGS.phone?(' · '+SETTINGS.phone):'')):''; } ov.classList.add('open'); }
   else ov.classList.remove('open');
 }
@@ -2851,7 +2885,11 @@ document.getElementById('v2d').onclick=()=>{
   document.getElementById('map').style.display='block';
   document.getElementById('v2d').classList.add('on'); document.getElementById('v3d').classList.remove('on');
   document.getElementById('sunbar').style.display='none';
-  if(typeof map!=='undefined') map.invalidateSize();
+  // 2D 지도 복원: 컨테이너가 다시 보이게 된 직후엔 크기 계산이 안 끝나 지도가 안 뜰 수 있어 지연 재호출(특히 모바일)
+  if(typeof map!=='undefined'){
+    try{ map.invalidateSize(); }catch(e){}
+    setTimeout(()=>{ try{ map.invalidateSize(); }catch(e){} }, 180);   // 레이아웃 반영 후 한 번 더 → 타일 재로딩·정렬
+  }
 };
 
 /* ================= 로그인/회원 (Supabase) — 무료 베타 게이트. 기본 OFF ================= */
@@ -2981,7 +3019,7 @@ async function initAuth(){
 }
 /* ===== 설정 화면(⚙️) — 7탭 (일반/타당성/경계/모듈/배치/원가/견적) · localStorage 저장 ===== */
 const SET_KEY='solarfit_settings';
-const SET_DEFAULTS={ company:'',phone:'',defmap:'esriko', gz:true,slope:15,setres:200, buffer:2,roadmask:true, krBrand:'현대',krW:645,krX:1134,krY:2465, cnBrand:'AIKO',cnW:655,cnX:1134,cnY:2382, tilt:15,incid:25,gap:10, modcost:310,kwunit:950000,margin:5, apply:178,hours:3.6,rate:2.5,defer:5,repay:10,loanpct:80, qphoto:'2d',
+const SET_DEFAULTS={ company:'',phone:'',defmap:'esriko', gz:true,slope:15,setres:200, buffer:2,roadmask:true, krBrand:'현대',krW:645,krX:1134,krY:2465, cnBrand:'AIKO',cnW:655,cnX:1134,cnY:2382, tilt:15,incid:25,gap:10, modcost:310,kwunit:950000,margin:5, apply:178,hours:3.6,rate:2.5,defer:5,repay:10,loanpct:80, qphoto:'2d', qparcel:'on',
   // ===== 원가 상수(⚙️ 원가·마진 — costCalc/견적서 연동) =====
   cReview:500000, cLadder:600000,
   cInvG125:5600000, cInvG50:3800000, cInvG36:2500000, cInvH110:5100000, cInvH50:3200000, cInvMargin:1000000,
@@ -3002,7 +3040,7 @@ const SET_MAP=[['st-company','company','t'],['st-phone','phone','t'],['st-defmap
   ['st-cn-brand','cnBrand','t'],['st-cn-w','cnW','n'],['st-cn-x','cnX','n'],['st-cn-y','cnY','n'],
   ['st-tilt','tilt','n'],['st-incid','incid','n'],['st-gap','gap','n'],
   ['st-modcost','modcost','n'],['st-kwunit','kwunit','n'],['st-margin','margin','n'],
-  ['st-apply','apply','n'],['st-hours','hours','n'],['st-rate','rate','n'],['st-defer','defer','n'],['st-repay','repay','n'],['st-loanpct','loanpct','n'],['st-qphoto','qphoto','t']];
+  ['st-apply','apply','n'],['st-hours','hours','n'],['st-rate','rate','n'],['st-defer','defer','n'],['st-repay','repay','n'],['st-loanpct','loanpct','n'],['st-qphoto','qphoto','t'],['st-qparcel','qparcel','t']];
 // ===== 구조물·전기 단가표(매트릭스) — 노지/건물 × 용량구간 × 제작/공사/전기 =====
 const STRUCT_CAPS=[['30','~30kW'],['50','~50kW'],['100','~100kW'],['300','~300kW'],['500','~500kW'],['700','~700kW'],['1000','700kW+']];
 const STRUCT_COLS=['제작','공사','전기'];
