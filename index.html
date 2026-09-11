@@ -1180,6 +1180,21 @@
   #iab-banner #iab-open{flex:0 0 auto;background:#a98a45;color:#fff;border:0;border-radius:8px;padding:8px 12px;font-size:12.5px;font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap}
   #iab-banner #iab-close{flex:0 0 auto;background:transparent;border:0;color:#93a3b5;font-size:16px;cursor:pointer;padding:2px 4px;line-height:1}
   .a2hs-toast{display:block;font-size:12px;color:#12925a;font-weight:700;margin-top:8px;min-height:15px}
+  /* 회원 탈퇴(위험 구역) */
+  .st-withdraw-btn{width:100%;padding:12px;border:1px solid #e6b3ae;border-radius:11px;background:#fdeceb;color:#c0362c;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit}
+  .st-withdraw-btn:hover{background:#fbe0de}
+  .del-list{list-style:none;margin:2px 0 14px;padding:13px 15px;background:#fbeceb;border:1px solid #f3cfcb;border-radius:12px;display:flex;flex-direction:column;gap:7px}
+  .del-list li{font-size:13px;color:#7a2b25;line-height:1.5;padding-left:15px;position:relative}
+  .del-list li::before{content:"–";position:absolute;left:2px;color:#c0362c}
+  .del-list li b{color:#8f241d;font-weight:800}
+  .del-hint{font-size:13px;color:#33423b;margin:0 0 8px;text-align:center}
+  .del-input{width:100%;padding:11px 12px;border:1.5px solid #d7dde5;border-radius:10px;font-size:15px;font-family:inherit;text-align:center;color:#15202e}
+  .del-input:focus{outline:none;border-color:#c0362c;box-shadow:0 0 0 3px #fbe0de}
+  .del-msg{font-size:12.5px;color:#c0362c;font-weight:700;min-height:16px;margin:8px 0 2px;text-align:center}
+  .del-go{width:100%;margin-top:4px;padding:13px;border:0;border-radius:11px;background:#c0362c;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit}
+  .del-go:disabled{background:#e3b3ae;cursor:default}
+  .del-go:not(:disabled):hover{background:#a52e25}
+  .del-cancel{width:100%;margin-top:8px;padding:11px;border:0;border-radius:11px;background:transparent;color:#66756c;font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit}
   /* 항목 설명 툴팁(ⓘ) — PC 마우스오버 + 모바일 탭 */
   .st-info{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:#dbe2ea;color:#5a6675;font-size:10px;font-weight:800;line-height:1;cursor:pointer;vertical-align:middle;margin-left:3px;user-select:none;-webkit-tap-highlight-color:transparent}
   /* 툴팁: body에 고정(fixed)으로 띄워 화면 안으로 위치 계산 → 모달에 잘리지 않음 */
@@ -1208,6 +1223,25 @@
     #quote-overlay{padding:calc(16px + env(safe-area-inset-top)) 10px calc(16px + env(safe-area-inset-bottom))}
   }
 </style>
+<!-- 회원 탈퇴 확인 -->
+<div id="del-modal" class="a2hs-back">
+  <div class="a2hs-card" style="max-width:420px">
+    <button class="a2hs-x" id="del-x" aria-label="닫기">✕</button>
+    <h3 class="a2hs-h" style="color:#c0362c">회원 탈퇴</h3>
+    <p class="a2hs-lead" style="color:#33423b;margin-bottom:12px">탈퇴하면 <b>지금까지의 모든 기록이 완전히 삭제</b>되며, <b>되돌릴 수 없습니다.</b><br>아래 항목이 모두 지워집니다:</p>
+    <ul class="del-list">
+      <li>로그인 <b>계정</b> (이메일·비밀번호)</li>
+      <li>저장된 <b>설정</b> (모듈·원가·견적서 기준 등)</li>
+      <li>보낸 <b>개발요청</b> 내역</li>
+      <li>그동안의 <b>사용 기록</b> 전부</li>
+    </ul>
+    <p class="del-hint">계속하려면 아래 칸에 <b>탈퇴</b> 라고 입력하세요.</p>
+    <input type="text" id="del-confirm-input" placeholder="탈퇴" autocomplete="off" class="del-input">
+    <div class="del-msg" id="del-msg"></div>
+    <button class="del-go" id="del-go" disabled>영구 삭제하고 탈퇴하기</button>
+    <button class="del-cancel" id="del-cancel">취소</button>
+  </div>
+</div>
 <!-- 인앱브라우저(카톡 등) 안내 배너 -->
 <div id="iab-banner">
   <span class="iab-txt">📱 더 편하게 쓰시려면 <b>브라우저</b>에서 열어주세요</span>
@@ -1278,6 +1312,10 @@
         </div>
         <div class="set-sec"><div class="set-lbl">지도 기본</div>
           <div class="st-row"><label>기본 지도 <span class="st-info" data-tip="앱을 처음 열 때 보여줄 지도를 고르세요. 위성사진·지명 표시 여부에 따라 선택합니다.">ⓘ</span></label><select id="st-defmap"><option value="esriko">위성(글로벌)+지명</option><option value="hybrid">위성+지명(국내 VWorld)</option><option value="esri">위성(글로벌·라벨없음)</option><option value="base">일반지도</option></select></div>
+        </div>
+        <div class="set-sec"><div class="set-lbl" style="color:#c0362c">위험 구역</div>
+          <button type="button" id="st-withdraw" class="st-withdraw-btn">회원 탈퇴</button>
+          <div class="st-note">탈퇴하면 지금까지의 <b>모든 기록</b>(계정·저장된 설정·개발요청 등)이 완전히 삭제되며 <b>되돌릴 수 없습니다.</b></div>
         </div>
       </div>
       <!-- 타당성검토 -->
@@ -3254,6 +3292,31 @@ function closeA2HS(){ const m=document.getElementById('a2hs-modal'); if(m) m.cla
   try{ updateInstallBtn(); }catch(e){}
   try{ initIABBanner(); }catch(e){}
 }
+/* ================= 회원 탈퇴 ================= */
+function openDel(){ const m=document.getElementById('del-modal'); if(!m) return; const i=document.getElementById('del-confirm-input'); if(i) i.value=''; const g=document.getElementById('del-go'); if(g){ g.disabled=true; g.textContent='영구 삭제하고 탈퇴하기'; } const msg=document.getElementById('del-msg'); if(msg) msg.textContent=''; m.classList.add('open'); }
+function closeDel(){ const m=document.getElementById('del-modal'); if(m) m.classList.remove('open'); }
+async function doWithdraw(){
+  const msg=document.getElementById('del-msg'), go=document.getElementById('del-go');
+  if(!_sb||!_authUser){ if(msg) msg.textContent='로그인 상태가 아닙니다.'; return; }
+  try{
+    if(go){ go.disabled=true; go.textContent='삭제 중…'; }
+    const { data:{ session } } = await _sb.auth.getSession();
+    const token = session && session.access_token;
+    if(!token){ if(msg) msg.textContent='세션이 만료되었습니다. 다시 로그인 후 시도해주세요.'; if(go){ go.disabled=false; go.textContent='영구 삭제하고 탈퇴하기'; } return; }
+    const r = await fetch('/api/account', { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer '+token }, body: JSON.stringify({ confirm:true }) });
+    const j = await r.json().catch(()=>({}));
+    if(!r.ok || !j.ok){ if(msg) msg.textContent='탈퇴 실패: '+((j&&j.error)||('오류 '+r.status)); if(go){ go.disabled=false; go.textContent='영구 삭제하고 탈퇴하기'; } return; }
+    try{ await _sb.auth.signOut(); }catch(e){}
+    try{ localStorage.removeItem('sf_email'); }catch(e){}
+    if(msg) msg.textContent='탈퇴가 완료되었습니다. 잠시 후 로그인 화면으로 이동합니다.';
+    setTimeout(()=>{ location.reload(); }, 1400);
+  }catch(e){ if(msg) msg.textContent='오류: '+((e&&e.message)||e); if(go){ go.disabled=false; go.textContent='영구 삭제하고 탈퇴하기'; } }
+}
+{ const wb=document.getElementById('st-withdraw'); if(wb) wb.onclick=openDel;
+  const dx=document.getElementById('del-x'), dcc=document.getElementById('del-cancel'); [dx,dcc].forEach(el=>{ if(el) el.onclick=closeDel; });
+  const dov=document.getElementById('del-modal'); if(dov) dov.addEventListener('click',e=>{ if(e.target===dov) closeDel(); });
+  const di=document.getElementById('del-confirm-input'); if(di) di.oninput=()=>{ const go=document.getElementById('del-go'); if(go) go.disabled=(di.value.trim()!=='탈퇴'); };
+  const dg=document.getElementById('del-go'); if(dg) dg.onclick=doWithdraw; }
 function openSettings(){ const m=$('set-modal'); if(!m) return; const e=$('set-email'); if(e) e.textContent=(_authUser&&_authUser.email)||'–'; const msg=$('set-msg'); if(msg){ msg.textContent=''; msg.className='set-msg'; } if($('set-pw1'))$('set-pw1').value=''; if($('set-pw2'))$('set-pw2').value=''; populateSettings(); try{ updateInstallBtn(); }catch(_){ } const sm=$('st-savemsg'); if(sm){ sm.textContent=''; sm.className='set-msg'; } m.classList.add('open'); }
 // 항목 설명 툴팁(ⓘ): body에 고정 버블로 띄우고 화면 안으로 위치 보정 → 모달에 잘리지 않음. PC 마우스오버 + 모바일 탭.
 (function(){ let bub=null, cur=null;
