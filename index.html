@@ -1128,6 +1128,34 @@
   .st-chk input{width:auto}
   .st-note{font-size:11px;color:#455160;margin-top:4px;line-height:1.5}
   .set-savebar{display:flex;align-items:center;justify-content:flex-end;gap:12px;border-top:1px solid #e4e8ef;padding-top:12px;margin-top:8px}
+  /* 홈 화면에 추가 버튼 + 안내 팝업 */
+  .st-install-btn{width:100%;padding:13px;border:0;border-radius:11px;background:#a98a45;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:7px;box-shadow:0 4px 14px rgba(169,138,69,.28)}
+  .st-install-btn:hover{background:#8f7238}
+  .st-install-btn.done{background:#eef0f2;color:#66756c;box-shadow:none;cursor:default}
+  .a2hs-back{position:fixed;inset:0;z-index:5000;display:none;align-items:center;justify-content:center;background:rgba(8,11,15,.55);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);padding:18px}
+  .a2hs-back.open{display:flex}
+  .a2hs-card{position:relative;width:100%;max-width:400px;max-height:90dvh;overflow:auto;background:#fff;color:#15202e;border-radius:20px;padding:26px 22px 22px;box-shadow:0 30px 80px rgba(0,0,0,.45);font-family:"Pretendard","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,sans-serif}
+  .a2hs-x{position:absolute;top:12px;right:12px;width:30px;height:30px;border:0;background:#f0f2f5;border-radius:9px;color:#66756c;font-size:15px;cursor:pointer;line-height:1}
+  .a2hs-tile{width:56px;height:56px;margin:2px auto 12px;border-radius:26%;background:radial-gradient(120% 120% at 30% 18%,#151b24,#090c10);color:#d8c188;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(216,193,136,.18),0 4px 12px rgba(0,0,0,.4)}
+  .a2hs-tile svg{width:64%;height:64%;stroke:currentColor;fill:none}
+  .a2hs-h{text-align:center;font-size:18px;font-weight:800;margin:0 0 5px;color:#15202e}
+  .a2hs-h b{color:#a98a45;letter-spacing:.08em;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-weight:400}
+  .a2hs-lead{text-align:center;font-size:13px;color:#66756c;margin:0 0 18px;line-height:1.55}
+  .a2hs-steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:15px}
+  .a2hs-steps li{display:flex;gap:12px;align-items:flex-start}
+  .a2hs-n{flex:0 0 auto;width:27px;height:27px;border-radius:50%;background:#a98a45;color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;margin-top:1px}
+  .a2hs-txt{font-size:14.5px;line-height:1.55;color:#15202e}
+  .a2hs-txt b{font-weight:800}
+  .a2hs-txt em{display:block;font-style:normal;font-size:12px;color:#8b95a6;margin-top:3px}
+  .a2hs-share{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border:1px solid #d7dde5;border-radius:9px;color:#0a84ff;vertical-align:middle;margin:7px 0 2px}
+  .a2hs-share svg{width:21px;height:21px}
+  .a2hs-a2h{display:inline-flex;align-items:center;gap:9px;margin-top:7px;padding:8px 12px;border:1px solid #d7dde5;border-radius:9px;font-size:13.5px;color:#15202e;font-weight:600}
+  .a2hs-a2h svg{width:21px;height:21px;color:#15202e;flex:0 0 auto}
+  .a2hs-ok{width:100%;margin-top:20px;padding:13px;border:0;border-radius:11px;background:#15202e;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit}
+  .a2hs-only-ios{display:none}
+  body.a2hs-ios .a2hs-only-ios{display:block}
+  body.a2hs-ios .a2hs-only-other{display:none}
+  body:not(.a2hs-ios) .a2hs-steps{display:none}
   /* 항목 설명 툴팁(ⓘ) — PC 마우스오버 + 모바일 탭 */
   .st-info{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:#dbe2ea;color:#5a6675;font-size:10px;font-weight:800;line-height:1;cursor:pointer;vertical-align:middle;margin-left:3px;user-select:none;-webkit-tap-highlight-color:transparent}
   /* 툴팁: body에 고정(fixed)으로 띄워 화면 안으로 위치 계산 → 모달에 잘리지 않음 */
@@ -1156,6 +1184,22 @@
     #quote-overlay{padding:calc(16px + env(safe-area-inset-top)) 10px calc(16px + env(safe-area-inset-bottom))}
   }
 </style>
+<!-- 홈 화면에 추가 안내(아이폰/아이패드) -->
+<div id="a2hs-modal" class="a2hs-back">
+  <div class="a2hs-card">
+    <button class="a2hs-x" id="a2hs-x" aria-label="닫기">✕</button>
+    <div class="a2hs-tile"><svg viewBox="0 0 48 48" fill="none"><rect x="6" y="6" width="36" height="36" rx="9.5" stroke="currentColor" stroke-width="2.1"/><path d="M6 24h36M24 6v36" stroke="currentColor" stroke-width="1.3" opacity=".4"/><circle cx="24" cy="24" r="3.1" fill="currentColor"/><path d="M16 20v-4h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity=".75"/><path d="M32 28v4h-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity=".75"/></svg></div>
+    <h3 class="a2hs-h">홈 화면에 <b>PLOT</b> 추가하기</h3>
+    <p class="a2hs-lead a2hs-only-ios">아래 <b>3단계</b>만 따라 하시면 돼요. 한 번만 하면 홈 화면 아이콘으로 앱처럼 바로 열립니다.</p>
+    <p class="a2hs-lead a2hs-only-other">브라우저 메뉴(⋮ 또는 주소창)에서 <b>‘홈 화면에 추가’</b> 또는 <b>‘설치’</b>를 선택하세요.</p>
+    <ol class="a2hs-steps">
+      <li><span class="a2hs-n">1</span><div class="a2hs-txt">아래 <b>공유 버튼</b>을 누르세요<span class="a2hs-share"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4"/><path d="M8.5 7.5 12 4l3.5 3.5"/><path d="M7 11H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-1"/></svg></span><em>아이폰은 화면 <b>아래쪽</b>, 아이패드는 <b>위쪽 주소창 옆</b>에 있어요.</em></div></li>
+      <li><span class="a2hs-n">2</span><div class="a2hs-txt">목록을 조금 내려 <b>‘홈 화면에 추가’</b>를 누르세요<span class="a2hs-a2h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M12 8.5v7M8.5 12h7"/></svg>홈 화면에 추가</span></div></li>
+      <li><span class="a2hs-n">3</span><div class="a2hs-txt">오른쪽 위 <b>‘추가’</b>를 누르면 끝!<br>홈 화면에 <b>PLOT</b> 아이콘이 생겨요.</div></li>
+    </ol>
+    <button class="a2hs-ok" id="a2hs-ok">알겠어요</button>
+  </div>
+</div>
 <div id="set-modal" class="set-back">
   <div class="set-box set-box-wide">
     <div class="set-h"><span>⚙️ 설정</span><button id="set-x" title="닫기">×</button></div>
@@ -1172,6 +1216,10 @@
       <!-- 일반설정 -->
       <div class="st-pane on" data-pane="general">
         <div class="set-sec"><div class="set-lbl">계정</div><div class="set-email" id="set-email">–</div></div>
+        <div class="set-sec"><div class="set-lbl">앱 · 홈 화면</div>
+          <button type="button" id="st-install" class="st-install-btn">📲 홈 화면에 추가</button>
+          <div class="st-note" id="st-install-note">버튼을 누르면 추가 방법을 안내해 드려요. 홈 화면에서 앱처럼 바로 열 수 있어요.</div>
+        </div>
         <div class="set-sec"><div class="set-lbl">비밀번호 변경</div>
           <input type="password" id="set-pw1" placeholder="새 비밀번호 (6자 이상)" autocomplete="new-password">
           <input type="password" id="set-pw2" placeholder="새 비밀번호 확인" autocomplete="new-password">
@@ -3089,7 +3137,33 @@ async function loadSettingsCloud(){
   applySettings(); if(!window.__defmapDone){ window.__defmapDone=true; applyDefmap(); } if(document.querySelector('#set-modal.open')) populateSettings();
 }
 async function saveSettingsCloud(){ try{ if(_sb&&_authUser){ await _sb.from('user_settings').upsert({id:_authUser.id, settings:SETTINGS}); } }catch(e){} }
-function openSettings(){ const m=$('set-modal'); if(!m) return; const e=$('set-email'); if(e) e.textContent=(_authUser&&_authUser.email)||'–'; const msg=$('set-msg'); if(msg){ msg.textContent=''; msg.className='set-msg'; } if($('set-pw1'))$('set-pw1').value=''; if($('set-pw2'))$('set-pw2').value=''; populateSettings(); const sm=$('st-savemsg'); if(sm){ sm.textContent=''; sm.className='set-msg'; } m.classList.add('open'); }
+/* ================= 홈 화면에 추가(앱 설치) ================= */
+let _deferredPrompt=null;
+if('serviceWorker' in navigator){ try{ navigator.serviceWorker.register('/sw.js').catch(()=>{}); }catch(e){} }
+window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); _deferredPrompt=e; try{ updateInstallBtn(); }catch(_){ } });
+window.addEventListener('appinstalled', ()=>{ _deferredPrompt=null; try{ updateInstallBtn(); }catch(_){ } });
+function isStandaloneApp(){ return (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone===true; }
+function isIOSDevice(){ const ua=navigator.userAgent||''; return /iPad|iPhone|iPod/.test(ua) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1); }
+function updateInstallBtn(){
+  const b=document.getElementById('st-install'), note=document.getElementById('st-install-note'); if(!b) return;
+  if(isStandaloneApp()){ b.disabled=true; b.classList.add('done'); b.textContent='✓ 이미 홈 화면에 추가됨'; if(note) note.textContent='홈 화면의 PLOT 아이콘으로 바로 여실 수 있어요.'; return; }
+  b.disabled=false; b.classList.remove('done'); b.textContent='📲 홈 화면에 추가';
+  if(note) note.textContent = _deferredPrompt ? '버튼을 누르면 설치창이 바로 열립니다.' : '버튼을 누르면 추가 방법을 그림으로 안내해 드려요.';
+}
+async function doInstall(){
+  if(isStandaloneApp()) return;
+  if(_deferredPrompt){ try{ _deferredPrompt.prompt(); await _deferredPrompt.userChoice; _deferredPrompt=null; updateInstallBtn(); return; }catch(e){ } }
+  openA2HS();   // 아이폰/아이패드(및 설치창 미지원 브라우저) = 그림 안내
+}
+function openA2HS(){ const m=document.getElementById('a2hs-modal'); if(!m) return; document.body.classList.toggle('a2hs-ios', isIOSDevice()); m.classList.add('open'); }
+function closeA2HS(){ const m=document.getElementById('a2hs-modal'); if(m) m.classList.remove('open'); }
+{ const b=document.getElementById('st-install'); if(b) b.onclick=doInstall;
+  ['a2hs-x','a2hs-ok'].forEach(id=>{ const el=document.getElementById(id); if(el) el.onclick=closeA2HS; });
+  const ov=document.getElementById('a2hs-modal'); if(ov) ov.addEventListener('click',e=>{ if(e.target===ov) closeA2HS(); });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElementById('a2hs-modal')?.classList.contains('open')) closeA2HS(); });
+  try{ updateInstallBtn(); }catch(e){}
+}
+function openSettings(){ const m=$('set-modal'); if(!m) return; const e=$('set-email'); if(e) e.textContent=(_authUser&&_authUser.email)||'–'; const msg=$('set-msg'); if(msg){ msg.textContent=''; msg.className='set-msg'; } if($('set-pw1'))$('set-pw1').value=''; if($('set-pw2'))$('set-pw2').value=''; populateSettings(); try{ updateInstallBtn(); }catch(_){ } const sm=$('st-savemsg'); if(sm){ sm.textContent=''; sm.className='set-msg'; } m.classList.add('open'); }
 // 항목 설명 툴팁(ⓘ): body에 고정 버블로 띄우고 화면 안으로 위치 보정 → 모달에 잘리지 않음. PC 마우스오버 + 모바일 탭.
 (function(){ let bub=null, cur=null;
   function ensure(){ if(!bub){ bub=document.createElement('div'); bub.id='tip-bubble'; document.body.appendChild(bub); } return bub; }
