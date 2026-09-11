@@ -365,6 +365,13 @@
   @media (min-width:861px){
     #wrap{display:block;position:relative;height:100vh;height:100dvh}
     #center{position:absolute;inset:0}
+    /* 좌측 메뉴 접기/펼치기 (데스크톱 전용) — 아이콘 툴바는 유지, 메뉴바만 숨김 */
+    #close-left{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;flex:0 0 auto;border-radius:7px}
+    #close-left:hover{background:var(--surface-2,#f4f6fa)}
+    #wrap.menu-collapsed #left{display:none}
+    #wrap.menu-collapsed #draw-tools{left:14px}
+    #menu-fab{display:none}
+    #wrap.menu-collapsed #menu-fab{display:flex}
     #left{position:absolute;top:14px;left:14px;width:340px;max-height:calc(100vh - 28px);max-height:calc(100dvh - 28px);overflow-y:auto;overflow-x:hidden;background:rgba(255,255,255,.40);-webkit-backdrop-filter:blur(22px) saturate(1.5);backdrop-filter:blur(22px) saturate(1.5);border:1px solid var(--line);border-right:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:15px 15px 16px;z-index:600}
     #left .sec{background:transparent;border:0;box-shadow:none;border-top:1px solid var(--line-2);border-radius:0;padding:14px 3px;margin:0}
     #left .sec:first-of-type{border-top:0;padding-top:2px}
@@ -645,7 +652,7 @@
       <div class="bt"><h1 class="plot-wm">PLOT</h1><div class="sub">부지 분석 · 자동 배치</div></div>
       <button id="btn-reset" title="지도 배율은 유지하고, 선택·그림·배치 결과를 모두 초기화합니다"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M3 2v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L3 8"/></svg>초기화</button>
       <a id="btn-admin" href="/admin.html" title="관리자 페이지"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>관리자</a>
-      <button id="close-left" title="메뉴 닫기">✕</button>
+      <button id="close-left" title="메뉴바 숨기기 (아이콘은 유지됩니다)">✕</button>
     </div>
 
     <div class="sec">
@@ -2031,6 +2038,10 @@ function resetAll(){
   setStatus('초기화되었습니다. <span style="color:var(--muted)">지도 배율은 유지됩니다.</span>');
 }
 $('btn-reset').onclick = resetAll;
+// 데스크톱: 좌측 메뉴바만 접기/펼치기 (아이콘 툴바는 유지)
+{ const _wrap=document.getElementById('wrap');
+  const _cl=document.getElementById('close-left'); if(_cl&&_wrap) _cl.onclick=()=>_wrap.classList.add('menu-collapsed');
+  const _mf=document.getElementById('menu-fab'); if(_mf&&_wrap) _mf.onclick=()=>_wrap.classList.remove('menu-collapsed'); }
 map.on('pm:create', async e=>{
   const idx=REGIONS.length;
   try{ e.layer.setStyle({color:REGION_COLORS[idx%REGION_COLORS.length], weight:2, fillOpacity:.06}); }catch(_){}
