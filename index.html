@@ -207,7 +207,7 @@
   .brand .logo svg{width:19px;height:19px;stroke:#fff;fill:none;stroke-width:2}
   .brand .bt{min-width:0}
   .brand h1{font-size:16.5px;font-weight:800;letter-spacing:-.02em;margin:0;line-height:1.1;color:var(--ink)}
-  .brand .sub{font-size:10.5px;font-weight:500;color:var(--muted);letter-spacing:.01em;margin-top:2px}
+  .brand .sub{font-size:10.5px;font-weight:500;color:var(--muted);letter-spacing:.01em;margin-top:2px;word-break:keep-all;line-height:1.35}
   #close-left,#close-results{color:var(--muted)}
   #close-left:hover,#close-results:hover{color:var(--ink)}
   h1{color:var(--ink)}
@@ -649,7 +649,7 @@
     <div class="sheet-grab" aria-hidden="true"></div>
     <div class="brand">
       <div class="logo-pin"><svg viewBox="0 0 48 48" fill="none"><rect x="6" y="6" width="36" height="36" rx="9.5" stroke="currentColor" stroke-width="2.1"/><path d="M6 24h36M24 6v36" stroke="currentColor" stroke-width="1.3" opacity=".4"/><circle cx="24" cy="24" r="3.1" fill="currentColor"/><path d="M16 20v-4h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity=".75"/><path d="M32 28v4h-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity=".75"/></svg></div>
-      <div class="bt"><h1 class="plot-wm">PLOT</h1><div class="sub">부지 분석 · 자동 배치</div></div>
+      <div class="bt"><h1 class="plot-wm">PLOT</h1><div class="sub">부지 분석<br>자동 배치</div></div>
       <button id="btn-reset" title="지도 배율은 유지하고, 선택·그림·배치 결과를 모두 초기화합니다"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M3 2v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L3 8"/></svg>초기화</button>
       <a id="btn-admin" href="/admin.html" title="관리자 페이지"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>관리자</a>
       <button id="close-left" title="메뉴바 숨기기 (아이콘은 유지됩니다)">✕</button>
