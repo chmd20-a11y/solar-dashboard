@@ -403,8 +403,11 @@
 <style id="plot-updates-css">
 /* PLOT 업데이트 소식 — 전부 .pu-/#pu- 스코프(앱 본체·인증과 충돌 없음). 색은 변수로 분리 → 재스킨 용이 */
 :root{--pu-new:#12925a;--pu-new-s:#e6f5ec;--pu-improve:#2563eb;--pu-improve-s:#e7edfd;--pu-fix:#c07d00;--pu-fix-s:#fbf1db;--pu-notice:#647184;--pu-notice-s:#eef1f6;--pu-brass:#a98a45;--pu-line:#e4e8ef;--pu-ink:#15202e;--pu-muted:#647184;--pu-faint:#8b95a6}
-#pu-bell{position:relative}
-#pu-bell .pu-badge{position:absolute;top:6px;right:9px;width:9px;height:9px;border-radius:50%;background:#e5484d;border:2px solid #fff;display:none}
+#pu-bell{position:absolute;top:14px;right:66px;z-index:600;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:var(--card,#fff);border:1px solid var(--line,#e4e8ef);border-radius:12px;box-shadow:var(--shadow,0 6px 20px rgba(15,23,40,.14));color:var(--ink,#15202e);cursor:pointer;padding:0;transition:transform .2s ease,color .15s}
+#pu-bell:hover{color:var(--accent,#0e7c66)}
+#pu-bell .ic{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.9}
+body.gc-shift #pu-bell{transform:translateX(-338px)}   /* 배치결과창 열릴 때 레이어 아이콘과 함께 왼쪽 이동 */
+#pu-bell .pu-badge{position:absolute;top:7px;right:9px;width:9px;height:9px;border-radius:50%;background:#e5484d;border:2px solid var(--card,#fff);display:none}
 #pu-bell.pu-unread .pu-badge{display:block}
 #pu-panel{position:fixed;top:0;right:0;bottom:0;width:min(380px,90%);background:#fff;color:var(--pu-ink);z-index:3600;transform:translateX(106%);transition:transform .32s cubic-bezier(.32,.72,0,1);box-shadow:-16px 0 50px rgba(15,23,40,.26);display:flex;flex-direction:column;font-family:"Pretendard","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,system-ui,sans-serif}
 #pu-panel.pu-open{transform:none}
@@ -785,8 +788,8 @@
     <div id="sunbar" class="panel" style="display:none"><svg class="ic ic-sm" viewBox="0 0 24 24" style="stroke:var(--warn)"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span style="white-space:nowrap">태양</span> <input type="range" id="o-sun" min="6" max="18" step="0.25" value="13"><b id="v-sun">13:00</b></div>
     <div id="status">위 <b>지번 검색</b> 또는 <b>경계 그리기</b>로 부지를 지정하세요.</div>
     <button id="reopen-results" title="배치 결과 보기"><svg class="ic ic-sm" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>배치 결과</button>
+    <button id="pu-bell" title="새 소식"><svg class="ic" viewBox="0 0 24 24" fill="none"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="pu-badge"></span></button>
     <div id="draw-tools">
-      <button id="pu-bell" title="새 소식"><svg class="ic" viewBox="0 0 24 24" fill="none"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span>소식</span><span class="pu-badge"></span></button>
       <a id="btn-admin-m" href="/admin.html" title="관리자 페이지"><svg class="ic" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>관리자</span></a>
       <button id="btn-draw" title="부지 경계 그리기 — 꼭짓점을 클릭해 부지를 그립니다"><svg class="ic" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span>경계</span></button>
       <button id="btn-undo" title="마지막에 찍은 꼭짓점 하나 취소 (Backspace)" style="display:none"><svg class="ic" viewBox="0 0 24 24"><polyline points="9 14 4 9 9 4"/><path d="M4 9h11a5 5 0 0 1 0 10h-4"/></svg><span>점취소</span></button>
