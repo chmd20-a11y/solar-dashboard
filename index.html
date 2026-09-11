@@ -794,8 +794,9 @@ body.gc-shift #pu-bell{transform:translateX(-338px)}   /* 배치결과창 열릴
       <button id="btn-draw" title="부지 경계 그리기 — 꼭짓점을 클릭해 부지를 그립니다"><svg class="ic" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span>경계</span></button>
       <button id="btn-undo" title="마지막에 찍은 꼭짓점 하나 취소 (Backspace)" style="display:none"><svg class="ic" viewBox="0 0 24 24"><polyline points="9 14 4 9 9 4"/><path d="M4 9h11a5 5 0 0 1 0 10h-4"/></svg><span>점취소</span></button>
       <button id="btn-clear" title="그린 구역 지우기"><svg class="ic" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><span>지우기</span></button>
-      <button id="btn-run" title="배치 계산 — 선택/그린 부지에 패널을 자동 배치"><svg class="ic" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span>배치</span></button>
+      <button id="btn-run" title="배치 계산 — 선택/그린 부지에 패널을 자동 배치"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1"/><line x1="3" y1="8" x2="21" y2="8"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="9" y1="4" x2="9" y2="16"/><line x1="15" y1="4" x2="15" y2="16"/><line x1="12" y1="16" x2="12" y2="20"/><line x1="8" y1="20" x2="16" y2="20"/></svg><span>배치</span></button>
       <button id="btn-grid" title="계통 여유용량 — 변전소 접속여유 표시 켜기/끄기"><svg class="ic" viewBox="0 0 24 24"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg><span class="gc-lbl">계통</span></button>
+      <button id="btn-near" title="근접 계통 분석 — 검색·지정한 부지 기준 가장 가까운 변전소·연계가능량 표시"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><line x1="12" y1="1.5" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22.5"/><line x1="1.5" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22.5" y2="12"/></svg><span>근접분석</span></button>
     </div>
     <div id="own-legend">
       <b>🏠 필지 소유정보</b>
@@ -1558,6 +1559,47 @@ body.gc-shift #pu-bell{transform:translateX(-338px)}   /* 배치결과창 열릴
   #gc-reopen{position:fixed;z-index:2600;left:50%;top:calc(env(safe-area-inset-top) + 76px);transform:translateX(-50%);display:none;align-items:center;gap:6px;background:#0e7c66;color:#fff;border:0;border-radius:22px;padding:9px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 8px 24px rgba(21,32,46,.28)}
   #gc-reopen.on{display:inline-flex}
   #gc-reopen:hover{background:#0b6a58}
+
+  /* ── 근접 계통 분석 카드(부지→가장 가까운 변전소) ── */
+  #near-card{position:fixed;z-index:2600;top:calc(env(safe-area-inset-top) + 76px);right:14px;width:340px;max-width:calc(100vw - 28px);background:#fff;border:1px solid #e4e8ef;border-radius:16px;box-shadow:0 22px 60px rgba(21,32,46,.28);display:none;overflow:hidden;color:#15202e;font-size:13px}
+  #near-card.on{display:block}
+  #near-card .nr-head{padding:14px 16px 12px;border-bottom:1px solid #eef1f6}
+  #near-card .nr-r1{display:flex;align-items:center;gap:7px;margin-bottom:6px}
+  #near-card .nr-r1 h3{font-size:14px;font-weight:800;margin:0;letter-spacing:-.01em}
+  #near-card .nr-est{margin-left:auto;font-size:10.5px;font-weight:800;color:#a98a45;background:#f7f2e6;border:1px solid #ece1c6;padding:3px 8px;border-radius:20px;white-space:nowrap}
+  #near-card .nr-x{background:none;border:0;font-size:20px;line-height:1;color:#8b95a6;cursor:pointer;padding:0 2px;margin-left:2px}
+  #near-card .nr-loc{font-size:12px;color:#647184;line-height:1.5}
+  #near-card .nr-loc b{color:#15202e}
+  #near-card .nr-sect{padding:12px 16px}
+  #near-card .nr-sect + .nr-sect{border-top:1px solid #eef1f6}
+  #near-card .nr-kv{display:flex;align-items:baseline;gap:8px;font-size:12.5px}
+  #near-card .nr-kv + .nr-kv{margin-top:7px}
+  #near-card .nr-kv .k{color:#647184;flex:0 0 auto}
+  #near-card .nr-kv .v{color:#15202e;font-weight:700;margin-left:auto;text-align:right}
+  #near-card .nr-kv .v .dim{font-weight:500;color:#98a2b3;font-size:11.5px}
+  #near-card .nr-sup-y{color:#0f8a3c;font-weight:800}
+  #near-card .nr-sup-n{color:#8b95a6;font-weight:700}
+  #near-card .nr-lbl{font-size:10.5px;font-weight:800;color:#98a2b3;letter-spacing:.06em;margin:0 0 8px}
+  #near-card table.nr-dl{width:100%;border-collapse:collapse;font-size:12.5px}
+  #near-card table.nr-dl td{padding:8px 0;border-bottom:1px solid #f1f3f7;vertical-align:middle}
+  #near-card table.nr-dl tr:last-child td{border-bottom:0}
+  #near-card table.nr-dl .nm{font-weight:700;color:#15202e}
+  #near-card table.nr-dl .nm .no{color:#98a2b3;font-weight:600;font-size:11px;margin-right:4px}
+  #near-card table.nr-dl td.cap{text-align:right;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+  #near-card .nr-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:1px}
+  #near-card table.nr-dl .u{font-weight:600;font-size:11px;color:#98a2b3;margin-left:2px}
+  #near-card .nr-adj{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+  #near-card .nr-adj .chip{font-size:11.5px;background:#f5f7fa;border:1px solid #e4e8ef;border-radius:16px;padding:5px 10px;cursor:pointer;color:#334}
+  #near-card .nr-adj .chip:hover{border-color:#0e7c66;background:#f0f7f4}
+  #near-card .nr-note{display:flex;gap:8px;align-items:flex-start;background:#fbfaf6;border-top:1px solid #eef1f6;padding:11px 16px;font-size:11.5px;line-height:1.6;color:#647184}
+  #near-card .nr-note .ic{color:#a98a45;flex:0 0 auto}
+  #near-card .nr-note b{color:#15202e}
+  .nr-km{background:rgba(255,255,255,.95)!important;border:1px solid #a98a45!important;color:#7a6222!important;font-weight:800;font-size:11px;padding:2px 8px;border-radius:20px;box-shadow:0 2px 8px rgba(21,32,46,.15);white-space:nowrap}
+  .nr-km:before{display:none!important}
+  .nr-sub-pin{width:30px;height:30px;border-radius:9px;background:radial-gradient(120% 120% at 30% 20%,#1b232f,#0a0d11);color:#d8c188;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 3px 10px rgba(0,0,0,.4),inset 0 0 0 1px rgba(216,193,136,.32)}
+  @media (max-width:620px){
+    #near-card{top:auto;bottom:0;right:0;left:0;width:100%;max-width:100%;border-radius:16px 16px 0 0;max-height:64vh;overflow-y:auto}
+  }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -1740,6 +1782,7 @@ async function doSearch(){
     return;
   }
   if(!pt){ setStatus('⚠️ 주소를 찾지 못했습니다. 지번/도로명을 다시 확인하세요.'); return; }
+  try{ window.__plotSite={lat:pt.lat,lng:pt.lng,label:addr}; }catch(e){}   // 근접 계통 분석 기준점 저장
   map.setView([pt.lat,pt.lng],18);
   setStatus('📐 부지 경계 불러오는 중…');
   let f=null; try{ f=await vwParcel(pt.lng,pt.lat); }catch(e){}
@@ -3530,6 +3573,7 @@ lgInitVisuals();
     let pt=null; try{ pt=await vwGeocode(q); }catch(e){ pt=null; }
     if(!pt){ box.innerHTML='<div class="gcp-note">주소를 찾지 못했습니다. 지번/도로명을 확인하세요.</div>'; return; }
     if(SRCH){ map.removeLayer(SRCH); } SRCH=L.circleMarker([pt.lat,pt.lng],{radius:7,color:'#fff',weight:2,fillColor:'#e6007a',fillOpacity:1}).addTo(map).bindTooltip('검색 위치',{permanent:false});
+    try{ window.__plotSite={lat:pt.lat,lng:pt.lng,label:q}; }catch(e){}   // 근접 계통 분석 기준점 저장
     map.setView([pt.lat,pt.lng],11);
     renderHits(nearHits(pt.lat,pt.lng));
   }
@@ -3575,6 +3619,69 @@ lgInitVisuals();
     else { if(LAYER) map.removeLayer(LAYER); if(PLAN_LAYER) map.removeLayer(PLAN_LAYER); if(SRCH){map.removeLayer(SRCH);SRCH=null;} legendEl().classList.remove('on'); const pn=document.getElementById('gc-panel'); if(pn){pn.classList.remove('on'); const tg=document.getElementById('gcp_plan_tg'); if(tg)tg.checked=false;} const rb=document.getElementById('gc-reopen'); if(rb) rb.classList.remove('on'); }
   }
   btn.addEventListener('click',e=>{ e.preventDefault(); setOn(!on); });
+
+  /* ── 근접 계통 분석: 검색·지정한 부지 기준 가장 가까운 변전소·연계가능량(목업 스타일) ── */
+  const nbtn=document.getElementById('btn-near');
+  let nearOn=false, NEARLAYER=null, nearSite=null;
+  function emdTokens(label){ return (String(label||'').match(/([가-힣]{1,10}(?:읍|면|동|리|가))/g))||[]; }
+  function supplyIncludes(s, tokens){   // 부지 읍/면/동/리가 변전소 공급구역에 포함되는지(추정)
+    const sup=s.supply3||s.supply||{}, keys=Object.keys(sup);
+    if(!keys.length || !tokens.length) return null;
+    for(const t of tokens){ const b=t.replace(/(읍|면|동|리|가)$/,''); if(!b || b.length<2) continue;
+      for(const k of keys){ if(k.includes(b)) return true; const arr=sup[k]||[]; if(arr.some(x=>String(x).includes(b))) return true; } }
+    return false;
+  }
+  function clearNear(){ if(NEARLAYER){ map.removeLayer(NEARLAYER); NEARLAYER=null; } }
+  function closeNear(){ nearOn=false; if(nbtn) nbtn.classList.remove('on'); clearNear(); const el=document.getElementById('near-card'); if(el) el.classList.remove('on'); }
+  function drawNearLayer(site, sel){
+    clearNear(); if(SRCH){ map.removeLayer(SRCH); SRCH=null; }
+    const g=L.layerGroup(), s=sel.s;
+    L.circle([site.lat,site.lng],{radius:2200,color:'#a98a45',weight:1,opacity:.55,fillColor:'#d8c188',fillOpacity:.10,dashArray:'4 5'}).addTo(g);
+    L.polyline([[site.lat,site.lng],[s.lat,s.lng]],{color:'#a98a45',weight:2.5,opacity:.9,dashArray:'2 7',lineCap:'round'}).addTo(g);
+    const mid=[(site.lat+s.lat)/2,(site.lng+s.lng)/2];
+    L.tooltip({permanent:true,direction:'center',className:'nr-km'}).setLatLng(mid).setContent('약 '+sel.d.toFixed(1)+' km').addTo(g);
+    L.marker([s.lat,s.lng],{icon:L.divIcon({className:'',html:'<div class="nr-sub-pin">⚡</div>',iconSize:[30,30],iconAnchor:[15,15]}),zIndexOffset:1500}).addTo(g)
+      .bindTooltip((s.osm_name||(s.name+' 변전소')),{direction:'top',offset:[0,-14],className:'nr-km'});
+    const pin='<svg width="30" height="40" viewBox="0 0 30 40" style="filter:drop-shadow(0 4px 6px rgba(0,0,0,.3))"><path d="M15 0C6.7 0 0 6.7 0 15c0 10 15 25 15 25s15-15 15-25C30 6.7 23.3 0 15 0z" fill="#D8C188" stroke="#8a6f2c" stroke-width="1.3"/><circle cx="15" cy="15" r="5.5" fill="#0A0D11"/></svg>';
+    L.marker([site.lat,site.lng],{icon:L.divIcon({className:'',html:pin,iconSize:[30,40],iconAnchor:[15,40]}),zIndexOffset:2000}).addTo(g);
+    NEARLAYER=g.addTo(map);
+    try{ map.fitBounds(L.latLngBounds([[site.lat,site.lng],[s.lat,s.lng]]).pad(0.45),{maxZoom:14}); }catch(e){}
+  }
+  function nearCardEl(){ let el=document.getElementById('near-card'); if(el) return el; el=document.createElement('div'); el.id='near-card'; document.body.appendChild(el); return el; }
+  function renderNearCard(site, sel, hits){
+    const s=sel.s, conn=s.connect_max_mw||0, nm=s.osm_name||(s.name+' 변전소');
+    const inc=supplyIncludes(s, emdTokens(site.label));
+    const supHtml = inc===true ? '<span class="nr-sup-y">✔ 공급권 포함(추정)</span>' : inc===false ? '<span class="nr-sup-n">공급권 밖(추정)</span>' : '<span class="nr-sup-n">확인 자료 없음</span>';
+    const dls=[...(s.lines||[])].sort((a,b)=>(b.conn||0)-(a.conn||0)).slice(0,5);
+    const dlRows = dls.length ? dls.map(l=>`<tr><td class="nm"><span class="no">D/L</span>${l.dl_nm}</td><td class="cap" style="color:${colorConn(l.conn||0)}"><span class="nr-dot" style="background:${colorConn(l.conn||0)}"></span>${(l.conn??0).toFixed(1)}<span class="u">MW</span></td></tr>`).join('') : '<tr><td class="nm" style="color:#8b95a6">배전선로 여유 정보 없음</td><td></td></tr>';
+    const adj=(hits||[]).filter(h=>h.s.code!==s.code).slice(0,3).map(h=>`<span class="chip" data-code="${h.s.code}">${(h.s.osm_name||h.s.name)} · ${h.d.toFixed(1)}km</span>`).join('');
+    const loc = site.label ? site.label : '지도 중심(부지 미지정 — 지번 검색 권장)';
+    const el=nearCardEl();
+    el.innerHTML=`<div class="nr-head"><div class="nr-r1"><span>📍</span><h3>부지 계통 근접 분석</h3><span class="nr-est">참고·추정</span><button class="nr-x" title="닫기">×</button></div><div class="nr-loc">기준 위치 <b>${loc}</b></div></div>`+
+      `<div class="nr-sect"><div class="nr-kv"><span class="k">가장 가까운 변전소</span><span class="v">${nm} <span class="dim">직선 약 ${sel.d.toFixed(1)} km</span></span></div><div class="nr-kv"><span class="k">이 지역 공급권</span><span class="v">${supHtml}</span></div><div class="nr-kv"><span class="k">변전소 최대 연계가능</span><span class="v" style="color:${colorConn(conn)}">${conn.toFixed(1)} MW</span></div></div>`+
+      `<div class="nr-sect"><p class="nr-lbl">배전선로(DL) 여유용량 · 상위</p><table class="nr-dl"><tbody>${dlRows}</tbody></table></div>`+
+      (adj?`<div class="nr-sect"><p class="nr-lbl">인근 변전소로 보기</p><div class="nr-adj">${adj}</div></div>`:'')+
+      `<div class="nr-note"><span class="ic">⚠</span><div><b>직선거리·공급구역 기반 추정</b>입니다. 실제 연결 선로와 정확한 연계가능 용량은 부지·경과지에 따라 달라지며, <b>한전 연계검토</b>로 확정됩니다.</div></div>`;
+    el.classList.add('on');
+    el.querySelector('.nr-x').onclick=()=>closeNear();
+    el.querySelectorAll('.nr-adj .chip').forEach(c=>c.onclick=()=>runNear(nearSite, c.getAttribute('data-code')));
+  }
+  async function runNear(site, forceCode){
+    if(!DATA){ await load(); }
+    const subs=(DATA&&DATA.substations)||[]; if(!subs.length){ alert('계통 데이터를 불러오지 못했습니다.'); return; }
+    nearSite=site;
+    const hits=nearHits(site.lat,site.lng); if(!hits.length) return;
+    let sel = forceCode ? (subs.filter(s=>s.code===forceCode).map(s=>({s,d:hav(site.lat,site.lng,s.lat,s.lng)}))[0]) : hits[0];
+    if(!sel) sel=hits[0];
+    drawNearLayer(site, sel); renderNearCard(site, sel, hits);
+    nearOn=true; if(nbtn) nbtn.classList.add('on');
+  }
+  if(nbtn){ nbtn.addEventListener('click', async e=>{ e.preventDefault();
+    if(nearOn){ closeNear(); return; }
+    let site=window.__plotSite||null; if(!site){ const c=map.getCenter(); site={lat:c.lat,lng:c.lng,label:''}; }
+    await runNear(site);
+  }); }
+
   // 배치결과창(#wrap.results-open) 표시 변화 감지 → 레이어 컨트롤 자동 이동
   try{ const wrap=document.getElementById('wrap'); if(wrap&&window.MutationObserver){ new MutationObserver(updateRightShift).observe(wrap,{attributes:true,attributeFilter:['class']}); } window.addEventListener('resize',updateRightShift); updateRightShift(); }catch(e){}
 })();
