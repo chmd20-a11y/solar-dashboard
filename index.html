@@ -1554,6 +1554,10 @@ body.gc-shift #pu-bell{transform:translateX(-338px)}   /* 배치결과창 열릴
   #gc-panel .gcp-plan{margin-top:12px;border-top:1px solid #e4e8ef;padding-top:11px}
   #gc-panel .gcp-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px;font-weight:600}
   #gc-panel .gcp-note{font-size:10.5px;color:#8b95a6;margin-top:5px;line-height:1.4}
+  /* 검색창 닫아도 변전소 마커는 유지 → 다시 검색창 부르는 칩 */
+  #gc-reopen{position:fixed;z-index:2600;left:50%;top:calc(env(safe-area-inset-top) + 76px);transform:translateX(-50%);display:none;align-items:center;gap:6px;background:#0e7c66;color:#fff;border:0;border-radius:22px;padding:9px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 8px 24px rgba(21,32,46,.28)}
+  #gc-reopen.on{display:inline-flex}
+  #gc-reopen:hover{background:#0b6a58}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -3547,12 +3551,17 @@ lgInitVisuals();
     <div class="gcp-res" id="gcp_res"><div class="gcp-note">고객 부지 지번을 넣으면 가장 가까운 변전소·연계가능량을 보여줍니다.</div></div>
     <div class="gcp-plan"><label class="gcp-toggle"><input type="checkbox" id="gcp_plan_tg"> 🏗 발전소 신설/증설 계획 표시</label><div class="gcp-note" id="gcp_plan_n"></div></div>`;
     document.body.appendChild(el);   // 별도 팝업(position:fixed) — 변형된 좌측 시트 밖(body)에 붙여 위치 고정
-    el.querySelector('.gcp-x').onclick=()=>setOn(false);
+    el.querySelector('.gcp-x').onclick=()=>setPanel(false);   // 검색창만 닫음 — 변전소 마커는 유지
     el.querySelectorAll('.gcp-tab').forEach(t=>t.onclick=()=>{ mode=t.getAttribute('data-t'); el.querySelectorAll('.gcp-tab').forEach(x=>x.classList.toggle('on',x===t)); document.getElementById('gcp_in').placeholder=mode==='name'?'예: 여수 · 남양주 · 양곡':'예: 김포시 양촌읍 양곡리 316'; document.getElementById('gcp_res').innerHTML=''; });
     document.getElementById('gcp_go').onclick=doSearch;
     document.getElementById('gcp_in').addEventListener('keydown',e=>{ if(e.key==='Enter') doSearch(); });
     document.getElementById('gcp_plan_tg').addEventListener('change',async e=>{ if(e.target.checked){ e.target.disabled=true; await loadPlans(); e.target.disabled=false; if(PLAN_LAYER) map.addLayer(PLAN_LAYER); } else if(PLAN_LAYER){ map.removeLayer(PLAN_LAYER); } });
     return el;
+  }
+  function reopenChip(){ let el=document.getElementById('gc-reopen'); if(!el){ el=document.createElement('button'); el.id='gc-reopen'; el.type='button'; el.innerHTML='🔍 변전소 검색'; el.title='지번·변전소명으로 검색'; (document.getElementById('center')||document.body).appendChild(el); el.onclick=()=>setPanel(true); } return el; }
+  function setPanel(v){   // 검색창만 여닫음(변전소 마커와 독립). 닫히면 재호출 칩 노출
+    if(v){ if(!on) return; panel().classList.add('on'); reopenChip().classList.remove('on'); }
+    else { const pn=document.getElementById('gc-panel'); if(pn) pn.classList.remove('on'); if(on) reopenChip().classList.add('on'); }
   }
   function legendEl(){ let el=document.getElementById('gc-legend'); if(!el){ el=document.createElement('div'); el.id='gc-legend'; el.className='gc-legend'; el.innerHTML=`<b>계통 여유용량</b> · 원 색 = 선로 최대 연계가능<div style="margin-top:6px"><span class="sw"><span class="dot" style="background:#0f8a3c"></span>10MW+</span><span class="sw"><span class="dot" style="background:#3fae57"></span>5–10</span><span class="sw"><span class="dot" style="background:#eab000"></span>1–5</span><span class="sw"><span class="dot" style="background:#f57c00"></span>0–1</span><span class="sw"><span class="dot" style="background:#d5443f"></span>0(불가)</span></div><div style="margin-top:5px;font-size:10.5px;color:#8b95a6">한전 분산전원 연계정보(22.9kV)·추정치</div>`; (document.getElementById('center')||document.body).appendChild(el); } return el; }
   async function load(){ if(DATA||loading) return; loading=true; btn.style.opacity='.6'; try{ DATA=await fetch('/capacity.json?_'+Date.now()).then(r=>r.json()); buildLayer(); stats(); }catch(e){ alert('계통 데이터를 불러오지 못했습니다.'); } loading=false; btn.style.opacity=''; }
@@ -3562,8 +3571,8 @@ lgInitVisuals();
     if(lbl)lbl.textContent='계통';   // 아이콘 라벨은 고정 '계통' — 켜짐/꺼짐은 강조색(.on)으로 표시
     if(sub)sub.textContent=v?'· 변전소 켜짐':'· 변전소 접속여유';
     if(v){ await load(); if(!on) return;   // 로드 중 사용자가 껐으면 중단(반대로 작동 방지)
-      if(LAYER) map.addLayer(LAYER); legendEl().classList.add('on'); panel().classList.add('on'); stats(); }
-    else { if(LAYER) map.removeLayer(LAYER); if(PLAN_LAYER) map.removeLayer(PLAN_LAYER); if(SRCH){map.removeLayer(SRCH);SRCH=null;} legendEl().classList.remove('on'); const pn=document.getElementById('gc-panel'); if(pn){pn.classList.remove('on'); const tg=document.getElementById('gcp_plan_tg'); if(tg)tg.checked=false;} }
+      if(LAYER) map.addLayer(LAYER); legendEl().classList.add('on'); setPanel(true); stats(); }
+    else { if(LAYER) map.removeLayer(LAYER); if(PLAN_LAYER) map.removeLayer(PLAN_LAYER); if(SRCH){map.removeLayer(SRCH);SRCH=null;} legendEl().classList.remove('on'); const pn=document.getElementById('gc-panel'); if(pn){pn.classList.remove('on'); const tg=document.getElementById('gcp_plan_tg'); if(tg)tg.checked=false;} const rb=document.getElementById('gc-reopen'); if(rb) rb.classList.remove('on'); }
   }
   btn.addEventListener('click',e=>{ e.preventDefault(); setOn(!on); });
   // 배치결과창(#wrap.results-open) 표시 변화 감지 → 레이어 컨트롤 자동 이동
