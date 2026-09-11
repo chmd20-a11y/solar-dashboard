@@ -3,7 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>솔라핏 · 회원 관리 (Admin)</title>
+<title>PLOT · 회원 관리 (Admin)</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#0a0d11">
 <style>
   :root{--bg:#eef1f6;--card:#fff;--ink:#15202e;--muted:#647184;--faint:#8b95a6;--line:#e4e8ef;--line2:#eef1f6;
     --accent:#0e7c66;--accent-h:#0b6a58;--accent-soft:#e1f2ee;--good:#12925a;--good-soft:#e6f5ec;--warn:#c07d00;--warn-soft:#fbf1db;--bad:#d5443f;
@@ -112,7 +115,7 @@
 <div class="wrap">
   <!-- 로그인 -->
   <div id="gate" style="display:none">
-    <h2>솔라핏 관리자</h2>
+    <h2>PLOT 관리자</h2>
     <div class="muted" style="margin-bottom:16px">관리자 계정으로 로그인하세요.</div>
     <div class="fld"><label>이메일</label><input type="email" id="g-email" autocomplete="email"></div>
     <div class="fld"><label>비밀번호</label><input type="password" id="g-pw" autocomplete="current-password"></div>
@@ -123,8 +126,8 @@
   <!-- 관리 화면 -->
   <div id="app" style="display:none">
     <div class="top">
-      <svg class="logo" viewBox="0 0 48 48"><g><path d="M6 34 16 30 26 34 36 30 44 34 44 40 36 44 26 40 16 44 6 40Z" fill="#1a6b52"/><g stroke="#eef4ee" stroke-width="1.4" stroke-linecap="round" fill="none" opacity=".92"><path d="M16 30.6V43.4"/><path d="M26 34.2V39.8"/><path d="M36 30.6V43.4"/></g></g><path d="M24 5.5C16.8 5.5 11.2 11 11.2 17.9 11.2 25.6 24 36.4 24 36.4 24 36.4 36.8 25.6 36.8 17.9 36.8 11 31.2 5.5 24 5.5Z" fill="#1a6b52"/><circle cx="24" cy="17.4" r="5" fill="#f4ad2c"/><g stroke="#f4ad2c" stroke-width="1.9" stroke-linecap="round"><path d="M24 9.6V7"/><path d="M24 25.2v2.6"/><path d="M31.5 17.4h2.6"/><path d="M16.5 17.4H13.9"/><path d="M29.3 12.1l1.8-1.8"/><path d="M18.7 22.7l-1.8 1.8"/><path d="M29.3 22.7l1.8 1.8"/><path d="M18.7 12.1l-1.8-1.8"/></g></svg>
-      <h1>회원 관리 <small>솔라핏 Admin</small></h1>
+      <span class="logo" style="display:flex;align-items:center;justify-content:center;border-radius:26%;background:radial-gradient(120% 120% at 30% 18%,#151b24,#090c10);color:#d8c188;box-shadow:inset 0 0 0 1px rgba(216,193,136,.18),0 3px 9px rgba(0,0,0,.4)"><svg viewBox="0 0 48 48" fill="none" style="width:64%;height:64%;stroke:currentColor;fill:none"><rect x="6" y="6" width="36" height="36" rx="9.5" stroke="currentColor" stroke-width="2.1"/><path d="M6 24h36M24 6v36" stroke="currentColor" stroke-width="1.3" opacity=".4"/><circle cx="24" cy="24" r="3.1" fill="currentColor"/><path d="M16 20v-4h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity=".75"/><path d="M32 28v4h-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity=".75"/></svg></span>
+      <h1>회원 관리 <small>PLOT Admin</small></h1>
       <div class="sp"></div>
       <span class="muted" id="me"></span>
       <a class="btn sm" href="/" style="text-decoration:none">← 서비스로</a>
