@@ -892,7 +892,7 @@
   #quote-card h2{font-size:15px;margin:0 0 2px;display:flex;align-items:center;gap:8px;color:var(--ink)}
   .q-title{text-align:center;font-size:21px;font-weight:800;color:var(--ink);margin:6px 0 12px;letter-spacing:-.01em}
   .quote-close{margin-left:auto;background:transparent;border:0;color:var(--muted);font-size:20px;cursor:pointer;line-height:1}
-  #q-set{background:var(--surface-2);border:1px dashed var(--accent-line);border-radius:10px;margin-bottom:14px;overflow:hidden}
+  #q-set{display:none}   /* 영업자 설정 패널 제거 — 모든 값은 ⚙️ 설정에서 조정, quotePull이 자동 반영 */
   #q-set .q-set-hd{padding:9px 12px;font-size:12px;color:var(--accent);cursor:pointer;user-select:none;font-weight:700;display:flex;align-items:center;gap:6px}
   #q-set .q-set-hd::after{content:'▾';margin-left:auto;transition:transform .15s}
   #q-set.closed .q-set-hd::after{transform:rotate(-90deg)}
@@ -1061,7 +1061,7 @@
 
         <div class="q-sec-h blue" style="margin-top:10px">현장 배치도</div>
         <div id="q-photo-wrap">
-          <div id="q-photo-empty">아직 현장 배치도가 없습니다. <b>영업자 설정</b>에서 <b>2D 지도 담기</b> 또는 <b>3D 뷰 담기</b>를 누르면 여기에 배치도가 담깁니다.</div>
+          <div id="q-photo-empty">부지를 지정하고 <b>배치 계산</b> 후 견적서를 열면 현장 배치도가 자동으로 담깁니다. <span style="color:var(--faint)">(2D/3D는 ⚙️ 설정 → 고객견적서에서 선택)</span></div>
           <img id="q-photo" style="display:none" alt="3D 현장 배치도">
           <div id="q-photo-note" style="display:none"></div>
         </div>
@@ -1221,6 +1221,7 @@
         <div class="set-sec"><div class="set-lbl">발전·판매 기준</div>
           <div class="st-row"><label>적용단가 (원/kWh)</label><input type="number" id="st-apply" value="178"></div>
           <div class="st-row"><label>일 발전시간 (h)</label><input type="number" id="st-hours" value="3.6" step="0.1"></div>
+          <div class="st-row"><label>견적서 현장 배치도</label><select id="st-qphoto"><option value="2d">2D 지도</option><option value="3d">3D 뷰</option></select></div>
         </div>
         <div class="set-sec"><div class="set-lbl">정책자금 조건</div>
           <div class="st-grid2"><div class="st-row"><label>이율 (%)</label><input type="number" id="st-rate" value="2.5" step="0.1"></div><div class="st-row"><label>거치 (년)</label><input type="number" id="st-defer" value="5"></div><div class="st-row"><label>상환 (년)</label><input type="number" id="st-repay" value="10"></div><div class="st-row"><label>대출 비율 (%)</label><input type="number" id="st-loanpct" value="80" step="1"></div></div>
@@ -2525,10 +2526,15 @@ function quotePull(){
   const first=(typeof selected!=='undefined' && selected.length)?(selected.find(s=>!s.road)||selected[0]):null;
   const addr=first?(first.addr||first.jibun||''):'';
   if(addr && !$('q-addr').value) $('q-addr').value=addr;
+  // 영업자설정 패널 제거 → 모듈등급·발전소수도 상태에서 자동 채움
+  const _mm=document.querySelector('#seg-mod button.on'); if($('q-modsel')) $('q-modsel').value = (_mm&&_mm.dataset.m==='cn') ? '225|중국산무등급|아이코' : '310|국산2등급|현대';
+  if($('q-plants')) $('q-plants').value = Math.max(1, (typeof REGIONS!=='undefined'&&REGIONS.length)?REGIONS.length:1);
 }
 function quoteOpen(on){
   const ov=$('quote-overlay');
-  if(on){ quotePull(); quoteCalc(); if(typeof three!=='undefined' && three && !_quotePhoto) captureQuote3D(); applyQuotePhoto(); { const qc=$('q-company'); if(qc) qc.textContent=(typeof SETTINGS!=='undefined'&&SETTINGS.company)?(SETTINGS.company+(SETTINGS.phone?(' · '+SETTINGS.phone):'')):''; } ov.classList.add('open'); }
+  if(on){ quotePull(); quoteCalc();
+    if(!_quotePhoto){ const _hasSite=(window.LAYOUT||(typeof REGIONS!=='undefined'&&REGIONS.length)); if(_hasSite){ const _mode=((typeof SETTINGS!=='undefined'&&SETTINGS.qphoto)||'2d'); try{ captureQuoteImg(_mode); }catch(e){} } }
+    applyQuotePhoto(); { const qc=$('q-company'); if(qc) qc.textContent=(typeof SETTINGS!=='undefined'&&SETTINGS.company)?(SETTINGS.company+(SETTINGS.phone?(' · '+SETTINGS.phone):'')):''; } ov.classList.add('open'); }
   else ov.classList.remove('open');
 }
 $('btn-quote').onclick=()=>quoteOpen(!$('quote-overlay').classList.contains('open'));
@@ -2975,7 +2981,7 @@ async function initAuth(){
 }
 /* ===== 설정 화면(⚙️) — 7탭 (일반/타당성/경계/모듈/배치/원가/견적) · localStorage 저장 ===== */
 const SET_KEY='solarfit_settings';
-const SET_DEFAULTS={ company:'',phone:'',defmap:'esriko', gz:true,slope:15,setres:200, buffer:2,roadmask:true, krBrand:'현대',krW:645,krX:1134,krY:2465, cnBrand:'AIKO',cnW:655,cnX:1134,cnY:2382, tilt:15,incid:25,gap:10, modcost:310,kwunit:950000,margin:5, apply:178,hours:3.6,rate:2.5,defer:5,repay:10,loanpct:80,
+const SET_DEFAULTS={ company:'',phone:'',defmap:'esriko', gz:true,slope:15,setres:200, buffer:2,roadmask:true, krBrand:'현대',krW:645,krX:1134,krY:2465, cnBrand:'AIKO',cnW:655,cnX:1134,cnY:2382, tilt:15,incid:25,gap:10, modcost:310,kwunit:950000,margin:5, apply:178,hours:3.6,rate:2.5,defer:5,repay:10,loanpct:80, qphoto:'2d',
   // ===== 원가 상수(⚙️ 원가·마진 — costCalc/견적서 연동) =====
   cReview:500000, cLadder:600000,
   cInvG125:5600000, cInvG50:3800000, cInvG36:2500000, cInvH110:5100000, cInvH50:3200000, cInvMargin:1000000,
@@ -2996,7 +3002,7 @@ const SET_MAP=[['st-company','company','t'],['st-phone','phone','t'],['st-defmap
   ['st-cn-brand','cnBrand','t'],['st-cn-w','cnW','n'],['st-cn-x','cnX','n'],['st-cn-y','cnY','n'],
   ['st-tilt','tilt','n'],['st-incid','incid','n'],['st-gap','gap','n'],
   ['st-modcost','modcost','n'],['st-kwunit','kwunit','n'],['st-margin','margin','n'],
-  ['st-apply','apply','n'],['st-hours','hours','n'],['st-rate','rate','n'],['st-defer','defer','n'],['st-repay','repay','n'],['st-loanpct','loanpct','n']];
+  ['st-apply','apply','n'],['st-hours','hours','n'],['st-rate','rate','n'],['st-defer','defer','n'],['st-repay','repay','n'],['st-loanpct','loanpct','n'],['st-qphoto','qphoto','t']];
 // ===== 구조물·전기 단가표(매트릭스) — 노지/건물 × 용량구간 × 제작/공사/전기 =====
 const STRUCT_CAPS=[['30','~30kW'],['50','~50kW'],['100','~100kW'],['300','~300kW'],['500','~500kW'],['700','~700kW'],['1000','700kW+']];
 const STRUCT_COLS=['제작','공사','전기'];
